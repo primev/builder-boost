@@ -1,0 +1,38 @@
+name: Deploy to EC2 (Mainnet)
+
+on:
+  workflow_dispatch:
+
+env:
+  HOST: 18.237.139.198
+  USER: ec2-user
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Set up SSH
+      run: |
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > private_key.pem
+        chmod 600 private_key.pem
+        mkdir -p ~/.ssh
+        touch ~/.ssh/known_hosts
+        chmod 644 ~/.ssh/known_hosts
+        ssh-keyscan $HOST >> ~/.ssh/known_hosts
+
+    - name: Build Boost
+      run: |
+        sudo apt update && sudo apt install -y golang make
+        make
+        CGO_ENABLED=0 make build
+
+    - name: Deploy to EC2
+      run: |
+        ssh -i private_key.pem $USER@$HOST "pm2 stop boost"
+        ssh -i private_key.pem $USER@$HOST "mkdir -p ~/builder-boost"
+        scp -i private_key.pem -r ./boost $USER@$HOST:~/builder-boost
+        ssh -i private_key.pem $USER@$HOST "pm2 start boost"
