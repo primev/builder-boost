@@ -6,7 +6,6 @@ require (
 	github.com/alecthomas/assert v1.0.0
 	github.com/attestantio/go-builder-client v0.2.8
 	github.com/ethereum/go-ethereum v1.11.6
-	github.com/google/uuid v1.3.0
 	github.com/gorilla/websocket v1.4.2
 	github.com/lthibault/log v1.2.2
 	github.com/sirupsen/logrus v1.9.0
@@ -41,6 +40,7 @@ require (
 	github.com/go-stack/stack v1.8.1 // indirect
 	github.com/goccy/go-yaml v1.9.2 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
+	github.com/google/uuid v1.3.0 // indirect
 	github.com/holiman/uint256 v1.2.2 // indirect
 	github.com/klauspost/cpuid/v2 v2.1.2 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect

@@ -68,7 +68,7 @@ func (a *API) init() {
 		// builder related
 		router.HandleFunc(PathSubmitBlock, handler(a.submitBlock))
 
-		router.HandleFunc(PathSearcherConnect, a.searcher)
+		router.HandleFunc(PathSearcherConnect, a.connectSearcher)
 
 		a.mux = router
 	})
@@ -101,7 +101,16 @@ func handler(f func(http.ResponseWriter, *http.Request) (int, error)) http.Handl
 	}
 }
 
-func (a *API) searcher(w http.ResponseWriter, r *http.Request) {
+// connectSearcher is the handler to connect a searcher to the builder for the websocket execution hints
+// TODO: Add authentication
+//
+// GET /ws?Searcher=0x123 where 0x123 is the address of the searcher (soon to be auth token)
+// The handler authenticates based on the following criteria:
+// 1. The address is a valid address
+// 2. The address has sufficient balance
+// 3. The address is not already connected
+
+func (a *API) connectSearcher(w http.ResponseWriter, r *http.Request) {
 	log.Info("searcher called")
 	ws := websocket.Upgrader{
 		ReadBufferSize:  1028,
@@ -120,10 +129,23 @@ func (a *API) searcher(w http.ResponseWriter, r *http.Request) {
 	balance := a.Rollup.CheckBalance(common.HexToAddress(searcherID))
 	log.Info("Searcher attempting connection", "searcherID", searcherID, "balance", balance)
 
+	// Check for sufficent balance
 	if balance.Cmp(a.Rollup.GetMinimalStake(a.Rollup.GetBuilderID())) < 0 {
 		log.Error("Searcher has insufficient balance", "balance", balance, "required", a.Rollup.GetMinimalStake(a.Rollup.GetBuilderID()))
 		w.WriteHeader(http.StatusForbidden)
 		w.Write([]byte("Searcher has insufficient balance"))
+		return
+	}
+
+	// Check if searcher is already connected
+	// TODO(@ckartik): Ensure we delete the searcher from the connectedSearchers map when the connection is closed
+	a.Worker.lock.RLock()
+	_, ok := a.Worker.connectedSearchers[searcherID]
+	a.Worker.lock.RUnlock()
+	if ok {
+		log.Error("Searcher is already connected", "searcherID", searcherID)
+		w.WriteHeader(http.StatusForbidden)
+		w.Write([]byte("Searcher is already connected"))
 		return
 	}
 
@@ -177,4 +199,11 @@ func succeed(status int) http.HandlerFunc {
 	return handler(func(http.ResponseWriter, *http.Request) (int, error) {
 		return status, nil
 	})
+}
+
+// healthCheck detremines if the service is healthy
+// how many connections are open
+func healthCheck(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("OK"))
 }
