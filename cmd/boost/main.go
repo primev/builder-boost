@@ -213,16 +213,6 @@ func run() cli.ActionFunc {
 				return ctx
 			}
 
-			// rl := rollup.New()
-			// // Manually creating a rollup
-			// rollup := boost.NewStubRollup()
-			// rollup.SetBalance("kartik", 32)
-			// rollup.SetBalance("murat", 32)
-			// rollup.SetBalance("dan", 32)
-			// rollup.SetBalance("kant", 32)
-			// rollup.SetBalance("serhii", 32)
-			// rollup.SetBalance("justenough", 31)
-
 			svr.Handler = &boost.API{
 				Service: service,
 				Log:     config.Log,

@@ -68,7 +68,7 @@ func (a *API) init() {
 		// builder related
 		router.HandleFunc(PathSubmitBlock, handler(a.submitBlock))
 
-		router.HandleFunc(PathSearcherConnect, a.connectSearcher)
+		router.HandleFunc(PathSearcherConnect, a.ConnectedSearcher)
 
 		a.mux = router
 	})
@@ -110,7 +110,7 @@ func handler(f func(http.ResponseWriter, *http.Request) (int, error)) http.Handl
 // 2. The address has sufficient balance
 // 3. The address is not already connected
 
-func (a *API) connectSearcher(w http.ResponseWriter, r *http.Request) {
+func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 	log.Info("searcher called")
 	ws := websocket.Upgrader{
 		ReadBufferSize:  1028,
