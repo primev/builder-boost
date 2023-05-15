@@ -9,6 +9,7 @@ require (
 	github.com/gorilla/websocket v1.4.2
 	github.com/lthibault/log v1.2.2
 	github.com/sirupsen/logrus v1.9.0
+	github.com/stretchr/testify v1.8.2
 	github.com/urfave/cli/v2 v2.17.2-0.20221006022127-8f469abc00aa
 	golang.org/x/sync v0.1.0
 	gopkg.in/DataDog/dd-trace-go.v1 v1.50.1
@@ -30,6 +31,7 @@ require (
 	github.com/btcsuite/btcd/btcec/v2 v2.2.0 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/deckarep/golang-set/v2 v2.1.0 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.0.1 // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
@@ -49,11 +51,13 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/outcaste-io/ristretto v0.2.1 // indirect
 	github.com/philhofer/fwd v1.1.1 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prysmaticlabs/go-bitfield v0.0.0-20210809151128-385d8c5e3fb7 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/secure-systems-lab/go-securesystemslib v0.5.0 // indirect
 	github.com/sergi/go-diff v1.2.0 // indirect
 	github.com/shirou/gopsutil v3.21.4-0.20210419000835-c7a38de76ee5+incompatible // indirect
+	github.com/stretchr/objx v0.5.0 // indirect
 	github.com/tinylib/msgp v1.1.6 // indirect
 	github.com/tklauser/go-sysconf v0.3.5 // indirect
 	github.com/tklauser/numcpus v0.2.2 // indirect
@@ -69,6 +73,7 @@ require (
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 	inet.af/netaddr v0.0.0-20220811202034-502d2d690317 // indirect
 )
 
