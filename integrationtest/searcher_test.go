@@ -84,64 +84,24 @@ func TestConnectSearcher(t *testing.T) {
 		assert.NotNil(t, resp)
 	})
 
-	// // Test with a searcher having insufficient balance
-	// t.Run("InsufficientBalance", func(t *testing.T) {
-	// 	insufficientBalanceSearcherID := "0x1234567890123456789012345678901234567890"
-	// 	api.Rollup.GetMinimalStake = func(builderID common.Address) *big.Int {
-	// 		return big.NewInt(100)
-	// 	}
-	// 	api.Rollup.CheckBalance = func(searcherID common.Address) *big.Int {
-	// 		return big.NewInt(50)
-	// 	}
-	// 	conn, resp, err := dialer.Dial("ws"+strings.TrimPrefix(server.URL, "http")+"?Searcher="+insufficientBalanceSearcherID, nil)
-	// 	assert.Nil(t, conn)
-	// 	assert.NotNil(t, resp)
-	// 	assert.NotNil(t, err)
-	// 	assert.Equal(t, http.StatusForbidden, resp.StatusCode)
-	// })
+	// Test with a searcher that is already connected
+	t.Run("Already connected searcher is forbidden", func(t *testing.T) {
+		validSearcherID := "0x812fC9524961d0566B3207fee1a567fef23E5E38"
+		mockRollup.On("CheckBalance", common.HexToAddress(validSearcherID)).Return(big.NewInt(100), nil)
+		mockRollup.On("GetBuilderID").Return(common.HexToAddress("0xbuilder"))
+		mockRollup.On("GetMinimalStake", common.HexToAddress("0xbuilder")).Return(big.NewInt(100))
 
-	// // Test with a searcher that is already connected
-	// t.Run("AlreadyConnected", func(t *testing.T) {
-	// 	alreadyConnectedSearcherID := "0x1234567890123456789012345678901234567891"
-	// 	api.Worker.connectedSearchers[alreadyConnectedSearcherID] = make(chan Metadata, 100)
-	// 	conn, resp, err := dialer.Dial("ws"+strings.TrimPrefix(server.URL, "http")+"?Searcher="+alreadyConnectedSearcherID, nil)
-	// 	assert.Nil(t, conn)
-	// 	assert.NotNil(t, resp)
-	// 	assert.NotNil(t, err)
-	// 	assert.Equal(t, http.StatusForbidden, resp.StatusCode)
-	// })
+		conn, resp, err := dialer.Dial("ws"+strings.TrimPrefix(server.URL, "http")+"?Searcher="+validSearcherID, nil)
+		assert.NotNil(t, conn)
+		assert.NotNil(t, resp)
+		assert.Nil(t, err)
 
-	// // Test with a valid searcher ID and sufficient balance
-	// t.Run("ValidSearcherID", func(t *testing.T) {
-	// 	validSearcherID := "0x1234567890123456789012345678901234567892"
-	// 	api.Rollup.GetMinimalStake = func(builderID common.Address) *big.Int {
-	// 		return big.NewInt(100)
-	// 	}
-	// 	api.Rollup.CheckBalance = func(searcherID common.Address) *big.Int {
-	// 		return big.NewInt(200)
-	// 	}
-	// 	conn, resp, err := dialer.Dial("ws"+strings.TrimPrefix(server.URL, "http")+"?Searcher="+validSearcherID, nil)
-	// 	assert.NotNil(t, conn)
-	// 	assert.Nil(t, resp)
-	// 	assert.Nil(t, err)
+		conn2, resp2, err2 := dialer.Dial("ws"+strings.TrimPrefix(server.URL, "http")+"?Searcher="+validSearcherID, nil)
+		assert.Equal(t, http.StatusForbidden, resp2.StatusCode)
+		assert.Nil(t, conn2)
+		assert.NotNil(t, resp2)
+		assert.NotNil(t, err2)
 
-	// 	// Send a message to the searcher
-	// 	metadata := Metadata{
-	// 		// Fill in the metadata fields
-	// 	}
-	// 	api.Worker.connectedSearchers[validSearcherID] <- metadata
+	})
 
-	// 	// Read the message from the WebSocket connection
-	// 	_, msg, err := conn.ReadMessage()
-	// 	assert.Nil(t, err)
-
-	// 	// Unmarshal the message and compare with the original metadata
-	// 	var receivedMetadata Metadata
-	// 	err = json.Unmarshal(msg, &receivedMetadata)
-	// 	assert.Nil(t, err)
-	// 	assert.Equal(t, metadata, receivedMetadata)
-
-	// 	// Close the connection
-	// 	conn.Close()
-	// })
 }
