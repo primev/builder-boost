@@ -50,14 +50,15 @@ func TestConnectSearcher(t *testing.T) {
 	}
 
 	// Test withan invalid searcher ID
-	t.Run("InvalidSearcherID", func(t *testing.T) {
+	t.Run("Invalid SearcherID", func(t *testing.T) {
 		invalidSearcherID := "invalidID"
 		conn, resp, _ := dialer.Dial("ws"+strings.TrimPrefix(server.URL, "http")+"?Searcher="+invalidSearcherID, nil)
 		assert.Nil(t, conn)
 		assert.NotNil(t, resp)
 		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 	})
-	t.Run("ValidSearcherID", func(t *testing.T) {
+
+	t.Run("Valid SearcherID", func(t *testing.T) {
 		// Setup the mock rollup
 		validSearcherID := "0x812fC9524961d0566B3207fee1a567fef23E5E38"
 		mockRollup.On("CheckBalance", common.HexToAddress(validSearcherID)).Return(big.NewInt(100), nil)
@@ -69,6 +70,20 @@ func TestConnectSearcher(t *testing.T) {
 		assert.NotNil(t, conn)
 		assert.NotNil(t, resp)
 	})
+
+	t.Run("Valid Searcher ID with insufficient balance", func(t *testing.T) {
+		// Setup the mock rollup
+		validSearcherID := "0x812fC9524961d0566B3207fee1a567fef23E5E38"
+		mockRollup.On("CheckBalance", common.HexToAddress(validSearcherID)).Return(big.NewInt(100), nil)
+		mockRollup.On("GetBuilderID").Return(common.HexToAddress("0xbuilder"))
+		mockRollup.On("GetMinimalStake", common.HexToAddress("0xbuilder")).Return(big.NewInt(101))
+
+		conn, resp, _ := dialer.Dial("ws"+strings.TrimPrefix(server.URL, "http")+"?Searcher="+validSearcherID, nil)
+		assert.Equal(t, http.StatusForbidden, resp.StatusCode)
+		assert.Nil(t, conn)
+		assert.NotNil(t, resp)
+	})
+
 	// // Test with a searcher having insufficient balance
 	// t.Run("InsufficientBalance", func(t *testing.T) {
 	// 	insufficientBalanceSearcherID := "0x1234567890123456789012345678901234567890"
