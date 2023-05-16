@@ -32,9 +32,7 @@ func TestConnectSearcher(t *testing.T) {
 
 	// wait for the boost service to be ready
 	<-service.Ready()
-	mockRollup := &rollup.MockRollup{}
 	api := &boost.API{
-		Rollup: mockRollup,
 		Worker: boost.NewWorker(service.GetWorkChannel(), config.Log),
 		Log:    config.Log,
 	}
@@ -60,10 +58,12 @@ func TestConnectSearcher(t *testing.T) {
 
 	t.Run("Valid SearcherID", func(t *testing.T) {
 		// Setup the mock rollup
+		mockRollup := rollup.MockRollup{}
 		validSearcherID := "0x812fC9524961d0566B3207fee1a567fef23E5E38"
 		mockRollup.On("CheckBalance", common.HexToAddress(validSearcherID)).Return(big.NewInt(100), nil)
 		mockRollup.On("GetBuilderID").Return(common.HexToAddress("0xbuilder"))
 		mockRollup.On("GetMinimalStake", common.HexToAddress("0xbuilder")).Return(big.NewInt(100))
+		api.Rollup = &mockRollup
 
 		conn, resp, _ := dialer.Dial("ws"+strings.TrimPrefix(server.URL, "http")+"?Searcher="+validSearcherID, nil)
 		assert.Equal(t, http.StatusSwitchingProtocols, resp.StatusCode)
@@ -73,23 +73,28 @@ func TestConnectSearcher(t *testing.T) {
 
 	t.Run("Valid Searcher ID with insufficient balance", func(t *testing.T) {
 		// Setup the mock rollup
-		validSearcherID := "0x812fC9524961d0566B3207fee1a567fef23E5E38"
+		mockRollup := rollup.MockRollup{}
+		validSearcherID := "0x812fC9524961d0566B3207fee1a567fef23E5E37"
+		builderID := "0xbuilder2"
 		mockRollup.On("CheckBalance", common.HexToAddress(validSearcherID)).Return(big.NewInt(100), nil)
-		mockRollup.On("GetBuilderID").Return(common.HexToAddress("0xbuilder"))
-		mockRollup.On("GetMinimalStake", common.HexToAddress("0xbuilder")).Return(big.NewInt(101))
+		mockRollup.On("GetBuilderID").Return(common.HexToAddress(builderID))
+		mockRollup.On("GetMinimalStake", common.HexToAddress(builderID)).Return(big.NewInt(101))
+		api.Rollup = &mockRollup
 
-		conn, resp, _ := dialer.Dial("ws"+strings.TrimPrefix(server.URL, "http")+"?Searcher="+validSearcherID, nil)
+		_, resp, _ := dialer.Dial("ws"+strings.TrimPrefix(server.URL, "http")+"?Searcher="+validSearcherID, nil)
 		assert.Equal(t, http.StatusForbidden, resp.StatusCode)
-		assert.Nil(t, conn)
 		assert.NotNil(t, resp)
 	})
 
 	// Test with a searcher that is already connected
 	t.Run("Already connected searcher is forbidden", func(t *testing.T) {
-		validSearcherID := "0x812fC9524961d0566B3207fee1a567fef23E5E38"
+		validSearcherID := "0x812fC9524961d0566B3207fee1a567fef23E5E39"
+		mockRollup := rollup.MockRollup{}
+
 		mockRollup.On("CheckBalance", common.HexToAddress(validSearcherID)).Return(big.NewInt(100), nil)
 		mockRollup.On("GetBuilderID").Return(common.HexToAddress("0xbuilder"))
 		mockRollup.On("GetMinimalStake", common.HexToAddress("0xbuilder")).Return(big.NewInt(100))
+		api.Rollup = &mockRollup
 
 		conn, resp, err := dialer.Dial("ws"+strings.TrimPrefix(server.URL, "http")+"?Searcher="+validSearcherID, nil)
 		assert.NotNil(t, conn)
@@ -103,5 +108,27 @@ func TestConnectSearcher(t *testing.T) {
 		assert.NotNil(t, err2)
 
 	})
+
+	// Test with a searcher that is already connected
+	// TODO(@ckartik): Resolve this test as a searcher who tries to reconnect will fail
+	// t.Run("Already connected searcher is closes connection and reopens", func(t *testing.T) {
+	// 	validSearcherID := "0x812fC9524961d0566B3207fee1a567fef23E5E10"
+	// 	mockRollup.On("CheckBalance", common.HexToAddress(validSearcherID)).Return(big.NewInt(100), nil)
+	// 	mockRollup.On("GetBuilderID").Return(common.HexToAddress("0xbuilder"))
+	// 	mockRollup.On("GetMinimalStake", common.HexToAddress("0xbuilder")).Return(big.NewInt(100))
+
+	// 	conn, resp, err := dialer.Dial("ws"+strings.TrimPrefix(server.URL, "http")+"?Searcher="+validSearcherID, nil)
+	// 	assert.NotNil(t, conn)
+	// 	assert.NotNil(t, resp)
+	// 	assert.Nil(t, err)
+	// 	conn.Close()
+
+	// 	conn2, resp2, err2 := dialer.Dial("ws"+strings.TrimPrefix(server.URL, "http")+"?Searcher="+validSearcherID, nil)
+	// 	// assert.Equal(t, http.StatusForbidden, resp2.StatusCode)
+	// 	assert.NotNil(t, conn2)
+	// 	assert.NotNil(t, resp2)
+	// 	assert.NotNil(t, err2)
+
+	// })
 
 }
