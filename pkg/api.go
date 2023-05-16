@@ -164,17 +164,36 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 
 	log.Info("Searcher connected and ready to consume data")
 
-	// Listen for messages from the client
-	// TODO(@ckartik): Turn into a select statment?
-	for {
-		data := <-searcherConsumeChannel
-		json, err := json.Marshal(data)
-		if err != nil {
-			log.Error(err)
-			return
+	closeSignalChannel := make(chan struct{})
+	go func(closeChannel chan struct{}, conn *websocket.Conn) {
+		for {
+			a.Log.Info("Starting to read from searcher", "searcherID", searcherID)
+			_, _, err := conn.NextReader()
+			if err != nil {
+				a.Log.Error("Error reading from searcher", "searcherID", searcherID, "err", err)
+				break
+			}
 		}
-		log.Info("Sending message", "msg", json)
-		conn.WriteMessage(websocket.TextMessage, json)
+		a.Log.Info("Searcher disconnected", "searcherID", searcherID)
+		closeChannel <- struct{}{}
+	}(closeSignalChannel, conn)
+
+	for {
+		select {
+		case <-closeSignalChannel:
+			a.Worker.lock.Lock()
+			defer a.Worker.lock.Unlock()
+			delete(a.Worker.connectedSearchers, searcherID)
+			return
+		case data := <-searcherConsumeChannel:
+			json, err := json.Marshal(data)
+			if err != nil {
+				log.Error(err)
+				return
+			}
+			log.Info("Sending message", "msg", json)
+			conn.WriteMessage(websocket.TextMessage, json)
+		}
 	}
 
 	// // Close the connection
