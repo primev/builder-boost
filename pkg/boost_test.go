@@ -136,11 +136,10 @@ func TestDefaultBoost_SubmitBlock(t *testing.T) {
 				fmt.Println("error:", err)
 			}
 			err = service.SubmitBlock(context.TODO(), &msg)
-			assert.Nil(t, err)
-			service.pMu.RLock()
-			defer service.pMu.RUnlock()
-			assert.Equal(t, service.currentMetaData.Transactions.Count, tt.txnCountExpected)
-			assert.Equal(t, service.currentMetaData.BaseFee, tt.expectedBaseFee)
+			metadata := <-service.pushChannel
+
+			assert.Equal(t, metadata.Transactions.Count, tt.txnCountExpected)
+			assert.Equal(t, metadata.BaseFee, tt.expectedBaseFee)
 		})
 	}
 }

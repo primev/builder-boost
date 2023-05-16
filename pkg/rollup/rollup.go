@@ -24,6 +24,7 @@ const (
 )
 
 //go:generate mockery --name Rollup
+
 type Rollup interface {
 	// Run starts rollup contract event listener
 	Run(ctx context.Context) error
