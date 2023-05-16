@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 env:
-  HOST: 34.211.46.141
+  HOST: ${{ secrets.HOST_SEPOLIA }}
   USER: ec2-user
 
 jobs:
