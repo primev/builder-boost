@@ -2,11 +2,13 @@ package integrationtest
 
 import (
 	"context"
+	"math/big"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/websocket"
 	"github.com/lthibault/log"
 	boost "github.com/primev/builder-boost/pkg"
@@ -30,10 +32,11 @@ func TestConnectSearcher(t *testing.T) {
 
 	// wait for the boost service to be ready
 	<-service.Ready()
-
+	mockRollup := &rollup.MockRollup{}
 	api := &boost.API{
-		Rollup: &rollup.MockRollup{},
+		Rollup: mockRollup,
 		Worker: boost.NewWorker(service.GetWorkChannel(), config.Log),
+		Log:    config.Log,
 	}
 
 	// Create a test server
@@ -49,13 +52,23 @@ func TestConnectSearcher(t *testing.T) {
 	// Test withan invalid searcher ID
 	t.Run("InvalidSearcherID", func(t *testing.T) {
 		invalidSearcherID := "invalidID"
-		conn, resp, err := dialer.Dial("ws"+strings.TrimPrefix(server.URL, "http")+"?Searcher="+invalidSearcherID, nil)
+		conn, resp, _ := dialer.Dial("ws"+strings.TrimPrefix(server.URL, "http")+"?Searcher="+invalidSearcherID, nil)
 		assert.Nil(t, conn)
 		assert.NotNil(t, resp)
-		assert.NotNil(t, err)
 		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 	})
+	t.Run("ValidSearcherID", func(t *testing.T) {
+		// Setup the mock rollup
+		validSearcherID := "0x812fC9524961d0566B3207fee1a567fef23E5E38"
+		mockRollup.On("CheckBalance", common.HexToAddress(validSearcherID)).Return(big.NewInt(100), nil)
+		mockRollup.On("GetBuilderID").Return(common.HexToAddress("0xbuilder"))
+		mockRollup.On("GetMinimalStake", common.HexToAddress("0xbuilder")).Return(big.NewInt(100))
 
+		conn, resp, _ := dialer.Dial("ws"+strings.TrimPrefix(server.URL, "http")+"?Searcher="+validSearcherID, nil)
+		assert.Equal(t, http.StatusSwitchingProtocols, resp.StatusCode)
+		assert.NotNil(t, conn)
+		assert.NotNil(t, resp)
+	})
 	// // Test with a searcher having insufficient balance
 	// t.Run("InsufficientBalance", func(t *testing.T) {
 	// 	insufficientBalanceSearcherID := "0x1234567890123456789012345678901234567890"

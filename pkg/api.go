@@ -120,14 +120,14 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 
 	searcherID := r.URL.Query().Get("Searcher")
 	if !common.IsHexAddress(searcherID) {
-		log.Error("Searcher ID is not a valid address", "searcherID", searcherID)
+		a.Log.Error("Searcher ID is not a valid address", "searcherID", searcherID)
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("Searcher ID is not a valid address"))
 		return
 	}
 
 	balance := a.Rollup.CheckBalance(common.HexToAddress(searcherID))
-	log.Info("Searcher attempting connection", "searcherID", searcherID, "balance", balance)
+	a.Log.Info("Searcher attempting connection", "searcherID", searcherID, "balance", balance)
 
 	// Check for sufficent balance
 	if balance.Cmp(a.Rollup.GetMinimalStake(a.Rollup.GetBuilderID())) < 0 {
