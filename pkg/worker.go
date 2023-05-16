@@ -26,6 +26,7 @@ func NewWorker(workQueue chan Metadata, logger log.Logger) *Worker {
 	}
 }
 
+// TODO(@ckartik): Add a channel to request health status of worker
 func (w *Worker) Run(ctx context.Context) (err error) {
 	go func() {
 		for {

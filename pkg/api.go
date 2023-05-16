@@ -61,6 +61,9 @@ func (a *API) init() {
 		// root returns 200 - nil
 		router.HandleFunc("/", succeed(http.StatusOK))
 
+		// Health check using the healthcheck handler
+		router.HandleFunc("/health", a.handleHealthCheck)
+
 		// proposer related
 		// router.HandleFunc(PathStatus, succeed(http.StatusOK)).Methods(http.MethodGet)
 
@@ -220,9 +223,21 @@ func succeed(status int) http.HandlerFunc {
 	})
 }
 
+type healthCheck struct {
+	Searchers []string `json:"connected_searchers"`
+}
+
 // healthCheck detremines if the service is healthy
 // how many connections are open
-func healthCheck(w http.ResponseWriter, r *http.Request) {
+func (a *API) handleHealthCheck(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("OK"))
+	// Get list of all connected searchers from a.Worker.connectedSearchers
+	searchers := make([]string, 0)
+	a.Worker.lock.RLock()
+	for searcher := range a.Worker.connectedSearchers {
+		searchers = append(searchers, searcher)
+	}
+	a.Worker.lock.RUnlock()
+	// Send the list over the API
+	json.NewEncoder(w).Encode(healthCheck{Searchers: searchers})
 }
