@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 env:
-  HOST: 18.237.139.198
+  HOST: ${{ secrets.HOST_MAINNET }}
   USER: ec2-user
 
 jobs:
