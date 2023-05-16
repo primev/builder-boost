@@ -111,24 +111,24 @@ func TestConnectSearcher(t *testing.T) {
 
 	// Test with a searcher that is already connected
 	// TODO(@ckartik): Resolve this test as a searcher who tries to reconnect will fail
-	// t.Run("Already connected searcher is closes connection and reopens", func(t *testing.T) {
-	// 	validSearcherID := "0x812fC9524961d0566B3207fee1a567fef23E5E10"
-	// 	mockRollup.On("CheckBalance", common.HexToAddress(validSearcherID)).Return(big.NewInt(100), nil)
-	// 	mockRollup.On("GetBuilderID").Return(common.HexToAddress("0xbuilder"))
-	// 	mockRollup.On("GetMinimalStake", common.HexToAddress("0xbuilder")).Return(big.NewInt(100))
+	t.Run("Already connected searcher is closes connection and reopens", func(t *testing.T) {
+		validSearcherID := "0x812fC9524961d0566B3207fee1a567fef23E5E10"
+		mockRollup := rollup.MockRollup{}
+		mockRollup.On("CheckBalance", common.HexToAddress(validSearcherID)).Return(big.NewInt(100), nil)
+		mockRollup.On("GetBuilderID").Return(common.HexToAddress("0xbuilder"))
+		mockRollup.On("GetMinimalStake", common.HexToAddress("0xbuilder")).Return(big.NewInt(100))
+		api.Rollup = &mockRollup
 
-	// 	conn, resp, err := dialer.Dial("ws"+strings.TrimPrefix(server.URL, "http")+"?Searcher="+validSearcherID, nil)
-	// 	assert.NotNil(t, conn)
-	// 	assert.NotNil(t, resp)
-	// 	assert.Nil(t, err)
-	// 	conn.Close()
+		conn, resp, err := dialer.Dial("ws"+strings.TrimPrefix(server.URL, "http")+"?Searcher="+validSearcherID, nil)
+		assert.NotNil(t, conn)
+		assert.NotNil(t, resp)
+		assert.Nil(t, err)
+		conn.Close()
 
-	// 	conn2, resp2, err2 := dialer.Dial("ws"+strings.TrimPrefix(server.URL, "http")+"?Searcher="+validSearcherID, nil)
-	// 	// assert.Equal(t, http.StatusForbidden, resp2.StatusCode)
-	// 	assert.NotNil(t, conn2)
-	// 	assert.NotNil(t, resp2)
-	// 	assert.NotNil(t, err2)
-
-	// })
+		_, resp2, err2 := dialer.Dial("ws"+strings.TrimPrefix(server.URL, "http")+"?Searcher="+validSearcherID, nil)
+		assert.Equal(t, http.StatusSwitchingProtocols, resp2.StatusCode)
+		assert.NotNil(t, resp2)
+		assert.Nil(t, err2)
+	})
 
 }
