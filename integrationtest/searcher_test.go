@@ -32,7 +32,7 @@ func TestConnectSearcher(t *testing.T) {
 	<-service.Ready()
 
 	api := &boost.API{
-		Rollup: rollup.MockRollup{},
+		Rollup: &rollup.MockRollup{},
 		Worker: boost.NewWorker(service.GetWorkChannel(), config.Log),
 	}
 
