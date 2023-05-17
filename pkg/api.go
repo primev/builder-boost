@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/gorilla/websocket"
 
@@ -238,7 +239,8 @@ func succeed(status int) http.HandlerFunc {
 }
 
 type healthCheck struct {
-	Searchers []string `json:"connected_searchers"`
+	Searchers       []string  `json:"connected_searchers"`
+	WorkerHeartBeat time.Time `json:"worker_heartbeat"`
 }
 
 // healthCheck detremines if the service is healthy
@@ -252,6 +254,7 @@ func (a *API) handleHealthCheck(w http.ResponseWriter, r *http.Request) {
 		searchers = append(searchers, searcher)
 	}
 	a.Worker.lock.RUnlock()
+
 	// Send the list over the API
-	json.NewEncoder(w).Encode(healthCheck{Searchers: searchers})
+	json.NewEncoder(w).Encode(healthCheck{Searchers: searchers, WorkerHeartBeat: time.Unix(a.Worker.GetHeartbeat(), 0)})
 }

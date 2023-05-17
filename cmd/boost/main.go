@@ -186,6 +186,7 @@ func run() cli.ActionFunc {
 		config.Log.Info("boost service ready")
 
 		masterWorker := boost.NewWorker(service.Boost.GetWorkChannel(), config.Log)
+
 		g.Go(func() error {
 			return masterWorker.Run(ctx)
 		})

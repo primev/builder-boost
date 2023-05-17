@@ -3,6 +3,8 @@ package boost
 import (
 	"context"
 	"sync"
+	"sync/atomic"
+	"time"
 
 	"github.com/lthibault/log"
 )
@@ -11,11 +13,19 @@ type Worker struct {
 	// TODO(@ckartik): Wrap with RWLock
 	lock               sync.RWMutex
 	connectedSearchers map[string]chan Metadata
-	log                log.Logger
-	workQueue          chan Metadata
+
+	// Note: Heartbeat is meant to be accessed via atomic operations .Store and .Load to ensure non-blocking performance
+	heartbeat *atomic.Int64
+
+	log       log.Logger
+	workQueue chan Metadata
 
 	once  sync.Once
 	ready chan struct{}
+}
+
+func (w *Worker) GetHeartbeat() int64 {
+	return w.heartbeat.Load()
 }
 
 func NewWorker(workQueue chan Metadata, logger log.Logger) *Worker {
@@ -23,6 +33,7 @@ func NewWorker(workQueue chan Metadata, logger log.Logger) *Worker {
 		connectedSearchers: make(map[string]chan Metadata),
 		workQueue:          workQueue,
 		log:                logger,
+		heartbeat:          &atomic.Int64{},
 	}
 }
 
@@ -30,6 +41,8 @@ func NewWorker(workQueue chan Metadata, logger log.Logger) *Worker {
 func (w *Worker) Run(ctx context.Context) (err error) {
 	go func() {
 		for {
+			w.heartbeat.Store(time.Now().Unix())
+
 			select {
 			case <-ctx.Done():
 				return
