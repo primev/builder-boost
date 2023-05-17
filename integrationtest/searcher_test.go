@@ -5,6 +5,7 @@ import (
 	"math/big"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -49,7 +50,19 @@ func TestConnectSearcher(t *testing.T) {
 	}
 
 	getWebSocketURL := func(searcherAddress, commitmentAddress common.Address) string {
-		return "ws" + strings.TrimPrefix(server.URL, "http") + "?searcherAddress=" + searcherAddress.Hex() + "&commitmentAddress=" + commitmentAddress.Hex()
+		u, err := url.Parse(server.URL)
+		if err != nil {
+			panic(err)
+		}
+
+		q := u.Query()
+		q.Set("searcherAddress", searcherAddress.Hex())
+		q.Set("commitmentAddress", commitmentAddress.Hex())
+
+		u.Scheme = "ws"
+		u.RawQuery = q.Encode()
+
+		return u.String()
 	}
 
 	// Test with an invalid searcher address
