@@ -187,18 +187,29 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 		closeChannel <- struct{}{}
 	}(closeSignalChannel, conn)
 
-	for {
-		select {
-		case <-closeSignalChannel:
-			a.Worker.lock.Lock()
-			defer a.Worker.lock.Unlock()
-			delete(a.Worker.connectedSearchers, searcherAddressParam)
-			return
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Error("Recovered in searcher communication goroutine: closing connection", r)
+				a.Worker.lock.Lock()
+				defer a.Worker.lock.Unlock()
+				delete(a.Worker.connectedSearchers, searcherAddressParam)
+				conn.Close()
+			}
+		}()
+
+		for {
+			select {
+			case <-closeSignalChannel:
+				a.Worker.lock.Lock()
+				defer a.Worker.lock.Unlock()
+				delete(a.Worker.connectedSearchers, searcherAddressParam)
+				return
 			case data := <-searcherConsumeChannel:
 				json, err := json.Marshal(data)
 				if err != nil {
 					log.Error(err)
-					return
+					panic(err)
 				}
 				conn.WriteMessage(websocket.TextMessage, json)
 			}
