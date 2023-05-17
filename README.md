@@ -18,10 +18,10 @@
 7. Connect to the searcher account in your wallet and get some sepolia ETH from the faucet [here](https://sepolia-faucet.pk910.de/). Once you've acquired enough seploia eth, send a transaction with 5-10% of the sepolia eth to the Builder Account. You can get the builder account address that you will need from the wallet, it will appear representation, similar to the following: 0x9f2...5E40
 
 A contract is currently deployed here:
-- https://sepolia.etherscan.io/address/0x24Be709969AFf70dEb6b3AEB62Ad3cd47FaC2035
+- https://sepolia.etherscan.io/address/0xc38e581D0403b4065F4d61A838431B143ceE4c81
 
 
-Step 1. Go [here](https://sepolia.etherscan.io/address/0x24Be709969AFf70dEb6b3AEB62Ad3cd47FaC2035#writeContract) and click on the setminimal stake. Here you can connect the wallet associated with the builder and set the minimal stake needed to connect to you to get execution hints.
+Step 1. Go [here](https://sepolia.etherscan.io/address/0xc38e581D0403b4065F4d61A838431B143ceE4c81#writeContract) and click on the setminimal stake. Here you can connect the wallet associated with the builder and set the minimal stake needed to connect to you to get execution hints.
 
 Step 2. Disconnect your builder wallet, this can be done by going to the wallet and clicking on the "Connected" indicator next to your account name in the wallet modal. Now click the 3 dots to the right of the account and press disconnect. 
 
