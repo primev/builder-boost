@@ -95,6 +95,8 @@ var (
 	svr    http.Server
 )
 
+// TODO(@ckartik): Intercept SIGINT and SIGTERM to gracefully shutdown the server and persist state to cache
+
 // Main starts the primev protocol
 func main() {
 	app := &cli.App{
