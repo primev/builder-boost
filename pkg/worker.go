@@ -55,6 +55,7 @@ func (w *Worker) workerRecovery(ctx context.Context) {
 
 // TODO(@ckartik): Add a channel to request health status of worker
 func (w *Worker) Run(ctx context.Context) (err error) {
+	w.log.Info("Starting Worker.Run")
 	go func() {
 		defer w.workerRecovery(ctx)
 		for {
