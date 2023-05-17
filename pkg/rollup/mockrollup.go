@@ -24,106 +24,8 @@ func (_m *MockRollup) EXPECT() *MockRollup_Expecter {
 	return &MockRollup_Expecter{mock: &_m.Mock}
 }
 
-// CheckBalance provides a mock function with given fields: searcher
-func (_m *MockRollup) CheckBalance(searcher common.Address) *big.Int {
-	ret := _m.Called(searcher)
-
-	var r0 *big.Int
-	if rf, ok := ret.Get(0).(func(common.Address) *big.Int); ok {
-		r0 = rf(searcher)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*big.Int)
-		}
-	}
-
-	return r0
-}
-
-// MockRollup_CheckBalance_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CheckBalance'
-type MockRollup_CheckBalance_Call struct {
-	*mock.Call
-}
-
-// CheckBalance is a helper method to define mock.On call
-//   - searcher common.Address
-func (_e *MockRollup_Expecter) CheckBalance(searcher interface{}) *MockRollup_CheckBalance_Call {
-	return &MockRollup_CheckBalance_Call{Call: _e.mock.On("CheckBalance", searcher)}
-}
-
-func (_c *MockRollup_CheckBalance_Call) Run(run func(searcher common.Address)) *MockRollup_CheckBalance_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(common.Address))
-	})
-	return _c
-}
-
-func (_c *MockRollup_CheckBalance_Call) Return(_a0 *big.Int) *MockRollup_CheckBalance_Call {
-	_c.Call.Return(_a0)
-	return _c
-}
-
-func (_c *MockRollup_CheckBalance_Call) RunAndReturn(run func(common.Address) *big.Int) *MockRollup_CheckBalance_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// CheckBalanceRemote provides a mock function with given fields: searcher
-func (_m *MockRollup) CheckBalanceRemote(searcher common.Address) (*big.Int, error) {
-	ret := _m.Called(searcher)
-
-	var r0 *big.Int
-	var r1 error
-	if rf, ok := ret.Get(0).(func(common.Address) (*big.Int, error)); ok {
-		return rf(searcher)
-	}
-	if rf, ok := ret.Get(0).(func(common.Address) *big.Int); ok {
-		r0 = rf(searcher)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*big.Int)
-		}
-	}
-
-	if rf, ok := ret.Get(1).(func(common.Address) error); ok {
-		r1 = rf(searcher)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// MockRollup_CheckBalanceRemote_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CheckBalanceRemote'
-type MockRollup_CheckBalanceRemote_Call struct {
-	*mock.Call
-}
-
-// CheckBalanceRemote is a helper method to define mock.On call
-//   - searcher common.Address
-func (_e *MockRollup_Expecter) CheckBalanceRemote(searcher interface{}) *MockRollup_CheckBalanceRemote_Call {
-	return &MockRollup_CheckBalanceRemote_Call{Call: _e.mock.On("CheckBalanceRemote", searcher)}
-}
-
-func (_c *MockRollup_CheckBalanceRemote_Call) Run(run func(searcher common.Address)) *MockRollup_CheckBalanceRemote_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(common.Address))
-	})
-	return _c
-}
-
-func (_c *MockRollup_CheckBalanceRemote_Call) Return(_a0 *big.Int, _a1 error) *MockRollup_CheckBalanceRemote_Call {
-	_c.Call.Return(_a0, _a1)
-	return _c
-}
-
-func (_c *MockRollup_CheckBalanceRemote_Call) RunAndReturn(run func(common.Address) (*big.Int, error)) *MockRollup_CheckBalanceRemote_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// GetBuilderID provides a mock function with given fields:
-func (_m *MockRollup) GetBuilderID() common.Address {
+// GetBuilderAddress provides a mock function with given fields:
+func (_m *MockRollup) GetBuilderAddress() common.Address {
 	ret := _m.Called()
 
 	var r0 common.Address
@@ -138,29 +40,74 @@ func (_m *MockRollup) GetBuilderID() common.Address {
 	return r0
 }
 
-// MockRollup_GetBuilderID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetBuilderID'
-type MockRollup_GetBuilderID_Call struct {
+// MockRollup_GetBuilderAddress_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetBuilderAddress'
+type MockRollup_GetBuilderAddress_Call struct {
 	*mock.Call
 }
 
-// GetBuilderID is a helper method to define mock.On call
-func (_e *MockRollup_Expecter) GetBuilderID() *MockRollup_GetBuilderID_Call {
-	return &MockRollup_GetBuilderID_Call{Call: _e.mock.On("GetBuilderID")}
+// GetBuilderAddress is a helper method to define mock.On call
+func (_e *MockRollup_Expecter) GetBuilderAddress() *MockRollup_GetBuilderAddress_Call {
+	return &MockRollup_GetBuilderAddress_Call{Call: _e.mock.On("GetBuilderAddress")}
 }
 
-func (_c *MockRollup_GetBuilderID_Call) Run(run func()) *MockRollup_GetBuilderID_Call {
+func (_c *MockRollup_GetBuilderAddress_Call) Run(run func()) *MockRollup_GetBuilderAddress_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		run()
 	})
 	return _c
 }
 
-func (_c *MockRollup_GetBuilderID_Call) Return(_a0 common.Address) *MockRollup_GetBuilderID_Call {
+func (_c *MockRollup_GetBuilderAddress_Call) Return(_a0 common.Address) *MockRollup_GetBuilderAddress_Call {
 	_c.Call.Return(_a0)
 	return _c
 }
 
-func (_c *MockRollup_GetBuilderID_Call) RunAndReturn(run func() common.Address) *MockRollup_GetBuilderID_Call {
+func (_c *MockRollup_GetBuilderAddress_Call) RunAndReturn(run func() common.Address) *MockRollup_GetBuilderAddress_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetCommitment provides a mock function with given fields: commitmentAddress, builder
+func (_m *MockRollup) GetCommitment(commitmentAddress common.Address, builder common.Address) common.Hash {
+	ret := _m.Called(commitmentAddress, builder)
+
+	var r0 common.Hash
+	if rf, ok := ret.Get(0).(func(common.Address, common.Address) common.Hash); ok {
+		r0 = rf(commitmentAddress, builder)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(common.Hash)
+		}
+	}
+
+	return r0
+}
+
+// MockRollup_GetCommitment_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetCommitment'
+type MockRollup_GetCommitment_Call struct {
+	*mock.Call
+}
+
+// GetCommitment is a helper method to define mock.On call
+//   - commitmentAddress common.Address
+//   - builder common.Address
+func (_e *MockRollup_Expecter) GetCommitment(commitmentAddress interface{}, builder interface{}) *MockRollup_GetCommitment_Call {
+	return &MockRollup_GetCommitment_Call{Call: _e.mock.On("GetCommitment", commitmentAddress, builder)}
+}
+
+func (_c *MockRollup_GetCommitment_Call) Run(run func(commitmentAddress common.Address, builder common.Address)) *MockRollup_GetCommitment_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(common.Address), args[1].(common.Address))
+	})
+	return _c
+}
+
+func (_c *MockRollup_GetCommitment_Call) Return(_a0 common.Hash) *MockRollup_GetCommitment_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockRollup_GetCommitment_Call) RunAndReturn(run func(common.Address, common.Address) common.Hash) *MockRollup_GetCommitment_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -209,13 +156,13 @@ func (_c *MockRollup_GetMinimalStake_Call) RunAndReturn(run func(common.Address)
 	return _c
 }
 
-// GetStake provides a mock function with given fields: builder, searcher
-func (_m *MockRollup) GetStake(builder common.Address, searcher common.Address) *big.Int {
-	ret := _m.Called(builder, searcher)
+// GetStake provides a mock function with given fields: searcher, commitment
+func (_m *MockRollup) GetStake(searcher common.Address, commitment common.Hash) *big.Int {
+	ret := _m.Called(searcher, commitment)
 
 	var r0 *big.Int
-	if rf, ok := ret.Get(0).(func(common.Address, common.Address) *big.Int); ok {
-		r0 = rf(builder, searcher)
+	if rf, ok := ret.Get(0).(func(common.Address, common.Hash) *big.Int); ok {
+		r0 = rf(searcher, commitment)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*big.Int)
@@ -231,15 +178,15 @@ type MockRollup_GetStake_Call struct {
 }
 
 // GetStake is a helper method to define mock.On call
-//   - builder common.Address
 //   - searcher common.Address
-func (_e *MockRollup_Expecter) GetStake(builder interface{}, searcher interface{}) *MockRollup_GetStake_Call {
-	return &MockRollup_GetStake_Call{Call: _e.mock.On("GetStake", builder, searcher)}
+//   - commitment common.Hash
+func (_e *MockRollup_Expecter) GetStake(searcher interface{}, commitment interface{}) *MockRollup_GetStake_Call {
+	return &MockRollup_GetStake_Call{Call: _e.mock.On("GetStake", searcher, commitment)}
 }
 
-func (_c *MockRollup_GetStake_Call) Run(run func(builder common.Address, searcher common.Address)) *MockRollup_GetStake_Call {
+func (_c *MockRollup_GetStake_Call) Run(run func(searcher common.Address, commitment common.Hash)) *MockRollup_GetStake_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(common.Address), args[1].(common.Address))
+		run(args[0].(common.Address), args[1].(common.Hash))
 	})
 	return _c
 }
@@ -249,7 +196,62 @@ func (_c *MockRollup_GetStake_Call) Return(_a0 *big.Int) *MockRollup_GetStake_Ca
 	return _c
 }
 
-func (_c *MockRollup_GetStake_Call) RunAndReturn(run func(common.Address, common.Address) *big.Int) *MockRollup_GetStake_Call {
+func (_c *MockRollup_GetStake_Call) RunAndReturn(run func(common.Address, common.Hash) *big.Int) *MockRollup_GetStake_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetStakeRemote provides a mock function with given fields: searcher, commitment
+func (_m *MockRollup) GetStakeRemote(searcher common.Address, commitment common.Hash) (*big.Int, error) {
+	ret := _m.Called(searcher, commitment)
+
+	var r0 *big.Int
+	var r1 error
+	if rf, ok := ret.Get(0).(func(common.Address, common.Hash) (*big.Int, error)); ok {
+		return rf(searcher, commitment)
+	}
+	if rf, ok := ret.Get(0).(func(common.Address, common.Hash) *big.Int); ok {
+		r0 = rf(searcher, commitment)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*big.Int)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(common.Address, common.Hash) error); ok {
+		r1 = rf(searcher, commitment)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockRollup_GetStakeRemote_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetStakeRemote'
+type MockRollup_GetStakeRemote_Call struct {
+	*mock.Call
+}
+
+// GetStakeRemote is a helper method to define mock.On call
+//   - searcher common.Address
+//   - commitment common.Hash
+func (_e *MockRollup_Expecter) GetStakeRemote(searcher interface{}, commitment interface{}) *MockRollup_GetStakeRemote_Call {
+	return &MockRollup_GetStakeRemote_Call{Call: _e.mock.On("GetStakeRemote", searcher, commitment)}
+}
+
+func (_c *MockRollup_GetStakeRemote_Call) Run(run func(searcher common.Address, commitment common.Hash)) *MockRollup_GetStakeRemote_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(common.Address), args[1].(common.Hash))
+	})
+	return _c
+}
+
+func (_c *MockRollup_GetStakeRemote_Call) Return(_a0 *big.Int, _a1 error) *MockRollup_GetStakeRemote_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockRollup_GetStakeRemote_Call) RunAndReturn(run func(common.Address, common.Hash) (*big.Int, error)) *MockRollup_GetStakeRemote_Call {
 	_c.Call.Return(run)
 	return _c
 }
