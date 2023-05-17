@@ -12,6 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/lthibault/log"
 	"github.com/primev/builder-boost/pkg/rollup"
+	"github.com/primev/builder-boost/pkg/utils"
 	// "gopkg.in/DataDog/dd-trace-go.v1/contrib/gorilla/mux"
 )
 
@@ -33,13 +34,13 @@ type jsonError struct {
 }
 
 type API struct {
-	Service   BoostService
-	Worker    *Worker
-	Rollup    rollup.Rollup
-	Log       log.Logger
-	once      sync.Once
-	mux       http.Handler
-	BuilderID common.Address
+	Service        BoostService
+	Worker         *Worker
+	Rollup         rollup.Rollup
+	Log            log.Logger
+	once           sync.Once
+	mux            http.Handler
+	BuilderAddress common.Address
 }
 
 func (a *API) init() {
@@ -121,20 +122,33 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 		CheckOrigin:     func(r *http.Request) bool { return true },
 	}
 
-	searcherID := r.URL.Query().Get("Searcher")
-	if !common.IsHexAddress(searcherID) {
-		a.Log.Error("Searcher ID is not a valid address", "searcherID", searcherID)
+	searcherAddressParam := r.URL.Query().Get("searcherAddress")
+	if !common.IsHexAddress(searcherAddressParam) {
+		a.Log.Error("searcherAddress is not a valid address", "searcherAddress", searcherAddressParam)
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("Searcher ID is not a valid address"))
+		w.Write([]byte("searcherAddress is not a valid address"))
 		return
 	}
 
-	balance := a.Rollup.CheckBalance(common.HexToAddress(searcherID))
-	a.Log.Info("Searcher attempting connection", "searcherID", searcherID, "balance", balance)
+	commitmentAddressParam := r.URL.Query().Get("commitmentAddress")
+	if !common.IsHexAddress(commitmentAddressParam) {
+		log.Error("commitmentAddress is not a valid address", "commitmentAddress", commitmentAddressParam)
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("commitmentAddress is not a valid address"))
+		return
+	}
+
+	builderAddress := a.Rollup.GetBuilderAddress()
+	searcherAddress := common.HexToAddress(searcherAddressParam)
+	commitmentAddress := common.HexToAddress(commitmentAddressParam)
+	commitment := utils.GetCommitment(commitmentAddress, builderAddress)
+
+	balance := a.Rollup.GetStake(searcherAddress, commitment)
+	log.Info("Searcher attempting connection", "searcherAddress", searcherAddressParam, "balance", balance)
 
 	// Check for sufficent balance
-	if balance.Cmp(a.Rollup.GetMinimalStake(a.Rollup.GetBuilderID())) < 0 {
-		log.Error("Searcher has insufficient balance", "balance", balance, "required", a.Rollup.GetMinimalStake(a.Rollup.GetBuilderID()))
+	if balance.Cmp(a.Rollup.GetMinimalStake(builderAddress)) < 0 {
+		log.Error("Searcher has insufficient balance", "balance", balance, "required", a.Rollup.GetMinimalStake(builderAddress))
 		w.WriteHeader(http.StatusForbidden)
 		w.Write([]byte("Searcher has insufficient balance"))
 		return
@@ -143,10 +157,10 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 	// Check if searcher is already connected
 	// TODO(@ckartik): Ensure we delete the searcher from the connectedSearchers map when the connection is closed
 	a.Worker.lock.RLock()
-	_, ok := a.Worker.connectedSearchers[searcherID]
+	_, ok := a.Worker.connectedSearchers[searcherAddressParam]
 	a.Worker.lock.RUnlock()
 	if ok {
-		log.Error("Searcher is already connected", "searcherID", searcherID)
+		log.Error("Searcher is already connected", "searcherAddress", searcherAddressParam)
 		w.WriteHeader(http.StatusForbidden)
 		w.Write([]byte("Searcher is already connected"))
 		return
@@ -162,7 +176,7 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 
 	searcherConsumeChannel := make(chan Metadata, 100)
 	a.Worker.lock.Lock()
-	a.Worker.connectedSearchers[searcherID] = searcherConsumeChannel
+	a.Worker.connectedSearchers[searcherAddressParam] = searcherConsumeChannel
 	a.Worker.lock.Unlock()
 
 	log.Info("Searcher connected and ready to consume data")
@@ -170,14 +184,14 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 	closeSignalChannel := make(chan struct{})
 	go func(closeChannel chan struct{}, conn *websocket.Conn) {
 		for {
-			a.Log.Info("Starting to read from searcher", "searcherID", searcherID)
+			a.Log.Info("Starting to read from searcher", "searcherAddress", searcherAddressParam)
 			_, _, err := conn.NextReader()
 			if err != nil {
-				a.Log.Error("Error reading from searcher", "searcherID", searcherID, "err", err)
+				a.Log.Error("Error reading from searcher", "searcherAddress", searcherAddressParam, "err", err)
 				break
 			}
 		}
-		a.Log.Info("Searcher disconnected", "searcherID", searcherID)
+		a.Log.Info("Searcher disconnected", "searcherAddress", searcherAddressParam)
 		closeChannel <- struct{}{}
 	}(closeSignalChannel, conn)
 
@@ -186,7 +200,7 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 		case <-closeSignalChannel:
 			a.Worker.lock.Lock()
 			defer a.Worker.lock.Unlock()
-			delete(a.Worker.connectedSearchers, searcherID)
+			delete(a.Worker.connectedSearchers, searcherAddressParam)
 			return
 		case data := <-searcherConsumeChannel:
 			json, err := json.Marshal(data)

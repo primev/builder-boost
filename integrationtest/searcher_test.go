@@ -13,6 +13,7 @@ import (
 	"github.com/lthibault/log"
 	boost "github.com/primev/builder-boost/pkg"
 	"github.com/primev/builder-boost/pkg/rollup"
+	"github.com/primev/builder-boost/pkg/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -47,88 +48,101 @@ func TestConnectSearcher(t *testing.T) {
 		WriteBufferSize: 1028,
 	}
 
-	// Test withan invalid searcher ID
-	t.Run("Invalid SearcherID", func(t *testing.T) {
-		invalidSearcherID := "invalidID"
-		conn, resp, _ := dialer.Dial("ws"+strings.TrimPrefix(server.URL, "http")+"?Searcher="+invalidSearcherID, nil)
+	getWebSocketURL := func(searcherAddress, commitmentAddress common.Address) string {
+		return "ws" + strings.TrimPrefix(server.URL, "http") + "?searcherAddress=" + searcherAddress.Hex() + "&commitmentAddress=" + commitmentAddress.Hex()
+	}
+
+	// Test with an invalid searcher address
+	t.Run("Invalid Searcher address", func(t *testing.T) {
+		invalidSearcherAddress := "invalidAddress"
+		conn, resp, _ := dialer.Dial("ws"+strings.TrimPrefix(server.URL, "http")+"?searcherAddress="+invalidSearcherAddress, nil)
 		assert.Nil(t, conn)
 		assert.NotNil(t, resp)
 		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 	})
 
-	t.Run("Valid SearcherID", func(t *testing.T) {
+	t.Run("Valid Searcher address", func(t *testing.T) {
 		// Setup the mock rollup
 		mockRollup := rollup.MockRollup{}
-		validSearcherID := "0x812fC9524961d0566B3207fee1a567fef23E5E38"
-		mockRollup.On("CheckBalance", common.HexToAddress(validSearcherID)).Return(big.NewInt(100), nil)
-		mockRollup.On("GetBuilderID").Return(common.HexToAddress("0xbuilder"))
-		mockRollup.On("GetMinimalStake", common.HexToAddress("0xbuilder")).Return(big.NewInt(100))
+		validSearcherAddress := common.HexToAddress("0x812fC9524961d0566B3207fee1a567fef23E5E38")
+		validCommitmentAddress := common.HexToAddress("0x812fC9524961d0566B3207fee1a567fef23E5E38")
+		builderAddress := common.HexToAddress("0xbuilder")
+		commitment := utils.GetCommitment(validCommitmentAddress, builderAddress)
+		mockRollup.On("GetStake", validSearcherAddress, commitment).Return(big.NewInt(100), nil)
+		mockRollup.On("GetBuilderAddress").Return(builderAddress)
+		mockRollup.On("GetMinimalStake", builderAddress).Return(big.NewInt(100))
 		api.Rollup = &mockRollup
 
-		conn, resp, _ := dialer.Dial("ws"+strings.TrimPrefix(server.URL, "http")+"?Searcher="+validSearcherID, nil)
+		conn, resp, _ := dialer.Dial(getWebSocketURL(validSearcherAddress, validCommitmentAddress), nil)
 		assert.Equal(t, http.StatusSwitchingProtocols, resp.StatusCode)
 		assert.NotNil(t, conn)
 		assert.NotNil(t, resp)
 	})
 
-	t.Run("Valid Searcher ID with insufficient balance", func(t *testing.T) {
+	t.Run("Valid Searcher address with insufficient balance", func(t *testing.T) {
 		// Setup the mock rollup
 		mockRollup := rollup.MockRollup{}
-		validSearcherID := "0x812fC9524961d0566B3207fee1a567fef23E5E37"
-		builderID := "0xbuilder2"
-		mockRollup.On("CheckBalance", common.HexToAddress(validSearcherID)).Return(big.NewInt(100), nil)
-		mockRollup.On("GetBuilderID").Return(common.HexToAddress(builderID))
-		mockRollup.On("GetMinimalStake", common.HexToAddress(builderID)).Return(big.NewInt(101))
+		validSearcherAddress := common.HexToAddress("0x812fC9524961d0566B3207fee1a567fef23E5E38")
+		validCommitmentAddress := common.HexToAddress("0x812fC9524961d0566B3207fee1a567fef23E5E38")
+		builderAddress := common.HexToAddress("0xbuilder2")
+		commitment := utils.GetCommitment(validCommitmentAddress, builderAddress)
+		mockRollup.On("GetStake", validSearcherAddress, commitment).Return(big.NewInt(100), nil)
+		mockRollup.On("GetBuilderAddress").Return(builderAddress)
+		mockRollup.On("GetMinimalStake", builderAddress).Return(big.NewInt(101))
 		api.Rollup = &mockRollup
 
-		_, resp, _ := dialer.Dial("ws"+strings.TrimPrefix(server.URL, "http")+"?Searcher="+validSearcherID, nil)
+		_, resp, _ := dialer.Dial(getWebSocketURL(validSearcherAddress, validCommitmentAddress), nil)
 		assert.Equal(t, http.StatusForbidden, resp.StatusCode)
 		assert.NotNil(t, resp)
 	})
 
 	// Test with a searcher that is already connected
 	t.Run("Already connected searcher is forbidden", func(t *testing.T) {
-		validSearcherID := "0x812fC9524961d0566B3207fee1a567fef23E5E39"
 		mockRollup := rollup.MockRollup{}
+		validSearcherAddress := common.HexToAddress("0x812fC9524961d0566B3207fee1a567fef23E5E39")
+		validCommitmentAddress := common.HexToAddress("0x812fC9524961d0566B3207fee1a567fef23E5E38")
+		builderAddress := common.HexToAddress("0xbuilder")
+		commitment := utils.GetCommitment(validCommitmentAddress, builderAddress)
 
-		mockRollup.On("CheckBalance", common.HexToAddress(validSearcherID)).Return(big.NewInt(100), nil)
-		mockRollup.On("GetBuilderID").Return(common.HexToAddress("0xbuilder"))
-		mockRollup.On("GetMinimalStake", common.HexToAddress("0xbuilder")).Return(big.NewInt(100))
+		mockRollup.On("GetStake", validSearcherAddress, commitment).Return(big.NewInt(100), nil)
+		mockRollup.On("GetBuilderAddress").Return(builderAddress)
+		mockRollup.On("GetMinimalStake", builderAddress).Return(big.NewInt(100))
 		api.Rollup = &mockRollup
 
-		conn, resp, err := dialer.Dial("ws"+strings.TrimPrefix(server.URL, "http")+"?Searcher="+validSearcherID, nil)
+		conn, resp, err := dialer.Dial(getWebSocketURL(validSearcherAddress, validCommitmentAddress), nil)
 		assert.NotNil(t, conn)
 		assert.NotNil(t, resp)
 		assert.Nil(t, err)
 
-		conn2, resp2, err2 := dialer.Dial("ws"+strings.TrimPrefix(server.URL, "http")+"?Searcher="+validSearcherID, nil)
+		conn2, resp2, err2 := dialer.Dial(getWebSocketURL(validSearcherAddress, validCommitmentAddress), nil)
 		assert.Equal(t, http.StatusForbidden, resp2.StatusCode)
 		assert.Nil(t, conn2)
 		assert.NotNil(t, resp2)
 		assert.NotNil(t, err2)
-
 	})
 
 	// Test with a searcher that is already connected
 	// TODO(@ckartik): Resolve this test as a searcher who tries to reconnect will fail
 	t.Run("Already connected searcher is closes connection and reopens", func(t *testing.T) {
-		validSearcherID := "0x812fC9524961d0566B3207fee1a567fef23E5E10"
+		validSearcherAddress := common.HexToAddress("0x812fC9524961d0566B3207fee1a567fef23E5E10")
+		validCommitmentAddress := common.HexToAddress("0x812fC9524961d0566B3207fee1a567fef23E5E38")
+		builderAddress := common.HexToAddress("0xbuilder")
+		commitment := utils.GetCommitment(validCommitmentAddress, builderAddress)
 		mockRollup := rollup.MockRollup{}
-		mockRollup.On("CheckBalance", common.HexToAddress(validSearcherID)).Return(big.NewInt(100), nil)
-		mockRollup.On("GetBuilderID").Return(common.HexToAddress("0xbuilder"))
-		mockRollup.On("GetMinimalStake", common.HexToAddress("0xbuilder")).Return(big.NewInt(100))
+		mockRollup.On("GetStake", validSearcherAddress, commitment).Return(big.NewInt(100), nil)
+		mockRollup.On("GetBuilderAddress").Return(builderAddress)
+		mockRollup.On("GetMinimalStake", builderAddress).Return(big.NewInt(100))
 		api.Rollup = &mockRollup
 
-		conn, resp, err := dialer.Dial("ws"+strings.TrimPrefix(server.URL, "http")+"?Searcher="+validSearcherID, nil)
+		conn, resp, err := dialer.Dial(getWebSocketURL(validSearcherAddress, validCommitmentAddress), nil)
 		assert.NotNil(t, conn)
 		assert.NotNil(t, resp)
 		assert.Nil(t, err)
 		conn.Close()
 
-		_, resp2, err2 := dialer.Dial("ws"+strings.TrimPrefix(server.URL, "http")+"?Searcher="+validSearcherID, nil)
+		_, resp2, err2 := dialer.Dial(getWebSocketURL(validSearcherAddress, validCommitmentAddress), nil)
 		assert.Equal(t, http.StatusSwitchingProtocols, resp2.StatusCode)
 		assert.NotNil(t, resp2)
 		assert.Nil(t, err2)
 	})
-
 }

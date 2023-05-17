@@ -30,7 +30,7 @@ var (
 
 // BuilderStakingMetaData contains all meta data concerning the BuilderStaking contract.
 var BuilderStakingMetaData = &bind.MetaData{
-	ABI: "[{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"builder\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"minimalStake\",\"type\":\"uint256\"}],\"name\":\"MinimalStakeUpdated\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"builder\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"searcher\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"stake\",\"type\":\"uint256\"}],\"name\":\"StakeUpdated\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_builder\",\"type\":\"address\"}],\"name\":\"deposit\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_searcher\",\"type\":\"address\"}],\"name\":\"getStakeAsBuilder\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_builder\",\"type\":\"address\"}],\"name\":\"getStakeAsSearcher\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_builder\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_searcher\",\"type\":\"address\"}],\"name\":\"hasMinimalStake\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"minimalStakes\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_minimalStake\",\"type\":\"uint256\"}],\"name\":\"setMinimalStake\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_builder\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_amount\",\"type\":\"uint256\"}],\"name\":\"withdraw\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]",
+	ABI: "[{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"builder\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"minimalStake\",\"type\":\"uint256\"}],\"name\":\"MinimalStakeUpdated\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"searcher\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"bytes32\",\"name\":\"commitment\",\"type\":\"bytes32\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"stake\",\"type\":\"uint256\"}],\"name\":\"StakeUpdated\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"_commitment\",\"type\":\"bytes32\"}],\"name\":\"deposit\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_builder\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_searcher\",\"type\":\"address\"},{\"internalType\":\"bytes32\",\"name\":\"_commitment\",\"type\":\"bytes32\"}],\"name\":\"hasMinimalStake\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"minimalStakes\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_minimalStake\",\"type\":\"uint256\"}],\"name\":\"setMinimalStake\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"},{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"name\":\"stakes\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"_commitment\",\"type\":\"bytes32\"}],\"name\":\"withdraw\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]",
 }
 
 // BuilderStakingABI is the input ABI used to generate the binding from.
@@ -179,74 +179,12 @@ func (_BuilderStaking *BuilderStakingTransactorRaw) Transact(opts *bind.Transact
 	return _BuilderStaking.Contract.contract.Transact(opts, method, params...)
 }
 
-// GetStakeAsBuilder is a free data retrieval call binding the contract method 0x5785bbd5.
+// HasMinimalStake is a free data retrieval call binding the contract method 0x159a8664.
 //
-// Solidity: function getStakeAsBuilder(address _searcher) view returns(uint256)
-func (_BuilderStaking *BuilderStakingCaller) GetStakeAsBuilder(opts *bind.CallOpts, _searcher common.Address) (*big.Int, error) {
+// Solidity: function hasMinimalStake(address _builder, address _searcher, bytes32 _commitment) view returns(bool)
+func (_BuilderStaking *BuilderStakingCaller) HasMinimalStake(opts *bind.CallOpts, _builder common.Address, _searcher common.Address, _commitment [32]byte) (bool, error) {
 	var out []interface{}
-	err := _BuilderStaking.contract.Call(opts, &out, "getStakeAsBuilder", _searcher)
-
-	if err != nil {
-		return *new(*big.Int), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
-
-	return out0, err
-
-}
-
-// GetStakeAsBuilder is a free data retrieval call binding the contract method 0x5785bbd5.
-//
-// Solidity: function getStakeAsBuilder(address _searcher) view returns(uint256)
-func (_BuilderStaking *BuilderStakingSession) GetStakeAsBuilder(_searcher common.Address) (*big.Int, error) {
-	return _BuilderStaking.Contract.GetStakeAsBuilder(&_BuilderStaking.CallOpts, _searcher)
-}
-
-// GetStakeAsBuilder is a free data retrieval call binding the contract method 0x5785bbd5.
-//
-// Solidity: function getStakeAsBuilder(address _searcher) view returns(uint256)
-func (_BuilderStaking *BuilderStakingCallerSession) GetStakeAsBuilder(_searcher common.Address) (*big.Int, error) {
-	return _BuilderStaking.Contract.GetStakeAsBuilder(&_BuilderStaking.CallOpts, _searcher)
-}
-
-// GetStakeAsSearcher is a free data retrieval call binding the contract method 0xe75fa583.
-//
-// Solidity: function getStakeAsSearcher(address _builder) view returns(uint256)
-func (_BuilderStaking *BuilderStakingCaller) GetStakeAsSearcher(opts *bind.CallOpts, _builder common.Address) (*big.Int, error) {
-	var out []interface{}
-	err := _BuilderStaking.contract.Call(opts, &out, "getStakeAsSearcher", _builder)
-
-	if err != nil {
-		return *new(*big.Int), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
-
-	return out0, err
-
-}
-
-// GetStakeAsSearcher is a free data retrieval call binding the contract method 0xe75fa583.
-//
-// Solidity: function getStakeAsSearcher(address _builder) view returns(uint256)
-func (_BuilderStaking *BuilderStakingSession) GetStakeAsSearcher(_builder common.Address) (*big.Int, error) {
-	return _BuilderStaking.Contract.GetStakeAsSearcher(&_BuilderStaking.CallOpts, _builder)
-}
-
-// GetStakeAsSearcher is a free data retrieval call binding the contract method 0xe75fa583.
-//
-// Solidity: function getStakeAsSearcher(address _builder) view returns(uint256)
-func (_BuilderStaking *BuilderStakingCallerSession) GetStakeAsSearcher(_builder common.Address) (*big.Int, error) {
-	return _BuilderStaking.Contract.GetStakeAsSearcher(&_BuilderStaking.CallOpts, _builder)
-}
-
-// HasMinimalStake is a free data retrieval call binding the contract method 0xa6419e28.
-//
-// Solidity: function hasMinimalStake(address _builder, address _searcher) view returns(bool)
-func (_BuilderStaking *BuilderStakingCaller) HasMinimalStake(opts *bind.CallOpts, _builder common.Address, _searcher common.Address) (bool, error) {
-	var out []interface{}
-	err := _BuilderStaking.contract.Call(opts, &out, "hasMinimalStake", _builder, _searcher)
+	err := _BuilderStaking.contract.Call(opts, &out, "hasMinimalStake", _builder, _searcher, _commitment)
 
 	if err != nil {
 		return *new(bool), err
@@ -258,18 +196,18 @@ func (_BuilderStaking *BuilderStakingCaller) HasMinimalStake(opts *bind.CallOpts
 
 }
 
-// HasMinimalStake is a free data retrieval call binding the contract method 0xa6419e28.
+// HasMinimalStake is a free data retrieval call binding the contract method 0x159a8664.
 //
-// Solidity: function hasMinimalStake(address _builder, address _searcher) view returns(bool)
-func (_BuilderStaking *BuilderStakingSession) HasMinimalStake(_builder common.Address, _searcher common.Address) (bool, error) {
-	return _BuilderStaking.Contract.HasMinimalStake(&_BuilderStaking.CallOpts, _builder, _searcher)
+// Solidity: function hasMinimalStake(address _builder, address _searcher, bytes32 _commitment) view returns(bool)
+func (_BuilderStaking *BuilderStakingSession) HasMinimalStake(_builder common.Address, _searcher common.Address, _commitment [32]byte) (bool, error) {
+	return _BuilderStaking.Contract.HasMinimalStake(&_BuilderStaking.CallOpts, _builder, _searcher, _commitment)
 }
 
-// HasMinimalStake is a free data retrieval call binding the contract method 0xa6419e28.
+// HasMinimalStake is a free data retrieval call binding the contract method 0x159a8664.
 //
-// Solidity: function hasMinimalStake(address _builder, address _searcher) view returns(bool)
-func (_BuilderStaking *BuilderStakingCallerSession) HasMinimalStake(_builder common.Address, _searcher common.Address) (bool, error) {
-	return _BuilderStaking.Contract.HasMinimalStake(&_BuilderStaking.CallOpts, _builder, _searcher)
+// Solidity: function hasMinimalStake(address _builder, address _searcher, bytes32 _commitment) view returns(bool)
+func (_BuilderStaking *BuilderStakingCallerSession) HasMinimalStake(_builder common.Address, _searcher common.Address, _commitment [32]byte) (bool, error) {
+	return _BuilderStaking.Contract.HasMinimalStake(&_BuilderStaking.CallOpts, _builder, _searcher, _commitment)
 }
 
 // MinimalStakes is a free data retrieval call binding the contract method 0x136fc2b3.
@@ -303,25 +241,56 @@ func (_BuilderStaking *BuilderStakingCallerSession) MinimalStakes(arg0 common.Ad
 	return _BuilderStaking.Contract.MinimalStakes(&_BuilderStaking.CallOpts, arg0)
 }
 
-// Deposit is a paid mutator transaction binding the contract method 0xf340fa01.
+// Stakes is a free data retrieval call binding the contract method 0x93074db6.
 //
-// Solidity: function deposit(address _builder) payable returns()
-func (_BuilderStaking *BuilderStakingTransactor) Deposit(opts *bind.TransactOpts, _builder common.Address) (*types.Transaction, error) {
-	return _BuilderStaking.contract.Transact(opts, "deposit", _builder)
+// Solidity: function stakes(address , bytes32 ) view returns(uint256)
+func (_BuilderStaking *BuilderStakingCaller) Stakes(opts *bind.CallOpts, arg0 common.Address, arg1 [32]byte) (*big.Int, error) {
+	var out []interface{}
+	err := _BuilderStaking.contract.Call(opts, &out, "stakes", arg0, arg1)
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
 }
 
-// Deposit is a paid mutator transaction binding the contract method 0xf340fa01.
+// Stakes is a free data retrieval call binding the contract method 0x93074db6.
 //
-// Solidity: function deposit(address _builder) payable returns()
-func (_BuilderStaking *BuilderStakingSession) Deposit(_builder common.Address) (*types.Transaction, error) {
-	return _BuilderStaking.Contract.Deposit(&_BuilderStaking.TransactOpts, _builder)
+// Solidity: function stakes(address , bytes32 ) view returns(uint256)
+func (_BuilderStaking *BuilderStakingSession) Stakes(arg0 common.Address, arg1 [32]byte) (*big.Int, error) {
+	return _BuilderStaking.Contract.Stakes(&_BuilderStaking.CallOpts, arg0, arg1)
 }
 
-// Deposit is a paid mutator transaction binding the contract method 0xf340fa01.
+// Stakes is a free data retrieval call binding the contract method 0x93074db6.
 //
-// Solidity: function deposit(address _builder) payable returns()
-func (_BuilderStaking *BuilderStakingTransactorSession) Deposit(_builder common.Address) (*types.Transaction, error) {
-	return _BuilderStaking.Contract.Deposit(&_BuilderStaking.TransactOpts, _builder)
+// Solidity: function stakes(address , bytes32 ) view returns(uint256)
+func (_BuilderStaking *BuilderStakingCallerSession) Stakes(arg0 common.Address, arg1 [32]byte) (*big.Int, error) {
+	return _BuilderStaking.Contract.Stakes(&_BuilderStaking.CallOpts, arg0, arg1)
+}
+
+// Deposit is a paid mutator transaction binding the contract method 0xb214faa5.
+//
+// Solidity: function deposit(bytes32 _commitment) payable returns()
+func (_BuilderStaking *BuilderStakingTransactor) Deposit(opts *bind.TransactOpts, _commitment [32]byte) (*types.Transaction, error) {
+	return _BuilderStaking.contract.Transact(opts, "deposit", _commitment)
+}
+
+// Deposit is a paid mutator transaction binding the contract method 0xb214faa5.
+//
+// Solidity: function deposit(bytes32 _commitment) payable returns()
+func (_BuilderStaking *BuilderStakingSession) Deposit(_commitment [32]byte) (*types.Transaction, error) {
+	return _BuilderStaking.Contract.Deposit(&_BuilderStaking.TransactOpts, _commitment)
+}
+
+// Deposit is a paid mutator transaction binding the contract method 0xb214faa5.
+//
+// Solidity: function deposit(bytes32 _commitment) payable returns()
+func (_BuilderStaking *BuilderStakingTransactorSession) Deposit(_commitment [32]byte) (*types.Transaction, error) {
+	return _BuilderStaking.Contract.Deposit(&_BuilderStaking.TransactOpts, _commitment)
 }
 
 // SetMinimalStake is a paid mutator transaction binding the contract method 0x3d6ec65e.
@@ -345,25 +314,25 @@ func (_BuilderStaking *BuilderStakingTransactorSession) SetMinimalStake(_minimal
 	return _BuilderStaking.Contract.SetMinimalStake(&_BuilderStaking.TransactOpts, _minimalStake)
 }
 
-// Withdraw is a paid mutator transaction binding the contract method 0xf3fef3a3.
+// Withdraw is a paid mutator transaction binding the contract method 0x8e19899e.
 //
-// Solidity: function withdraw(address _builder, uint256 _amount) returns()
-func (_BuilderStaking *BuilderStakingTransactor) Withdraw(opts *bind.TransactOpts, _builder common.Address, _amount *big.Int) (*types.Transaction, error) {
-	return _BuilderStaking.contract.Transact(opts, "withdraw", _builder, _amount)
+// Solidity: function withdraw(bytes32 _commitment) returns()
+func (_BuilderStaking *BuilderStakingTransactor) Withdraw(opts *bind.TransactOpts, _commitment [32]byte) (*types.Transaction, error) {
+	return _BuilderStaking.contract.Transact(opts, "withdraw", _commitment)
 }
 
-// Withdraw is a paid mutator transaction binding the contract method 0xf3fef3a3.
+// Withdraw is a paid mutator transaction binding the contract method 0x8e19899e.
 //
-// Solidity: function withdraw(address _builder, uint256 _amount) returns()
-func (_BuilderStaking *BuilderStakingSession) Withdraw(_builder common.Address, _amount *big.Int) (*types.Transaction, error) {
-	return _BuilderStaking.Contract.Withdraw(&_BuilderStaking.TransactOpts, _builder, _amount)
+// Solidity: function withdraw(bytes32 _commitment) returns()
+func (_BuilderStaking *BuilderStakingSession) Withdraw(_commitment [32]byte) (*types.Transaction, error) {
+	return _BuilderStaking.Contract.Withdraw(&_BuilderStaking.TransactOpts, _commitment)
 }
 
-// Withdraw is a paid mutator transaction binding the contract method 0xf3fef3a3.
+// Withdraw is a paid mutator transaction binding the contract method 0x8e19899e.
 //
-// Solidity: function withdraw(address _builder, uint256 _amount) returns()
-func (_BuilderStaking *BuilderStakingTransactorSession) Withdraw(_builder common.Address, _amount *big.Int) (*types.Transaction, error) {
-	return _BuilderStaking.Contract.Withdraw(&_BuilderStaking.TransactOpts, _builder, _amount)
+// Solidity: function withdraw(bytes32 _commitment) returns()
+func (_BuilderStaking *BuilderStakingTransactorSession) Withdraw(_commitment [32]byte) (*types.Transaction, error) {
+	return _BuilderStaking.Contract.Withdraw(&_BuilderStaking.TransactOpts, _commitment)
 }
 
 // BuilderStakingMinimalStakeUpdatedIterator is returned from FilterMinimalStakeUpdated and is used to iterate over the raw logs and unpacked data for MinimalStakeUpdated events raised by the BuilderStaking contract.
@@ -570,15 +539,15 @@ func (it *BuilderStakingStakeUpdatedIterator) Close() error {
 
 // BuilderStakingStakeUpdated represents a StakeUpdated event raised by the BuilderStaking contract.
 type BuilderStakingStakeUpdated struct {
-	Builder  common.Address
-	Searcher common.Address
-	Stake    *big.Int
-	Raw      types.Log // Blockchain specific contextual infos
+	Searcher   common.Address
+	Commitment [32]byte
+	Stake      *big.Int
+	Raw        types.Log // Blockchain specific contextual infos
 }
 
-// FilterStakeUpdated is a free log retrieval operation binding the contract event 0xe5c5e2e23207d40d5bc669072459c1fee64395c31fcde90a3d63432ace92c9ec.
+// FilterStakeUpdated is a free log retrieval operation binding the contract event 0x57401ebf3558e31f2eca30da2a7ee84bf3448e52fea178abdcd7b9442dbc8b2e.
 //
-// Solidity: event StakeUpdated(address builder, address searcher, uint256 stake)
+// Solidity: event StakeUpdated(address searcher, bytes32 commitment, uint256 stake)
 func (_BuilderStaking *BuilderStakingFilterer) FilterStakeUpdated(opts *bind.FilterOpts) (*BuilderStakingStakeUpdatedIterator, error) {
 
 	logs, sub, err := _BuilderStaking.contract.FilterLogs(opts, "StakeUpdated")
@@ -588,9 +557,9 @@ func (_BuilderStaking *BuilderStakingFilterer) FilterStakeUpdated(opts *bind.Fil
 	return &BuilderStakingStakeUpdatedIterator{contract: _BuilderStaking.contract, event: "StakeUpdated", logs: logs, sub: sub}, nil
 }
 
-// WatchStakeUpdated is a free log subscription operation binding the contract event 0xe5c5e2e23207d40d5bc669072459c1fee64395c31fcde90a3d63432ace92c9ec.
+// WatchStakeUpdated is a free log subscription operation binding the contract event 0x57401ebf3558e31f2eca30da2a7ee84bf3448e52fea178abdcd7b9442dbc8b2e.
 //
-// Solidity: event StakeUpdated(address builder, address searcher, uint256 stake)
+// Solidity: event StakeUpdated(address searcher, bytes32 commitment, uint256 stake)
 func (_BuilderStaking *BuilderStakingFilterer) WatchStakeUpdated(opts *bind.WatchOpts, sink chan<- *BuilderStakingStakeUpdated) (event.Subscription, error) {
 
 	logs, sub, err := _BuilderStaking.contract.WatchLogs(opts, "StakeUpdated")
@@ -625,9 +594,9 @@ func (_BuilderStaking *BuilderStakingFilterer) WatchStakeUpdated(opts *bind.Watc
 	}), nil
 }
 
-// ParseStakeUpdated is a log parse operation binding the contract event 0xe5c5e2e23207d40d5bc669072459c1fee64395c31fcde90a3d63432ace92c9ec.
+// ParseStakeUpdated is a log parse operation binding the contract event 0x57401ebf3558e31f2eca30da2a7ee84bf3448e52fea178abdcd7b9442dbc8b2e.
 //
-// Solidity: event StakeUpdated(address builder, address searcher, uint256 stake)
+// Solidity: event StakeUpdated(address searcher, bytes32 commitment, uint256 stake)
 func (_BuilderStaking *BuilderStakingFilterer) ParseStakeUpdated(log types.Log) (*BuilderStakingStakeUpdated, error) {
 	event := new(BuilderStakingStakeUpdated)
 	if err := _BuilderStaking.contract.UnpackLog(event, "StakeUpdated", log); err != nil {

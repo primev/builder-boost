@@ -73,13 +73,13 @@ var flags = []cli.Flag{
 	&cli.StringFlag{
 		Name:    "rollupcontract",
 		Usage:   "Rollup contract address",
-		Value:   "0xB82c160372cd59eD689D84f2632847963F87B212",
+		Value:   "0x24Be709969AFf70dEb6b3AEB62Ad3cd47FaC2035",
 		EnvVars: []string{"ROLLUPCONTRACT"},
 	},
 	&cli.StringFlag{
 		Name:    "rollupblock",
 		Usage:   "Block at which rollup contract was deployed",
-		Value:   "3490558",
+		Value:   "3498689",
 		EnvVars: []string{"ROLLUPBLOCK"},
 	},
 	&cli.StringFlag{

@@ -29,20 +29,18 @@ type Rollup interface {
 	// Run starts rollup contract event listener
 	Run(ctx context.Context) error
 
-	// CheckBalance returns cached balance of searcher commited to this builder
-	CheckBalance(searcher common.Address) *big.Int
-
-	// CheckBalanceRemote fetches and returns balance of searcher commited to this builder from remote contract.
-	// After fetching result is cached.
-	CheckBalanceRemote(searcher common.Address) (*big.Int, error)
+	// GetBuilderAddress returns current builder address
+	GetBuilderAddress() common.Address
 
 	// GetStake returns cached stake of searcher commited to specified builder
-	GetStake(builder, searcher common.Address) *big.Int
+	GetStake(searcher common.Address, commitment common.Hash) *big.Int
+
+	// GetStakeRemote fetches and returns balance of searcher commited to this builder from remote contract.
+	// After fetching result is cached.
+	GetStakeRemote(searcher common.Address, commitment common.Hash) (*big.Int, error)
 
 	// GetMinimalStake returns cached minimal stake of specified builder
 	GetMinimalStake(builder common.Address) *big.Int
-
-	GetBuilderID() common.Address
 }
 
 func New(
@@ -120,32 +118,27 @@ func (r *rollup) Run(ctx context.Context) error {
 	}
 }
 
-// GetBuilderID returns builder ID
-func (r *rollup) GetBuilderID() common.Address {
+// GetBuilderAddress returns current builder address
+func (r *rollup) GetBuilderAddress() common.Address {
 	return r.builderAddress
 }
 
-// CheckBalance returns cached balance of searcher commited to this builder
-func (r *rollup) CheckBalance(searcher common.Address) *big.Int {
-	return r.getStake(r.builderAddress, searcher)
+// GetStake returns cached stake of searcher commited to specified builder
+func (r *rollup) GetStake(searcher common.Address, commitment common.Hash) *big.Int {
+	return r.getStake(searcher, commitment)
 }
 
-// CheckBalanceRemote fetches and returns balance of searcher commited to this builder from remote contract.
+// GetStakeRemote fetches and returns balance of searcher commited to this builder from remote contract.
 // After fetching result is cached.
-func (r *rollup) CheckBalanceRemote(searcher common.Address) (*big.Int, error) {
-	stake, err := r.contract.GetStakeAsBuilder(&bind.CallOpts{From: r.builderAddress}, searcher)
+func (r *rollup) GetStakeRemote(searcher common.Address, commitment common.Hash) (*big.Int, error) {
+	stake, err := r.contract.Stakes(nil, searcher, commitment)
 	if err != nil {
 		return nil, err
 	}
 
-	r.setStake(r.builderAddress, searcher, stake)
+	r.setStake(searcher, commitment, stake)
 
 	return stake, nil
-}
-
-// GetStake returns cached stake of searcher commited to specified builder
-func (r *rollup) GetStake(builder, searcher common.Address) *big.Int {
-	return r.getStake(builder, searcher)
 }
 
 // GetMinimalStake returns cached minimal stake of specified builder
@@ -234,13 +227,13 @@ func (r *rollup) processStakeUpdatedEvents(it *contracts.BuilderStakingStakeUpda
 		}
 
 		blockNumber := it.Event.Raw.BlockNumber
-		builder := it.Event.Builder
+		commitment := common.Hash(it.Event.Commitment)
 		searcher := it.Event.Searcher
 		stake := it.Event.Stake
 
-		r.setStake(builder, searcher, stake)
+		r.setStake(searcher, commitment, stake)
 
-		r.log.WithField("builder", builder).WithField("searcher", searcher).
+		r.log.WithField("searcher", searcher).WithField("commitment", commitment).
 			WithField("stake", stake).WithField("block", blockNumber).
 			Info("processed stake updated event")
 	}
@@ -254,7 +247,7 @@ func (r *rollup) loadState() error {
 	if !r.fileExists(r.statePath) {
 		r.state = State{
 			LatestProcessedBlock: r.startBlock,
-			Stakes:               make(map[common.Address]map[common.Address]BigInt),
+			Stakes:               make(map[common.Address]map[common.Hash]BigInt),
 			MinimalStakes:        make(map[common.Address]BigInt),
 		}
 
@@ -279,7 +272,7 @@ func (r *rollup) loadState() error {
 	}
 
 	if state.Stakes == nil {
-		state.Stakes = make(map[common.Address]map[common.Address]BigInt)
+		state.Stakes = make(map[common.Address]map[common.Hash]BigInt)
 	}
 
 	if state.MinimalStakes == nil {
@@ -304,16 +297,16 @@ func (r *rollup) saveState() error {
 }
 
 // getStake returns stake value staked for particular builder by searcher
-func (r *rollup) getStake(builder, searcher common.Address) *big.Int {
+func (r *rollup) getStake(searcher common.Address, commitment common.Hash) *big.Int {
 	r.stateMutex.Lock()
 	defer r.stateMutex.Unlock()
 
-	builderStakes, ok := r.state.Stakes[r.builderAddress]
+	searcherStakes, ok := r.state.Stakes[searcher]
 	if !ok {
 		return big.NewInt(0)
 	}
 
-	stake, ok := builderStakes[searcher]
+	stake, ok := searcherStakes[commitment]
 	if !ok {
 		return big.NewInt(0)
 	}
@@ -322,15 +315,15 @@ func (r *rollup) getStake(builder, searcher common.Address) *big.Int {
 }
 
 // setStake updates stake value staked for particular builder by searcher
-func (r *rollup) setStake(builder, searcher common.Address, stake *big.Int) {
+func (r *rollup) setStake(searcher common.Address, commitment common.Hash, stake *big.Int) {
 	r.stateMutex.Lock()
 	defer r.stateMutex.Unlock()
 
-	if _, ok := r.state.Stakes[builder]; !ok {
-		r.state.Stakes[builder] = make(map[common.Address]BigInt)
+	if _, ok := r.state.Stakes[searcher]; !ok {
+		r.state.Stakes[searcher] = make(map[common.Hash]BigInt)
 	}
 
-	r.state.Stakes[builder][searcher] = BigInt{*stake}
+	r.state.Stakes[searcher][commitment] = BigInt{*stake}
 }
 
 // getMinimalStake returns stake value staked for particular builder by searcher
