@@ -67,51 +67,6 @@ func (_c *MockRollup_GetBuilderAddress_Call) RunAndReturn(run func() common.Addr
 	return _c
 }
 
-// GetCommitment provides a mock function with given fields: commitmentAddress, builder
-func (_m *MockRollup) GetCommitment(commitmentAddress common.Address, builder common.Address) common.Hash {
-	ret := _m.Called(commitmentAddress, builder)
-
-	var r0 common.Hash
-	if rf, ok := ret.Get(0).(func(common.Address, common.Address) common.Hash); ok {
-		r0 = rf(commitmentAddress, builder)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(common.Hash)
-		}
-	}
-
-	return r0
-}
-
-// MockRollup_GetCommitment_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetCommitment'
-type MockRollup_GetCommitment_Call struct {
-	*mock.Call
-}
-
-// GetCommitment is a helper method to define mock.On call
-//   - commitmentAddress common.Address
-//   - builder common.Address
-func (_e *MockRollup_Expecter) GetCommitment(commitmentAddress interface{}, builder interface{}) *MockRollup_GetCommitment_Call {
-	return &MockRollup_GetCommitment_Call{Call: _e.mock.On("GetCommitment", commitmentAddress, builder)}
-}
-
-func (_c *MockRollup_GetCommitment_Call) Run(run func(commitmentAddress common.Address, builder common.Address)) *MockRollup_GetCommitment_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(common.Address), args[1].(common.Address))
-	})
-	return _c
-}
-
-func (_c *MockRollup_GetCommitment_Call) Return(_a0 common.Hash) *MockRollup_GetCommitment_Call {
-	_c.Call.Return(_a0)
-	return _c
-}
-
-func (_c *MockRollup_GetCommitment_Call) RunAndReturn(run func(common.Address, common.Address) common.Hash) *MockRollup_GetCommitment_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
 // GetMinimalStake provides a mock function with given fields: builder
 func (_m *MockRollup) GetMinimalStake(builder common.Address) *big.Int {
 	ret := _m.Called(builder)
@@ -252,6 +207,47 @@ func (_c *MockRollup_GetStakeRemote_Call) Return(_a0 *big.Int, _a1 error) *MockR
 }
 
 func (_c *MockRollup_GetStakeRemote_Call) RunAndReturn(run func(common.Address, common.Hash) (*big.Int, error)) *MockRollup_GetStakeRemote_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// IsSyncing provides a mock function with given fields:
+func (_m *MockRollup) IsSyncing() bool {
+	ret := _m.Called()
+
+	var r0 bool
+	if rf, ok := ret.Get(0).(func() bool); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	return r0
+}
+
+// MockRollup_IsSyncing_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'IsSyncing'
+type MockRollup_IsSyncing_Call struct {
+	*mock.Call
+}
+
+// IsSyncing is a helper method to define mock.On call
+func (_e *MockRollup_Expecter) IsSyncing() *MockRollup_IsSyncing_Call {
+	return &MockRollup_IsSyncing_Call{Call: _e.mock.On("IsSyncing")}
+}
+
+func (_c *MockRollup_IsSyncing_Call) Run(run func()) *MockRollup_IsSyncing_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *MockRollup_IsSyncing_Call) Return(_a0 bool) *MockRollup_IsSyncing_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockRollup_IsSyncing_Call) RunAndReturn(run func() bool) *MockRollup_IsSyncing_Call {
 	_c.Call.Return(run)
 	return _c
 }

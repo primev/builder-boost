@@ -9,6 +9,7 @@ import (
 
 type State struct {
 	LatestProcessedBlock uint64                                    `json:"latestProcessedBlock"`
+	LatestKnownBlock     uint64                                    `json:"latestKnownBlock"`
 	Stakes               map[common.Address]map[common.Hash]BigInt `json:"stakes"`
 	MinimalStakes        map[common.Address]BigInt                 `json:"minimalStakes"`
 }
