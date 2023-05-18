@@ -151,8 +151,8 @@ func TestDefaultBoost_SubmitBlock(t *testing.T) {
 				fmt.Println("error:", err)
 			}
 			err = service.SubmitBlock(context.TODO(), &msg)
+			assert.Equal(t, err, tt.expectedErr)
 			if err != nil {
-				assert.Equal(t, err, tt.expectedErr)
 				return
 			}
 			metadata := <-service.pushChannel

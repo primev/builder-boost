@@ -1,6 +1,6 @@
 package integrationtest
 
-var NoTransactionBlockRaw = `{
+const NoTransactionBlockRaw = `{
 	"message": {
 		"slot": "2246842",
 		"parent_hash": "0x04509e89bb0a974344d0855af9c6e41f26f3198c9edb1aac21e5c11e04745ef4",
