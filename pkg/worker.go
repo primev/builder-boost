@@ -10,7 +10,6 @@ import (
 )
 
 type Worker struct {
-	// TODO(@ckartik): Wrap with RWLock
 	lock               sync.RWMutex
 	connectedSearchers map[string]chan Metadata
 

@@ -141,7 +141,6 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 	if balance.Cmp(a.Rollup.GetMinimalStake(builderAddress)) < 0 {
 		log.Error("Searcher has insufficient balance", "balance", balance, "required", a.Rollup.GetMinimalStake(builderAddress))
 		w.WriteHeader(http.StatusForbidden)
-		w.Write([]byte("Searcher has insufficient balance"))
 		return
 	}
 
@@ -153,7 +152,7 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 	if ok {
 		log.Error("Searcher is already connected", "searcherAddress", searcherAddressParam)
 		w.WriteHeader(http.StatusForbidden)
-		w.Write([]byte("Searcher is already connected"))
+		w.Write([]byte("searcher is already connected"))
 		return
 	}
 
