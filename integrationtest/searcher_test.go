@@ -121,16 +121,17 @@ func TestConnectSearcher(t *testing.T) {
 	t.Run("Valid SearcherID with blocks going through to worker", func(t *testing.T) {
 		// Setup the mock rollup
 		mockRollup := rollup.MockRollup{}
-		validSearcherAddress := common.HexToAddress("0x812fC9524961d0566B3207fee1a567fef23E5E36")
-		validCommitmentAddress := common.HexToAddress("0x812fC9524961d0566B3207fee1a567fef23E5E36")
-		builderAddress := common.HexToAddress("0xbuilder2")
-		commitment := utils.GetCommitment(validCommitmentAddress, builderAddress)
-		mockRollup.On("GetStake", validSearcherAddress, commitment).Return(big.NewInt(100), nil)
+		_, searcherAddress := generatePrivateKey()
+		builderKey, builderAddress := generatePrivateKey()
+		commitment := utils.GetCommitment(builderKey, searcherAddress)
+
 		mockRollup.On("GetBuilderAddress").Return(builderAddress)
 		mockRollup.On("GetMinimalStake", builderAddress).Return(big.NewInt(100))
+		mockRollup.On("GetCommitment", searcherAddress).Return(commitment)
+		mockRollup.On("GetAggregaredStake", searcherAddress).Return(big.NewInt(100))
 		api.Rollup = &mockRollup
 
-		conn, resp, _ := dialer.Dial(getWebSocketURL(validSearcherAddress, validCommitmentAddress), nil)
+		conn, resp, _ := dialer.Dial(getWebSocketURL(searcherAddress), nil)
 		assert.Equal(t, http.StatusSwitchingProtocols, resp.StatusCode)
 		assert.NotNil(t, conn)
 		assert.NotNil(t, resp)
