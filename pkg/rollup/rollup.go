@@ -152,12 +152,12 @@ func (r *rollup) GetMinimalStake(builder common.Address) *big.Int {
 	return r.getMinimalStake(builder)
 }
 
-// IsSyncing returns true if service has fully synced rollup
+// IsSyncing returns true if service is still synced rollup
 func (r *rollup) IsSyncing() bool {
 	r.stateMutex.Lock()
 	defer r.stateMutex.Unlock()
 
-	return r.stateUpdated && r.state.LatestProcessedBlock+blockSyncStateThreshold >= r.state.LatestKnownBlock
+	return !r.stateUpdated || r.state.LatestKnownBlock > r.state.LatestProcessedBlock+blockSyncStateThreshold
 }
 
 // processNextEvents processes events from next batch of blocks and updates local state
