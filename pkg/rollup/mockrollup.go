@@ -24,6 +24,50 @@ func (_m *MockRollup) EXPECT() *MockRollup_Expecter {
 	return &MockRollup_Expecter{mock: &_m.Mock}
 }
 
+// GetAggregaredStake provides a mock function with given fields: searcher
+func (_m *MockRollup) GetAggregaredStake(searcher common.Address) *big.Int {
+	ret := _m.Called(searcher)
+
+	var r0 *big.Int
+	if rf, ok := ret.Get(0).(func(common.Address) *big.Int); ok {
+		r0 = rf(searcher)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*big.Int)
+		}
+	}
+
+	return r0
+}
+
+// MockRollup_GetAggregaredStake_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetAggregaredStake'
+type MockRollup_GetAggregaredStake_Call struct {
+	*mock.Call
+}
+
+// GetAggregaredStake is a helper method to define mock.On call
+//   - searcher common.Address
+func (_e *MockRollup_Expecter) GetAggregaredStake(searcher interface{}) *MockRollup_GetAggregaredStake_Call {
+	return &MockRollup_GetAggregaredStake_Call{Call: _e.mock.On("GetAggregaredStake", searcher)}
+}
+
+func (_c *MockRollup_GetAggregaredStake_Call) Run(run func(searcher common.Address)) *MockRollup_GetAggregaredStake_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(common.Address))
+	})
+	return _c
+}
+
+func (_c *MockRollup_GetAggregaredStake_Call) Return(_a0 *big.Int) *MockRollup_GetAggregaredStake_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockRollup_GetAggregaredStake_Call) RunAndReturn(run func(common.Address) *big.Int) *MockRollup_GetAggregaredStake_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetBuilderAddress provides a mock function with given fields:
 func (_m *MockRollup) GetBuilderAddress() common.Address {
 	ret := _m.Called()

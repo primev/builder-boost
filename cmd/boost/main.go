@@ -15,8 +15,8 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/lthibault/log"
 	boost "github.com/primev/builder-boost/pkg"
+	"github.com/primev/builder-boost/pkg/boostcli"
 	"github.com/primev/builder-boost/pkg/rollup"
-	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/sync/errgroup"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
@@ -56,37 +56,37 @@ var flags = []cli.Flag{
 		Name:    "agentaddr",
 		Usage:   "datadog agent address",
 		Value:   "",
-		EnvVars: []string{"AGENTADDR"},
+		EnvVars: []string{"AGENT_ADDR"},
 	},
 	&cli.StringFlag{
 		Name:    "rollupkey",
 		Usage:   "Private key to interact with rollup",
 		Value:   "",
-		EnvVars: []string{"ROLLUPKEY"},
+		EnvVars: []string{"ROLLUP_KEY"},
 	},
 	&cli.StringFlag{
 		Name:    "rollupaddr",
 		Usage:   "Rollup RPC address",
 		Value:   "https://rpc.sepolia.org",
-		EnvVars: []string{"ROLLUPADDR"},
+		EnvVars: []string{"ROLLUP_ADDR"},
 	},
 	&cli.StringFlag{
 		Name:    "rollupcontract",
 		Usage:   "Rollup contract address",
 		Value:   "0xc38e581D0403b4065F4d61A838431B143ceE4c81",
-		EnvVars: []string{"ROLLUPCONTRACT"},
+		EnvVars: []string{"ROLLUP_CONTRACT"},
 	},
 	&cli.StringFlag{
 		Name:    "rollupblock",
 		Usage:   "Block at which rollup contract was deployed",
 		Value:   "3500791",
-		EnvVars: []string{"ROLLUPBLOCK"},
+		EnvVars: []string{"ROLLUP_BLOCK"},
 	},
 	&cli.StringFlag{
 		Name:    "rollupstate",
 		Usage:   "Filename of rollup state file",
 		Value:   "rollup.json",
-		EnvVars: []string{"ROLLUPSTATE"},
+		EnvVars: []string{"ROLLUP_STATE"},
 	},
 }
 
@@ -117,7 +117,7 @@ func setup() cli.BeforeFunc {
 	return func(c *cli.Context) (err error) {
 
 		config = boost.Config{
-			Log: logger(c),
+			Log: boostcli.Logger(c),
 		}
 
 		svr = http.Server{
@@ -139,7 +139,7 @@ func run() cli.ActionFunc {
 		// setup rollup service
 		builderKetString := c.String("rollupkey")
 		if builderKetString == "" {
-			return errors.New("rollup key is not set, use --rollupkey option or ROLLUPKEY env variable")
+			return errors.New("rollup key is not set, use --rollupkey option or ROLLUP_KEY env variable")
 		}
 
 		builderKeyBytes := common.FromHex(builderKetString)
@@ -243,64 +243,4 @@ func run() cli.ActionFunc {
 
 		return g.Wait()
 	}
-}
-
-func logger(c *cli.Context) log.Logger {
-	return log.New(
-		withLevel(c),
-		withFormat(c),
-		withErrWriter(c))
-}
-
-func withLevel(c *cli.Context) (opt log.Option) {
-	var level = log.FatalLevel
-	defer func() {
-		opt = log.WithLevel(level)
-	}()
-
-	if c.Bool("trace") {
-		level = log.TraceLevel
-		return
-	}
-
-	if c.String("logfmt") == "none" {
-		return
-	}
-
-	switch c.String("loglvl") {
-	case "trace", "t":
-		level = log.TraceLevel
-	case "debug", "d":
-		level = log.DebugLevel
-	case "info", "i":
-		level = log.InfoLevel
-	case "warn", "warning", "w":
-		level = log.WarnLevel
-	case "error", "err", "e":
-		level = log.ErrorLevel
-	case "fatal", "f":
-		level = log.FatalLevel
-	default:
-		level = log.InfoLevel
-	}
-
-	return
-}
-
-func withFormat(c *cli.Context) log.Option {
-	var fmt logrus.Formatter
-
-	switch c.String("logfmt") {
-	case "none":
-	case "json":
-		fmt = &logrus.JSONFormatter{PrettyPrint: c.Bool("prettyprint")}
-	default:
-		fmt = new(logrus.TextFormatter)
-	}
-
-	return log.WithFormatter(fmt)
-}
-
-func withErrWriter(c *cli.Context) log.Option {
-	return log.WithWriter(c.App.ErrWriter)
 }

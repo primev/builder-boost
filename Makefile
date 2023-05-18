@@ -8,6 +8,7 @@ test:
 
 build:
 	go build ./cmd/boost
+	go build ./cmd/searcher
 
 all:
 	make dep
