@@ -1,11 +1,15 @@
 package utils
 
 import (
+	"crypto/ecdsa"
+	"crypto/x509"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
-// GetCommitment calculates commitment by pseudo searcher and builder addresses
-func GetCommitment(commitmentAddress, builder common.Address) common.Hash {
-	return crypto.Keccak256Hash(commitmentAddress.Bytes(), builder.Bytes())
+// GetCommitment calculates commitment hash by builder private key and searcher address
+func GetCommitment(key *ecdsa.PrivateKey, searcher common.Address) common.Hash {
+	keyBytes, _ := x509.MarshalECPrivateKey(key)
+	return crypto.Keccak256Hash(keyBytes, searcher.Bytes())
 }

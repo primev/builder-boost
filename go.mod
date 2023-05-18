@@ -6,7 +6,7 @@ require (
 	github.com/alecthomas/assert v1.0.0
 	github.com/attestantio/go-builder-client v0.2.8
 	github.com/ethereum/go-ethereum v1.11.6
-	github.com/gorilla/websocket v1.4.2
+	github.com/gorilla/websocket v1.5.0
 	github.com/lthibault/log v1.2.2
 	github.com/sirupsen/logrus v1.9.0
 	github.com/stretchr/testify v1.8.2

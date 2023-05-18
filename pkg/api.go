@@ -13,7 +13,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/lthibault/log"
 	"github.com/primev/builder-boost/pkg/rollup"
-	"github.com/primev/builder-boost/pkg/utils"
 	// "gopkg.in/DataDog/dd-trace-go.v1/contrib/gorilla/mux"
 )
 
@@ -131,20 +130,11 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	commitmentAddressParam := r.URL.Query().Get("commitmentAddress")
-	if !common.IsHexAddress(commitmentAddressParam) {
-		log.Error("commitmentAddress is not a valid address", "commitmentAddress", commitmentAddressParam)
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("commitmentAddress is not a valid address"))
-		return
-	}
-
 	builderAddress := a.Rollup.GetBuilderAddress()
 	searcherAddress := common.HexToAddress(searcherAddressParam)
-	commitmentAddress := common.HexToAddress(commitmentAddressParam)
-	commitment := utils.GetCommitment(commitmentAddress, builderAddress)
 
-	balance := a.Rollup.GetStake(searcherAddress, commitment)
+	balance := a.Rollup.GetAggregaredStake(searcherAddress)
+
 	log.Info("Searcher attempting connection", "searcherAddress", searcherAddressParam, "balance", balance)
 
 	// Check for sufficent balance
