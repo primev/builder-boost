@@ -208,6 +208,8 @@ func (r *rollup) processNextBlocks(ctx context.Context) error {
 		return err
 	}
 
+	r.stateMutex.Lock()
+	defer r.stateMutex.Unlock()
 	r.state.LatestProcessedBlock = endBlock
 	r.state.LatestKnownBlock = latestBlock
 	r.stateUpdated = true
