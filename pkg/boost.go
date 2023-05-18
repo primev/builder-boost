@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/binary"
 	"encoding/json"
+	"errors"
 	"sync"
 	"time"
 
@@ -41,6 +42,10 @@ type Metadata struct {
 	Transactions Transaction `json:"transactions"`
 }
 
+var (
+	ErrBlockUnprocessable = errors.New("V001: block unprocessable")
+)
+
 // NewGateway new auction gateway service
 func NewBoost(config Config) (*DefaultBoost, error) {
 	if err := config.validate(); err != nil {
@@ -62,9 +67,15 @@ func (rs *DefaultBoost) Log() log.Logger {
 	return rs.config.Log
 }
 
-func (as *DefaultBoost) SubmitBlock(ctx context.Context, msg *capella.SubmitBlockRequest) error {
+func (as *DefaultBoost) SubmitBlock(ctx context.Context, msg *capella.SubmitBlockRequest) (err error) {
 	span, _ := tracer.StartSpanFromContext(ctx, "submit-block")
 	defer span.Finish()
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error(ErrBlockUnprocessable.Error())
+			err = ErrBlockUnprocessable
+		}
+	}()
 
 	var _txn types.Transaction
 	var blockMetadata Metadata

@@ -10,7 +10,6 @@ import (
 )
 
 type Worker struct {
-	// TODO(@ckartik): Wrap with RWLock
 	lock               sync.RWMutex
 	connectedSearchers map[string]chan Metadata
 
@@ -37,9 +36,27 @@ func NewWorker(workQueue chan Metadata, logger log.Logger) *Worker {
 	}
 }
 
+// workerRecovery recovers from a panic in Worker.Run and restarts the Worker
+func (w *Worker) workerRecovery(ctx context.Context) {
+	if r := recover(); r != nil {
+		w.log.Error("Recovered from panic in Worker.Run", "error", r)
+
+		// Restart the Worker with a new context
+		newCtx, cancel := context.WithCancel(ctx)
+		defer cancel()
+
+		w.log.Info("Restarting Worker.Run")
+		if err := w.Run(newCtx); err != nil {
+			w.log.Error("Failed to restart Worker.Run", "error", err)
+		}
+	}
+}
+
 // TODO(@ckartik): Add a channel to request health status of worker
 func (w *Worker) Run(ctx context.Context) (err error) {
+	w.log.Info("Starting Worker.Run")
 	go func() {
+		defer w.workerRecovery(ctx)
 		for {
 			w.heartbeat.Store(time.Now().Unix())
 

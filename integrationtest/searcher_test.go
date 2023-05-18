@@ -3,13 +3,16 @@ package integrationtest
 import (
 	"context"
 	"crypto/ecdsa"
+	"encoding/json"
 	"math/big"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"strings"
+	"sync"
 	"testing"
 
+	"github.com/attestantio/go-builder-client/api/capella"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/gorilla/websocket"
@@ -26,10 +29,18 @@ func TestConnectSearcher(t *testing.T) {
 	config := boost.Config{
 		Log: log.New(),
 	}
+
 	// setup the boost service
+	bst, err := boost.NewBoost(config)
+	if err != nil {
+		t.Log(err)
+		t.FailNow()
+	}
+
 	service := &boost.DefaultService{
 		Log:    config.Log,
 		Config: config,
+		Boost:  bst,
 	}
 
 	go service.Run(context.TODO())
@@ -37,9 +48,12 @@ func TestConnectSearcher(t *testing.T) {
 	// wait for the boost service to be ready
 	<-service.Ready()
 	api := &boost.API{
-		Worker: boost.NewWorker(service.GetWorkChannel(), config.Log),
-		Log:    config.Log,
+		Service: service,
+		Worker:  boost.NewWorker(service.GetWorkChannel(), config.Log),
+		Log:     config.Log,
 	}
+
+	go api.Worker.Run(context.Background())
 
 	// Create a test server
 	server := httptest.NewServer(http.HandlerFunc(api.ConnectedSearcher))
@@ -104,7 +118,47 @@ func TestConnectSearcher(t *testing.T) {
 		assert.NotNil(t, resp)
 	})
 
-	t.Run("Valid Searcher address with insufficient balance", func(t *testing.T) {
+	t.Run("Valid SearcherID with blocks going through to worker", func(t *testing.T) {
+		// Setup the mock rollup
+		mockRollup := rollup.MockRollup{}
+		_, searcherAddress := generatePrivateKey()
+		builderKey, builderAddress := generatePrivateKey()
+		commitment := utils.GetCommitment(builderKey, searcherAddress)
+
+		mockRollup.On("GetBuilderAddress").Return(builderAddress)
+		mockRollup.On("GetMinimalStake", builderAddress).Return(big.NewInt(100))
+		mockRollup.On("GetCommitment", searcherAddress).Return(commitment)
+		mockRollup.On("GetAggregaredStake", searcherAddress).Return(big.NewInt(100))
+		api.Rollup = &mockRollup
+
+		conn, resp, _ := dialer.Dial(getWebSocketURL(searcherAddress), nil)
+		assert.Equal(t, http.StatusSwitchingProtocols, resp.StatusCode)
+		assert.NotNil(t, conn)
+		assert.NotNil(t, resp)
+		var block capella.SubmitBlockRequest
+		json.Unmarshal([]byte(NoTransactionBlockRaw), &block)
+		wg := sync.WaitGroup{}
+		wg.Add(1)
+		go func(t *testing.T) {
+			// Read from connection
+			mtype, r, err := conn.NextReader()
+			if err != nil {
+				t.Log(err)
+			}
+			assert.Equal(t, websocket.TextMessage, mtype)
+			var data boost.Metadata
+			// Decode r into data
+			_ = json.NewDecoder(r).Decode(&data)
+			assert.Equal(t, data.Builder, "0xaa1488eae4b06a1fff840a2b6db167afc520758dc2c8af0dfb57037954df3431b747e2f900fe8805f05d635e9a29717b")
+			wg.Done()
+		}(t)
+
+		service.SubmitBlock(context.TODO(), &block)
+		wg.Wait()
+	})
+
+	t.Run("Valid Searcher ID with insufficient balance", func(t *testing.T) {
+		// Setup the mock rollup
 		mockRollup := rollup.MockRollup{}
 		_, searcherAddress := generatePrivateKey()
 		builderKey, builderAddress := generatePrivateKey()

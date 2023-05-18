@@ -20,6 +20,7 @@ func TestDefaultBoost_SubmitBlock(t *testing.T) {
 		jsonPayload      string
 		txnCountExpected int64
 		expectedBaseFee  uint32
+		expectedErr      error
 	}{
 		{
 			name: "lots of txns",
@@ -122,6 +123,20 @@ func TestDefaultBoost_SubmitBlock(t *testing.T) {
 			txnCountExpected: int64(0),
 			expectedBaseFee:  uint32(7),
 		},
+		{
+			name:             "malformed json",
+			jsonPayload:      `{}`,
+			txnCountExpected: int64(0),
+			expectedBaseFee:  uint32(7),
+			expectedErr:      ErrBlockUnprocessable,
+		},
+		{
+			name:             "malformed json",
+			jsonPayload:      `{"message":{}, "execution_payload":{}}`,
+			txnCountExpected: int64(0),
+			expectedBaseFee:  uint32(7),
+			expectedErr:      ErrBlockUnprocessable,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -136,6 +151,10 @@ func TestDefaultBoost_SubmitBlock(t *testing.T) {
 				fmt.Println("error:", err)
 			}
 			err = service.SubmitBlock(context.TODO(), &msg)
+			assert.Equal(t, err, tt.expectedErr)
+			if err != nil {
+				return
+			}
 			metadata := <-service.pushChannel
 
 			assert.Equal(t, metadata.Transactions.Count, tt.txnCountExpected)

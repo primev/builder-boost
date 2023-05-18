@@ -141,7 +141,6 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 	if balance.Cmp(a.Rollup.GetMinimalStake(builderAddress)) < 0 {
 		log.Error("Searcher has insufficient balance", "balance", balance, "required", a.Rollup.GetMinimalStake(builderAddress))
 		w.WriteHeader(http.StatusForbidden)
-		w.Write([]byte("Searcher has insufficient balance"))
 		return
 	}
 
@@ -153,7 +152,7 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 	if ok {
 		log.Error("Searcher is already connected", "searcherAddress", searcherAddressParam)
 		w.WriteHeader(http.StatusForbidden)
-		w.Write([]byte("Searcher is already connected"))
+		w.Write([]byte("searcher is already connected"))
 		return
 	}
 
@@ -176,6 +175,7 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 	go func(closeChannel chan struct{}, conn *websocket.Conn) {
 		for {
 			a.Log.Info("Starting to read from searcher", "searcherAddress", searcherAddressParam)
+
 			_, _, err := conn.NextReader()
 			if err != nil {
 				a.Log.Error("Error reading from searcher", "searcherAddress", searcherAddressParam, "err", err)
@@ -186,26 +186,34 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 		closeChannel <- struct{}{}
 	}(closeSignalChannel, conn)
 
-	for {
-		select {
-		case <-closeSignalChannel:
-			a.Worker.lock.Lock()
-			defer a.Worker.lock.Unlock()
-			delete(a.Worker.connectedSearchers, searcherAddressParam)
-			return
-		case data := <-searcherConsumeChannel:
-			json, err := json.Marshal(data)
-			if err != nil {
-				log.Error(err)
-				return
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Error("Recovered in searcher communication goroutine: closing connection", r)
+				a.Worker.lock.Lock()
+				defer a.Worker.lock.Unlock()
+				delete(a.Worker.connectedSearchers, searcherAddressParam)
+				conn.Close()
 			}
-			log.Info("Sending message", "msg", json)
-			conn.WriteMessage(websocket.TextMessage, json)
-		}
-	}
+		}()
 
-	// // Close the connection
-	// conn.Close()
+		for {
+			select {
+			case <-closeSignalChannel:
+				a.Worker.lock.Lock()
+				defer a.Worker.lock.Unlock()
+				delete(a.Worker.connectedSearchers, searcherAddressParam)
+				return
+			case data := <-searcherConsumeChannel:
+				json, err := json.Marshal(data)
+				if err != nil {
+					log.Error(err)
+					panic(err)
+				}
+				conn.WriteMessage(websocket.TextMessage, json)
+			}
+		}
+	}()
 }
 
 // builder related handlers
