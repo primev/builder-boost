@@ -19,8 +19,9 @@ import (
 )
 
 const (
-	blockProcessBatchSize = 2048
-	blockProcessPeriod    = time.Second * 3
+	blockSyncStateThreshold = 4
+	blockProcessBatchSize   = 2048
+	blockProcessPeriod      = time.Second * 3
 )
 
 //go:generate mockery --name Rollup
@@ -41,6 +42,9 @@ type Rollup interface {
 
 	// GetMinimalStake returns cached minimal stake of specified builder
 	GetMinimalStake(builder common.Address) *big.Int
+
+	// IsSyncing returns true if service is in sync state
+	IsSyncing() bool
 }
 
 func New(
@@ -64,9 +68,10 @@ func New(
 		builderAddress: crypto.PubkeyToAddress(builderKey.PublicKey),
 		startBlock:     startBlock,
 
-		statePath:  statePath,
-		state:      State{},
-		stateMutex: sync.Mutex{},
+		statePath:    statePath,
+		state:        State{},
+		stateMutex:   sync.Mutex{},
+		stateUpdated: false,
 
 		log: log.WithField("service", "rollup"),
 	}
@@ -88,9 +93,10 @@ type rollup struct {
 	builderAddress common.Address
 	startBlock     uint64
 
-	statePath  string
-	state      State
-	stateMutex sync.Mutex
+	statePath    string
+	state        State
+	stateMutex   sync.Mutex
+	stateUpdated bool
 
 	log log.Logger
 }
@@ -146,6 +152,14 @@ func (r *rollup) GetMinimalStake(builder common.Address) *big.Int {
 	return r.getMinimalStake(builder)
 }
 
+// IsSyncing returns true if service is still synced rollup
+func (r *rollup) IsSyncing() bool {
+	r.stateMutex.Lock()
+	defer r.stateMutex.Unlock()
+
+	return !r.stateUpdated || r.state.LatestKnownBlock > r.state.LatestProcessedBlock+blockSyncStateThreshold
+}
+
 // processNextEvents processes events from next batch of blocks and updates local state
 func (r *rollup) processNextBlocks(ctx context.Context) error {
 	// receive start and end block to process
@@ -194,7 +208,11 @@ func (r *rollup) processNextBlocks(ctx context.Context) error {
 		return err
 	}
 
+	r.stateMutex.Lock()
+	defer r.stateMutex.Unlock()
 	r.state.LatestProcessedBlock = endBlock
+	r.state.LatestKnownBlock = latestBlock
+	r.stateUpdated = true
 
 	return nil
 }
@@ -247,6 +265,7 @@ func (r *rollup) loadState() error {
 	if !r.fileExists(r.statePath) {
 		r.state = State{
 			LatestProcessedBlock: r.startBlock,
+			LatestKnownBlock:     r.startBlock,
 			Stakes:               make(map[common.Address]map[common.Hash]BigInt),
 			MinimalStakes:        make(map[common.Address]BigInt),
 		}

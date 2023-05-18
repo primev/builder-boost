@@ -7,7 +7,6 @@
   - One account will be used to emulate the searcher (this account will need to hold significant funds)
   - The other account will be used to for the builder (this account will needs sufficient funds to send a transaction to the contract)
 
-
 ## Wallet Setup
 1. First let's start by funding a few accounts with sepolia ETH
 2. Download a wallet provider, you can find the one we will use for this demo [here](https://metamask.io/download/), proceed to hit install. Follow any steps requested.
@@ -28,7 +27,7 @@ A contract is currently deployed here:
 
 **Step 4.** Build `boost` command:
 ```
-$ make dep; make build
+$ make all
 ```
 
 **Step 5.** Run boost command:
