@@ -137,12 +137,12 @@ func run() cli.ActionFunc {
 		g, ctx := errgroup.WithContext(c.Context)
 
 		// setup rollup service
-		builderKetString := c.String("rollupkey")
-		if builderKetString == "" {
+		builderKeyString := c.String("rollupkey")
+		if builderKeyString == "" {
 			return errors.New("rollup key is not set, use --rollupkey option or ROLLUP_KEY env variable")
 		}
 
-		builderKeyBytes := common.FromHex(builderKetString)
+		builderKeyBytes := common.FromHex(builderKeyString)
 		builderKey := crypto.ToECDSAUnsafe(builderKeyBytes)
 
 		client, err := ethclient.Dial(c.String("rollupaddr"))
@@ -217,10 +217,11 @@ func run() cli.ActionFunc {
 			}
 
 			svr.Handler = &boost.API{
-				Service: service,
-				Log:     config.Log,
-				Worker:  masterWorker,
-				Rollup:  rollup,
+				Service:        service,
+				Log:            config.Log,
+				Worker:         masterWorker,
+				Rollup:         rollup,
+				BuilderAddress: crypto.PubkeyToAddress(builderKey.PublicKey),
 			}
 
 			config.Log.Info("http server listening")

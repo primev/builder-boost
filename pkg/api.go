@@ -65,6 +65,9 @@ func (a *API) init() {
 		// Health check using the healthcheck handler
 		router.HandleFunc("/health", a.handleHealthCheck)
 
+		// Adds an endpoint to retrieve the builder ID
+		router.HandleFunc("/builder", a.handleBuilderID)
+
 		// proposer related
 		// router.HandleFunc(PathStatus, succeed(http.StatusOK)).Methods(http.MethodGet)
 
@@ -77,6 +80,16 @@ func (a *API) init() {
 		a.mux = router
 	})
 
+}
+
+type IDResponse struct {
+	ID string `json:"id"`
+}
+
+// handleBuilderID returns the builder ID as an IDResponse
+func (a *API) handleBuilderID(w http.ResponseWriter, r *http.Request) {
+	a.Log.Info("Request Reached")
+	_ = json.NewEncoder(w).Encode(IDResponse{ID: a.BuilderAddress.Hex()})
 }
 
 func (a *API) ServeHTTP(w http.ResponseWriter, r *http.Request) {
