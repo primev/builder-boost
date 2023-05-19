@@ -137,15 +137,14 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 		CheckOrigin:     func(r *http.Request) bool { return true },
 	}
 
-	searcherAddressParam := r.URL.Query().Get("searcherAddress")
-	if !common.IsHexAddress(searcherAddressParam) {
-		a.Log.Error("searcherAddress is not a valid address", "searcherAddress", searcherAddressParam)
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("searcherAddress is not a valid address"))
-		return
-	}
 	// Use verification scheme on token
 	token := r.URL.Query().Get("token")
+	if token == "" {
+		a.Log.Error("token is not valid", "token", token)
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("token is not valid"))
+		return
+	}
 	builderAddress := a.Rollup.GetBuilderAddress()
 
 	searcherAddress, ok := utils.VerifyToken(token, builderAddress.Hex())
@@ -159,7 +158,7 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 	// searcherAddress := common.HexToAddress(searcherAddressParam)
 
 	balance := a.Rollup.GetAggregaredStake(searcherAddress)
-
+	searcherAddressParam := searcherAddress.Hex()
 	log.Info("Searcher attempting connection", "searcherAddress", searcherAddressParam, "balance", balance)
 
 	// Check for sufficent balance
