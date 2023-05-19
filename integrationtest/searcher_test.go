@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// TODO(@ckartik): Refactor to add a before step for initalizing the mock rollup
 func TestConnectSearcher(t *testing.T) {
 	// Initialize the API and its dependencies
 
