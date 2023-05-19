@@ -41,7 +41,7 @@ func (s *searcher) Run(ctx context.Context) error {
 	u := url.URL{Scheme: "ws", Host: s.addr, Path: "/ws"}
 	q := u.Query()
 	q.Set("searcherAddress", crypto.PubkeyToAddress(s.key.PublicKey).Hex())
-
+	q.Set("token", token)
 	u.RawQuery = q.Encode()
 
 	for {

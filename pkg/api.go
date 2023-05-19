@@ -11,6 +11,8 @@ import (
 
 	"github.com/attestantio/go-builder-client/api/capella"
 	"github.com/ethereum/go-ethereum/common"
+	cm2 "github.com/primev/builder-boost/pkg/common"
+
 	"github.com/lthibault/log"
 	"github.com/primev/builder-boost/pkg/rollup"
 	// "gopkg.in/DataDog/dd-trace-go.v1/contrib/gorilla/mux"
@@ -142,9 +144,18 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("searcherAddress is not a valid address"))
 		return
 	}
+	// Use verification scheme on token
+	token := r.URL.Query().Get("token")
+	searcherAddress, ok := cm2.VerifyToken(token, a.BuilderAddress.Hex())
+	if !ok {
+		a.Log.Error("token is not valid", "token", token)
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("token is not valid"))
+		return
+	}
 
 	builderAddress := a.Rollup.GetBuilderAddress()
-	searcherAddress := common.HexToAddress(searcherAddressParam)
+	// searcherAddress := common.HexToAddress(searcherAddressParam)
 
 	balance := a.Rollup.GetAggregaredStake(searcherAddress)
 
@@ -160,7 +171,7 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 	// Check if searcher is already connected
 	// TODO(@ckartik): Ensure we delete the searcher from the connectedSearchers map when the connection is closed
 	a.Worker.lock.RLock()
-	_, ok := a.Worker.connectedSearchers[searcherAddressParam]
+	_, ok = a.Worker.connectedSearchers[searcherAddressParam]
 	a.Worker.lock.RUnlock()
 	if ok {
 		log.Error("Searcher is already connected", "searcherAddress", searcherAddressParam)
