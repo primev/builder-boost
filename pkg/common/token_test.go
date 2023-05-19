@@ -40,9 +40,7 @@ func TestGenerateToken(t *testing.T) {
 				t.FailNow()
 			}
 			address, ok := VerifyToken(token, tt.args.msg)
-			t.Log(address.Hex())
-			t.Log("original", crypto.PubkeyToAddress(tt.args.key.PublicKey).Hex())
-			t.Log(ok)
+
 			assert.Equal(t, ok, true)
 			assert.Equal(t, address.Hex(), crypto.PubkeyToAddress(tt.args.key.PublicKey).Hex())
 		})
