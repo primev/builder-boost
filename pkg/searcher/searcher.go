@@ -12,7 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/gorilla/websocket"
 	"github.com/lthibault/log"
-	"github.com/primev/builder-boost/pkg/common"
+	"github.com/primev/builder-boost/pkg/utils"
 )
 
 type Searcher interface {
@@ -92,7 +92,7 @@ func (s *searcher) generateTokenForBuilder(boostBaseURL string) (token string) {
 		log.Fatal(err)
 	}
 
-	token, err = common.GenerateToken(builderInfo.BuilderID, s.key)
+	token, err = utils.GenerateToken(builderInfo.BuilderID, s.key)
 	if err != nil {
 		log.Fatal(err)
 	}

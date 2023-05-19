@@ -66,14 +66,14 @@ func TestConnectSearcher(t *testing.T) {
 		WriteBufferSize: 1028,
 	}
 
-	getWebSocketURL := func(searcherAddress common.Address) string {
+	getWebSocketURL := func(searcherAddress common.Address, token string) string {
 		u, err := url.Parse(server.URL)
 		if err != nil {
 			panic(err)
 		}
-
 		q := u.Query()
 		q.Set("searcherAddress", searcherAddress.Hex())
+		q.Set("token", token)
 
 		u.Scheme = "ws"
 		u.RawQuery = q.Encode()
@@ -103,8 +103,12 @@ func TestConnectSearcher(t *testing.T) {
 
 	t.Run("Valid Searcher address", func(t *testing.T) {
 		mockRollup := rollup.MockRollup{}
-		_, searcherAddress := generatePrivateKey()
+		searcherKey, searcherAddress := generatePrivateKey()
 		builderKey, builderAddress := generatePrivateKey()
+		token, err := utils.GenerateToken(builderAddress.Hex(), searcherKey)
+		if err != nil {
+			panic(err)
+		}
 		commitment := utils.GetCommitment(builderKey, searcherAddress)
 
 		mockRollup.On("GetBuilderAddress").Return(builderAddress)
@@ -113,7 +117,7 @@ func TestConnectSearcher(t *testing.T) {
 		mockRollup.On("GetAggregaredStake", searcherAddress).Return(big.NewInt(100))
 		api.Rollup = &mockRollup
 
-		conn, resp, _ := dialer.Dial(getWebSocketURL(searcherAddress), nil)
+		conn, resp, _ := dialer.Dial(getWebSocketURL(searcherAddress, token), nil)
 		assert.Equal(t, http.StatusSwitchingProtocols, resp.StatusCode)
 		assert.NotNil(t, conn)
 		assert.NotNil(t, resp)
@@ -122,8 +126,12 @@ func TestConnectSearcher(t *testing.T) {
 	t.Run("Valid SearcherID with blocks going through to worker", func(t *testing.T) {
 		// Setup the mock rollup
 		mockRollup := rollup.MockRollup{}
-		_, searcherAddress := generatePrivateKey()
 		builderKey, builderAddress := generatePrivateKey()
+		searcherKey, searcherAddress := generatePrivateKey()
+		token, err := utils.GenerateToken(builderAddress.Hex(), searcherKey)
+		if err != nil {
+			panic(err)
+		}
 		commitment := utils.GetCommitment(builderKey, searcherAddress)
 
 		mockRollup.On("GetBuilderAddress").Return(builderAddress)
@@ -132,7 +140,7 @@ func TestConnectSearcher(t *testing.T) {
 		mockRollup.On("GetAggregaredStake", searcherAddress).Return(big.NewInt(100))
 		api.Rollup = &mockRollup
 
-		conn, resp, _ := dialer.Dial(getWebSocketURL(searcherAddress), nil)
+		conn, resp, _ := dialer.Dial(getWebSocketURL(searcherAddress, token), nil)
 		assert.Equal(t, http.StatusSwitchingProtocols, resp.StatusCode)
 		assert.NotNil(t, conn)
 		assert.NotNil(t, resp)
@@ -161,17 +169,20 @@ func TestConnectSearcher(t *testing.T) {
 	t.Run("Valid Searcher ID with insufficient balance", func(t *testing.T) {
 		// Setup the mock rollup
 		mockRollup := rollup.MockRollup{}
-		_, searcherAddress := generatePrivateKey()
+		searcherKey, searcherAddress := generatePrivateKey()
 		builderKey, builderAddress := generatePrivateKey()
 		commitment := utils.GetCommitment(builderKey, searcherAddress)
-
+		token, err := utils.GenerateToken(builderAddress.Hex(), searcherKey)
+		if err != nil {
+			panic(err)
+		}
 		mockRollup.On("GetBuilderAddress").Return(builderAddress)
 		mockRollup.On("GetMinimalStake", builderAddress).Return(big.NewInt(101))
 		mockRollup.On("GetCommitment", searcherAddress).Return(commitment)
 		mockRollup.On("GetAggregaredStake", searcherAddress).Return(big.NewInt(100))
 		api.Rollup = &mockRollup
 
-		_, resp, _ := dialer.Dial(getWebSocketURL(searcherAddress), nil)
+		_, resp, _ := dialer.Dial(getWebSocketURL(searcherAddress, token), nil)
 		assert.Equal(t, http.StatusForbidden, resp.StatusCode)
 		assert.NotNil(t, resp)
 	})
@@ -179,22 +190,25 @@ func TestConnectSearcher(t *testing.T) {
 	// Test with a searcher that is already connected
 	t.Run("Already connected searcher is forbidden", func(t *testing.T) {
 		mockRollup := rollup.MockRollup{}
-		_, searcherAddress := generatePrivateKey()
+		searcherKey, searcherAddress := generatePrivateKey()
 		builderKey, builderAddress := generatePrivateKey()
 		commitment := utils.GetCommitment(builderKey, searcherAddress)
-
+		token, err := utils.GenerateToken(builderAddress.Hex(), searcherKey)
+		if err != nil {
+			panic(err)
+		}
 		mockRollup.On("GetBuilderAddress").Return(builderAddress)
 		mockRollup.On("GetMinimalStake", builderAddress).Return(big.NewInt(100))
 		mockRollup.On("GetCommitment", searcherAddress).Return(commitment)
 		mockRollup.On("GetAggregaredStake", searcherAddress).Return(big.NewInt(100))
 		api.Rollup = &mockRollup
 
-		conn, resp, err := dialer.Dial(getWebSocketURL(searcherAddress), nil)
+		conn, resp, err := dialer.Dial(getWebSocketURL(searcherAddress, token), nil)
 		assert.NotNil(t, conn)
 		assert.NotNil(t, resp)
 		assert.Nil(t, err)
 
-		conn2, resp2, err2 := dialer.Dial(getWebSocketURL(searcherAddress), nil)
+		conn2, resp2, err2 := dialer.Dial(getWebSocketURL(searcherAddress, token), nil)
 		assert.Equal(t, http.StatusForbidden, resp2.StatusCode)
 		assert.Nil(t, conn2)
 		assert.NotNil(t, resp2)
@@ -205,23 +219,26 @@ func TestConnectSearcher(t *testing.T) {
 	// TODO(@ckartik): Resolve this test as a searcher who tries to reconnect will fail
 	t.Run("Already connected searcher is closes connection and reopens", func(t *testing.T) {
 		mockRollup := rollup.MockRollup{}
-		_, searcherAddress := generatePrivateKey()
+		searcherKey, searcherAddress := generatePrivateKey()
 		builderKey, builderAddress := generatePrivateKey()
 		commitment := utils.GetCommitment(builderKey, searcherAddress)
-
+		token, err := utils.GenerateToken(builderAddress.Hex(), searcherKey)
+		if err != nil {
+			panic(err)
+		}
 		mockRollup.On("GetBuilderAddress").Return(builderAddress)
 		mockRollup.On("GetMinimalStake", builderAddress).Return(big.NewInt(100))
 		mockRollup.On("GetCommitment", searcherAddress).Return(commitment)
 		mockRollup.On("GetAggregaredStake", searcherAddress).Return(big.NewInt(100))
 		api.Rollup = &mockRollup
 
-		conn, resp, err := dialer.Dial(getWebSocketURL(searcherAddress), nil)
+		conn, resp, err := dialer.Dial(getWebSocketURL(searcherAddress, token), nil)
 		assert.NotNil(t, conn)
 		assert.NotNil(t, resp)
 		assert.Nil(t, err)
 		conn.Close()
 
-		_, resp2, err2 := dialer.Dial(getWebSocketURL(searcherAddress), nil)
+		_, resp2, err2 := dialer.Dial(getWebSocketURL(searcherAddress, token), nil)
 		assert.Equal(t, http.StatusSwitchingProtocols, resp2.StatusCode)
 		assert.NotNil(t, resp2)
 		assert.Nil(t, err2)
