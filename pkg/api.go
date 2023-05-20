@@ -61,20 +61,12 @@ func (a *API) init() {
 		// 	withLogger(a.Log),
 		// ) // set middleware
 
-		// root returns 200 - nil
-		router.HandleFunc("/", succeed(http.StatusOK))
-
-		// Health check using the healthcheck handler
 		router.HandleFunc("/health", a.handleHealthCheck)
 
 		// Adds an endpoint to retrieve the builder ID
 		router.HandleFunc("/builder", a.handleBuilderID)
 
-		// proposer related
-		// router.HandleFunc(PathStatus, succeed(http.StatusOK)).Methods(http.MethodGet)
-
 		// TODO(@ckartik): Guard this to only by a requset made form an authorized internal service
-		// builder related
 		router.HandleFunc(PathSubmitBlock, handler(a.submitBlock))
 
 		router.HandleFunc(PathSearcherConnect, a.ConnectedSearcher)
@@ -90,7 +82,7 @@ type IDResponse struct {
 
 // handleBuilderID returns the builder ID as an IDResponse
 func (a *API) handleBuilderID(w http.ResponseWriter, r *http.Request) {
-	a.Log.Info("Request Reached")
+
 	_ = json.NewEncoder(w).Encode(IDResponse{ID: a.BuilderAddress.Hex()})
 }
 
