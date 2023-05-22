@@ -11,8 +11,10 @@ import (
 
 	"github.com/attestantio/go-builder-client/api/capella"
 	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/lthibault/log"
 	"github.com/primev/builder-boost/pkg/rollup"
+	"github.com/primev/builder-boost/pkg/utils"
 	// "gopkg.in/DataDog/dd-trace-go.v1/contrib/gorilla/mux"
 )
 
@@ -59,17 +61,12 @@ func (a *API) init() {
 		// 	withLogger(a.Log),
 		// ) // set middleware
 
-		// root returns 200 - nil
-		router.HandleFunc("/", succeed(http.StatusOK))
-
-		// Health check using the healthcheck handler
 		router.HandleFunc("/health", a.handleHealthCheck)
 
-		// proposer related
-		// router.HandleFunc(PathStatus, succeed(http.StatusOK)).Methods(http.MethodGet)
+		// Adds an endpoint to retrieve the builder ID
+		router.HandleFunc("/builder", a.handleBuilderID)
 
 		// TODO(@ckartik): Guard this to only by a requset made form an authorized internal service
-		// builder related
 		router.HandleFunc(PathSubmitBlock, handler(a.submitBlock))
 
 		router.HandleFunc(PathSearcherConnect, a.ConnectedSearcher)
@@ -77,6 +74,16 @@ func (a *API) init() {
 		a.mux = router
 	})
 
+}
+
+type IDResponse struct {
+	ID string `json:"id"`
+}
+
+// handleBuilderID returns the builder ID as an IDResponse
+func (a *API) handleBuilderID(w http.ResponseWriter, r *http.Request) {
+
+	_ = json.NewEncoder(w).Encode(IDResponse{ID: a.BuilderAddress.Hex()})
 }
 
 func (a *API) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -122,19 +129,28 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 		CheckOrigin:     func(r *http.Request) bool { return true },
 	}
 
-	searcherAddressParam := r.URL.Query().Get("searcherAddress")
-	if !common.IsHexAddress(searcherAddressParam) {
-		a.Log.Error("searcherAddress is not a valid address", "searcherAddress", searcherAddressParam)
+	// Use verification scheme on token
+	token := r.URL.Query().Get("token")
+	if token == "" {
+		a.Log.Error("token is not valid", "token", token)
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("searcherAddress is not a valid address"))
+		w.Write([]byte("token is not valid"))
+		return
+	}
+	builderAddress := a.Rollup.GetBuilderAddress()
+
+	searcherAddress, ok := utils.VerifyToken(token, builderAddress.Hex())
+	if !ok {
+		a.Log.Error("token is not valid", "token", token)
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("token is not valid"))
 		return
 	}
 
-	builderAddress := a.Rollup.GetBuilderAddress()
-	searcherAddress := common.HexToAddress(searcherAddressParam)
+	// searcherAddress := common.HexToAddress(searcherAddressParam)
 
 	balance := a.Rollup.GetAggregaredStake(searcherAddress)
-
+	searcherAddressParam := searcherAddress.Hex()
 	log.Info("Searcher attempting connection", "searcherAddress", searcherAddressParam, "balance", balance)
 
 	// Check for sufficent balance
@@ -147,7 +163,7 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 	// Check if searcher is already connected
 	// TODO(@ckartik): Ensure we delete the searcher from the connectedSearchers map when the connection is closed
 	a.Worker.lock.RLock()
-	_, ok := a.Worker.connectedSearchers[searcherAddressParam]
+	_, ok = a.Worker.connectedSearchers[searcherAddressParam]
 	a.Worker.lock.RUnlock()
 	if ok {
 		log.Error("Searcher is already connected", "searcherAddress", searcherAddressParam)
