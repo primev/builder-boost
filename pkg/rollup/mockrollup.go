@@ -111,6 +111,50 @@ func (_c *MockRollup_GetBuilderAddress_Call) RunAndReturn(run func() common.Addr
 	return _c
 }
 
+// GetCommitment provides a mock function with given fields: searcher
+func (_m *MockRollup) GetCommitment(searcher common.Address) common.Hash {
+	ret := _m.Called(searcher)
+
+	var r0 common.Hash
+	if rf, ok := ret.Get(0).(func(common.Address) common.Hash); ok {
+		r0 = rf(searcher)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(common.Hash)
+		}
+	}
+
+	return r0
+}
+
+// MockRollup_GetCommitment_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetCommitment'
+type MockRollup_GetCommitment_Call struct {
+	*mock.Call
+}
+
+// GetCommitment is a helper method to define mock.On call
+//   - searcher common.Address
+func (_e *MockRollup_Expecter) GetCommitment(searcher interface{}) *MockRollup_GetCommitment_Call {
+	return &MockRollup_GetCommitment_Call{Call: _e.mock.On("GetCommitment", searcher)}
+}
+
+func (_c *MockRollup_GetCommitment_Call) Run(run func(searcher common.Address)) *MockRollup_GetCommitment_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(common.Address))
+	})
+	return _c
+}
+
+func (_c *MockRollup_GetCommitment_Call) Return(_a0 common.Hash) *MockRollup_GetCommitment_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockRollup_GetCommitment_Call) RunAndReturn(run func(common.Address) common.Hash) *MockRollup_GetCommitment_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetMinimalStake provides a mock function with given fields: builder
 func (_m *MockRollup) GetMinimalStake(builder common.Address) *big.Int {
 	ret := _m.Called(builder)

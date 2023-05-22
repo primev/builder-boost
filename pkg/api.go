@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/websocket"
 	"github.com/sirupsen/logrus"
 
@@ -59,6 +60,9 @@ func (a *API) init() {
 		// Adds an endpoint to retrieve the builder ID
 		router.HandleFunc("/builder", a.handleBuilderID)
 
+		// Adds an endpoint to get commitment to the builder by searcher address
+		router.HandleFunc("/commitment", a.handleSearcherCommitment)
+
 		// TODO(@ckartik): Guard this to only by a requset made form an authorized internal service
 		router.HandleFunc(PathSubmitBlock, handler(a.submitBlock))
 
@@ -66,15 +70,6 @@ func (a *API) init() {
 
 		a.mux = router
 	})
-}
-
-type IDResponse struct {
-	ID string `json:"id"`
-}
-
-// handleBuilderID returns the builder ID as an IDResponse
-func (a *API) handleBuilderID(w http.ResponseWriter, r *http.Request) {
-	_ = json.NewEncoder(w).Encode(IDResponse{ID: a.Rollup.GetBuilderAddress().Hex()})
 }
 
 func (a *API) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -103,6 +98,35 @@ func handler(f func(http.ResponseWriter, *http.Request) (int, error)) http.Handl
 	}
 }
 
+type IDResponse struct {
+	ID string `json:"id"`
+}
+
+// handleBuilderID returns the builder ID as an IDResponse
+func (a *API) handleBuilderID(w http.ResponseWriter, r *http.Request) {
+	_ = json.NewEncoder(w).Encode(IDResponse{ID: a.Rollup.GetBuilderAddress().Hex()})
+}
+
+type CommitmentResponse struct {
+	Commitment string `json:"commitment"`
+}
+
+func (a *API) handleSearcherCommitment(w http.ResponseWriter, r *http.Request) {
+	searcherAddressParam := r.URL.Query().Get("searcherAddress")
+	if !common.IsHexAddress(searcherAddressParam) {
+		a.Log.WithField("searcher", searcherAddressParam).Error("searcher address is not valid")
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("searcher address is not valid"))
+		return
+	}
+
+	searcherAddress := common.HexToAddress(searcherAddressParam)
+	commitment := a.Rollup.GetCommitment(searcherAddress)
+
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(CommitmentResponse{Commitment: commitment.Hex()})
+}
+
 // connectSearcher is the handler to connect a searcher to the builder for the websocket execution hints
 // TODO: Add authentication
 //
@@ -123,7 +147,7 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 	// Use verification scheme on token
 	token := r.URL.Query().Get("token")
 	if token == "" {
-		a.Log.Error("token is not valid", "token", token)
+		a.Log.WithField("token", token).Error("token is not valid")
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("token is not valid"))
 		return
@@ -132,7 +156,7 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 
 	searcherAddress, ok := utils.VerifyToken(token, builderAddress.Hex())
 	if !ok {
-		a.Log.Error("token is not valid", "token", token)
+		a.Log.WithField("token", token).Error("token is not valid")
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("token is not valid"))
 		return
