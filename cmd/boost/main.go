@@ -217,11 +217,10 @@ func run() cli.ActionFunc {
 			}
 
 			svr.Handler = &boost.API{
-				Service:        service,
-				Log:            config.Log,
-				Worker:         masterWorker,
-				Rollup:         rollup,
-				BuilderAddress: crypto.PubkeyToAddress(builderKey.PublicKey),
+				Service: service,
+				Log:     config.Log,
+				Worker:  masterWorker,
+				Rollup:  rollup,
 			}
 
 			config.Log.Info("http server listening")

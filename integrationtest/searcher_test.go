@@ -66,13 +66,12 @@ func TestConnectSearcher(t *testing.T) {
 		WriteBufferSize: 1028,
 	}
 
-	getWebSocketURL := func(searcherAddress common.Address, token string) string {
+	getWebSocketURL := func(token string) string {
 		u, err := url.Parse(server.URL)
 		if err != nil {
 			panic(err)
 		}
 		q := u.Query()
-		q.Set("searcherAddress", searcherAddress.Hex())
 		q.Set("token", token)
 
 		u.Scheme = "ws"
@@ -117,7 +116,7 @@ func TestConnectSearcher(t *testing.T) {
 		mockRollup.On("GetAggregaredStake", searcherAddress).Return(big.NewInt(100))
 		api.Rollup = &mockRollup
 
-		conn, resp, _ := dialer.Dial(getWebSocketURL(searcherAddress, token), nil)
+		conn, resp, _ := dialer.Dial(getWebSocketURL(token), nil)
 		assert.Equal(t, http.StatusSwitchingProtocols, resp.StatusCode)
 		assert.NotNil(t, conn)
 		assert.NotNil(t, resp)
@@ -140,7 +139,7 @@ func TestConnectSearcher(t *testing.T) {
 		mockRollup.On("GetAggregaredStake", searcherAddress).Return(big.NewInt(100))
 		api.Rollup = &mockRollup
 
-		conn, resp, _ := dialer.Dial(getWebSocketURL(searcherAddress, token), nil)
+		conn, resp, _ := dialer.Dial(getWebSocketURL(token), nil)
 		assert.Equal(t, http.StatusSwitchingProtocols, resp.StatusCode)
 		assert.NotNil(t, conn)
 		assert.NotNil(t, resp)
@@ -182,7 +181,7 @@ func TestConnectSearcher(t *testing.T) {
 		mockRollup.On("GetAggregaredStake", searcherAddress).Return(big.NewInt(100))
 		api.Rollup = &mockRollup
 
-		_, resp, _ := dialer.Dial(getWebSocketURL(searcherAddress, token), nil)
+		_, resp, _ := dialer.Dial(getWebSocketURL(token), nil)
 		assert.Equal(t, http.StatusForbidden, resp.StatusCode)
 		assert.NotNil(t, resp)
 	})
@@ -203,12 +202,12 @@ func TestConnectSearcher(t *testing.T) {
 		mockRollup.On("GetAggregaredStake", searcherAddress).Return(big.NewInt(100))
 		api.Rollup = &mockRollup
 
-		conn, resp, err := dialer.Dial(getWebSocketURL(searcherAddress, token), nil)
+		conn, resp, err := dialer.Dial(getWebSocketURL(token), nil)
 		assert.NotNil(t, conn)
 		assert.NotNil(t, resp)
 		assert.Nil(t, err)
 
-		conn2, resp2, err2 := dialer.Dial(getWebSocketURL(searcherAddress, token), nil)
+		conn2, resp2, err2 := dialer.Dial(getWebSocketURL(token), nil)
 		assert.Equal(t, http.StatusForbidden, resp2.StatusCode)
 		assert.Nil(t, conn2)
 		assert.NotNil(t, resp2)
@@ -232,13 +231,13 @@ func TestConnectSearcher(t *testing.T) {
 		mockRollup.On("GetAggregaredStake", searcherAddress).Return(big.NewInt(100))
 		api.Rollup = &mockRollup
 
-		conn, resp, err := dialer.Dial(getWebSocketURL(searcherAddress, token), nil)
+		conn, resp, err := dialer.Dial(getWebSocketURL(token), nil)
 		assert.NotNil(t, conn)
 		assert.NotNil(t, resp)
 		assert.Nil(t, err)
 		conn.Close()
 
-		_, resp2, err2 := dialer.Dial(getWebSocketURL(searcherAddress, token), nil)
+		_, resp2, err2 := dialer.Dial(getWebSocketURL(token), nil)
 		assert.Equal(t, http.StatusSwitchingProtocols, resp2.StatusCode)
 		assert.NotNil(t, resp2)
 		assert.Nil(t, err2)

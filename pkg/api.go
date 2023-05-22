@@ -7,22 +7,24 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/websocket"
+	"github.com/sirupsen/logrus"
 
 	"github.com/attestantio/go-builder-client/api/capella"
-	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/lthibault/log"
 	"github.com/primev/builder-boost/pkg/rollup"
 	"github.com/primev/builder-boost/pkg/utils"
-	// "gopkg.in/DataDog/dd-trace-go.v1/contrib/gorilla/mux"
 )
 
 // Router paths
 const (
 	// proposer endpoints
-	PathStatus          = "/primev/v0/status"
-	PathSubmitBlock     = "/primev/v1/builder/blocks"
+	PathStatus      = "/primev/v0/status"
+	PathSubmitBlock = "/primev/v1/builder/blocks"
+
+	// searcher endpoints
 	PathSearcherConnect = "/ws"
 )
 
@@ -36,13 +38,12 @@ type jsonError struct {
 }
 
 type API struct {
-	Service        BoostService
-	Worker         *Worker
-	Rollup         rollup.Rollup
-	Log            log.Logger
-	once           sync.Once
-	mux            http.Handler
-	BuilderAddress common.Address
+	Service BoostService
+	Worker  *Worker
+	Rollup  rollup.Rollup
+	Log     log.Logger
+	once    sync.Once
+	mux     http.Handler
 }
 
 func (a *API) init() {
@@ -52,19 +53,15 @@ func (a *API) init() {
 		}
 
 		// TODO(@floodcode): Add CORS middleware
-
 		router := http.NewServeMux()
-
-		// router.Use(
-		// 	withDrainBody(),
-		// 	withContentType("application/json"),
-		// 	withLogger(a.Log),
-		// ) // set middleware
 
 		router.HandleFunc("/health", a.handleHealthCheck)
 
 		// Adds an endpoint to retrieve the builder ID
 		router.HandleFunc("/builder", a.handleBuilderID)
+
+		// Adds an endpoint to get commitment to the builder by searcher address
+		router.HandleFunc("/commitment", a.handleSearcherCommitment)
 
 		// TODO(@ckartik): Guard this to only by a requset made form an authorized internal service
 		router.HandleFunc(PathSubmitBlock, handler(a.submitBlock))
@@ -73,17 +70,6 @@ func (a *API) init() {
 
 		a.mux = router
 	})
-
-}
-
-type IDResponse struct {
-	ID string `json:"id"`
-}
-
-// handleBuilderID returns the builder ID as an IDResponse
-func (a *API) handleBuilderID(w http.ResponseWriter, r *http.Request) {
-
-	_ = json.NewEncoder(w).Encode(IDResponse{ID: a.BuilderAddress.Hex()})
 }
 
 func (a *API) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -112,6 +98,35 @@ func handler(f func(http.ResponseWriter, *http.Request) (int, error)) http.Handl
 	}
 }
 
+type IDResponse struct {
+	ID string `json:"id"`
+}
+
+// handleBuilderID returns the builder ID as an IDResponse
+func (a *API) handleBuilderID(w http.ResponseWriter, r *http.Request) {
+	_ = json.NewEncoder(w).Encode(IDResponse{ID: a.Rollup.GetBuilderAddress().Hex()})
+}
+
+type CommitmentResponse struct {
+	Commitment string `json:"commitment"`
+}
+
+func (a *API) handleSearcherCommitment(w http.ResponseWriter, r *http.Request) {
+	searcherAddressParam := r.URL.Query().Get("searcherAddress")
+	if !common.IsHexAddress(searcherAddressParam) {
+		a.Log.WithField("searcher", searcherAddressParam).Error("searcher address is not valid")
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("searcher address is not valid"))
+		return
+	}
+
+	searcherAddress := common.HexToAddress(searcherAddressParam)
+	commitment := a.Rollup.GetCommitment(searcherAddress)
+
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(CommitmentResponse{Commitment: commitment.Hex()})
+}
+
 // connectSearcher is the handler to connect a searcher to the builder for the websocket execution hints
 // TODO: Add authentication
 //
@@ -122,7 +137,7 @@ func handler(f func(http.ResponseWriter, *http.Request) (int, error)) http.Handl
 // 3. The address is not already connected
 
 func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
-	log.Info("searcher called")
+	a.Log.Info("searcher called")
 	ws := websocket.Upgrader{
 		ReadBufferSize:  1028,
 		WriteBufferSize: 1028,
@@ -132,7 +147,7 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 	// Use verification scheme on token
 	token := r.URL.Query().Get("token")
 	if token == "" {
-		a.Log.Error("token is not valid", "token", token)
+		a.Log.WithField("token", token).Error("token is not valid")
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("token is not valid"))
 		return
@@ -141,21 +156,22 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 
 	searcherAddress, ok := utils.VerifyToken(token, builderAddress.Hex())
 	if !ok {
-		a.Log.Error("token is not valid", "token", token)
+		a.Log.WithField("token", token).Error("token is not valid")
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("token is not valid"))
 		return
 	}
 
-	// searcherAddress := common.HexToAddress(searcherAddressParam)
-
+	minimalStake := a.Rollup.GetMinimalStake(builderAddress)
 	balance := a.Rollup.GetAggregaredStake(searcherAddress)
 	searcherAddressParam := searcherAddress.Hex()
-	log.Info("Searcher attempting connection", "searcherAddress", searcherAddressParam, "balance", balance)
+	a.Log.WithFields(logrus.Fields{"searcher": searcherAddressParam, "balance": balance}).
+		Info("searcher attempting connection")
 
 	// Check for sufficent balance
-	if balance.Cmp(a.Rollup.GetMinimalStake(builderAddress)) < 0 {
-		log.Error("Searcher has insufficient balance", "balance", balance, "required", a.Rollup.GetMinimalStake(builderAddress))
+	if balance.Cmp(minimalStake) < 0 {
+		a.Log.WithFields(logrus.Fields{"balance": balance, "required": minimalStake}).
+			Error("searcher has insufficient balance")
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}
@@ -166,7 +182,7 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 	_, ok = a.Worker.connectedSearchers[searcherAddressParam]
 	a.Worker.lock.RUnlock()
 	if ok {
-		log.Error("Searcher is already connected", "searcherAddress", searcherAddressParam)
+		a.Log.WithFields(logrus.Fields{"searcher": searcherAddressParam}).Error("searcher is already connected")
 		w.WriteHeader(http.StatusForbidden)
 		w.Write([]byte("searcher is already connected"))
 		return
@@ -174,9 +190,9 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 
 	// Upgrade the HTTP request to a WebSocket connection
 	conn, err := ws.Upgrade(w, r, nil)
-	log.Info("searcher upgraded connection")
+	a.Log.Info("searcher upgraded connection")
 	if err != nil {
-		log.Error(err)
+		a.Log.Error(err)
 		return
 	}
 
@@ -185,27 +201,27 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 	a.Worker.connectedSearchers[searcherAddressParam] = searcherConsumeChannel
 	a.Worker.lock.Unlock()
 
-	log.Info("Searcher connected and ready to consume data")
+	a.Log.Info("searcher connected and ready to consume data")
 
 	closeSignalChannel := make(chan struct{})
 	go func(closeChannel chan struct{}, conn *websocket.Conn) {
 		for {
-			a.Log.Info("Starting to read from searcher", "searcherAddress", searcherAddressParam)
+			a.Log.WithFields(logrus.Fields{"searcher": searcherAddressParam}).Info("starting to read from searcher")
 
 			_, _, err := conn.NextReader()
 			if err != nil {
-				a.Log.Error("Error reading from searcher", "searcherAddress", searcherAddressParam, "err", err)
+				a.Log.WithFields(logrus.Fields{"searcher": searcherAddressParam, "err": err}).Error("error reading from searcher")
 				break
 			}
 		}
-		a.Log.Info("Searcher disconnected", "searcherAddress", searcherAddressParam)
+		a.Log.WithFields(logrus.Fields{"searcher": searcherAddressParam}).Info("searcher disconnected")
 		closeChannel <- struct{}{}
 	}(closeSignalChannel, conn)
 
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
-				log.Error("Recovered in searcher communication goroutine: closing connection", r)
+				a.Log.Error("recovered in searcher communication goroutine: closing connection", r)
 				a.Worker.lock.Lock()
 				defer a.Worker.lock.Unlock()
 				delete(a.Worker.connectedSearchers, searcherAddressParam)
@@ -223,7 +239,7 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 			case data := <-searcherConsumeChannel:
 				json, err := json.Marshal(data)
 				if err != nil {
-					log.Error(err)
+					a.Log.Error(err)
 					panic(err)
 				}
 				conn.WriteMessage(websocket.TextMessage, json)
@@ -244,12 +260,6 @@ func (a *API) submitBlock(w http.ResponseWriter, r *http.Request) (int, error) {
 	}
 
 	return http.StatusOK, nil
-}
-
-func succeed(status int) http.HandlerFunc {
-	return handler(func(http.ResponseWriter, *http.Request) (int, error) {
-		return status, nil
-	})
 }
 
 type healthCheck struct {

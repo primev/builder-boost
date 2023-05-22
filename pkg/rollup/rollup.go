@@ -47,6 +47,9 @@ type Rollup interface {
 	// GetMinimalStake returns cached minimal stake of specified builder
 	GetMinimalStake(builder common.Address) *big.Int
 
+	// GetCommitment calculates commitment hash for this builder by searcher address
+	GetCommitment(searcher common.Address) common.Hash
+
 	// IsSyncing returns true if service is in sync state
 	IsSyncing() bool
 }
@@ -160,6 +163,11 @@ func (r *rollup) GetStakeRemote(searcher common.Address, commitment common.Hash)
 // GetMinimalStake returns cached minimal stake of specified builder
 func (r *rollup) GetMinimalStake(builder common.Address) *big.Int {
 	return r.getMinimalStake(builder)
+}
+
+// GetCommitment calculates commitment hash for this builder by searcher address
+func (r *rollup) GetCommitment(searcher common.Address) common.Hash {
+	return utils.GetCommitment(r.builderKey, searcher)
 }
 
 // IsSyncing returns true if service is still synced rollup
