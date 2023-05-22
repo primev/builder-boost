@@ -26,7 +26,7 @@ $ make all
 
 **Step 2.** Run `boost` command:
 ```
-$ ./boost --addr :8080 --rollupkey `<Builder-Private-Key>`
+$ ./boost --addr :8080 --rollupkey `<builder-private-key>`
 ```
 You can get the builder private key from step 6 in the wallet setup section.
 
@@ -36,14 +36,14 @@ You can get the builder private key from step 6 in the wallet setup section.
 
 **Step 5.** Receive commitment hash from builder:
 ```
-$ curl "http://localhost:8080/commitment?searcherAddress=<your-searcher-address>"
+$ curl "http://localhost:8080/commitment?searcherAddress=<searcher-address>"
 ```
 
 **Step 6.** Connect any wallet (to preserve privacy, do not use searcher address) and add the required funds to the `deposit` function. In commitment field input hash returned from **Step 5**. The amount should be equal to or greater than the minimum amount you set in **Step 3**.
 
 **Step 7.** Connect as a searcher:
 ```
-$ ./searcher --boostaddr localhost:8080 --searcherkey <your-searcher-address>
+$ ./searcher --boostaddr localhost:8080 --searcherkey <searcher-private-key>
 ```
 
 **Step 8.** Connect to the local env in [this](https://primev.postman.co/workspace/Team-Workspace~18870d84-94f0-4d1e-8163-db558f83d7e8/request/27192304-32af6ec4-013b-423f-aff6-44226090fcf6) postman workspace and send the request under `create a block`
