@@ -7,7 +7,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/websocket"
 	"github.com/sirupsen/logrus"
 
@@ -112,15 +111,24 @@ type CommitmentResponse struct {
 }
 
 func (a *API) handleSearcherCommitment(w http.ResponseWriter, r *http.Request) {
-	searcherAddressParam := r.URL.Query().Get("searcherAddress")
-	if !common.IsHexAddress(searcherAddressParam) {
-		a.Log.WithField("searcher", searcherAddressParam).Error("searcher address is not valid")
+	// TODO(@ckartik): Move to middleware
+	token := r.URL.Query().Get("token")
+	if token == "" {
+		a.Log.WithField("token", token).Error("token is not valid")
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("searcher address is not valid"))
+		w.Write([]byte("token is not valid"))
+		return
+	}
+	builderAddress := a.Rollup.GetBuilderAddress()
+
+	searcherAddress, ok := utils.VerifyToken(token, builderAddress.Hex())
+	if !ok {
+		a.Log.WithField("token", token).Error("token is not valid")
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("token is not valid"))
 		return
 	}
 
-	searcherAddress := common.HexToAddress(searcherAddressParam)
 	commitment := a.Rollup.GetCommitment(searcherAddress)
 
 	w.WriteHeader(http.StatusOK)
