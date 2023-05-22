@@ -5,7 +5,6 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"errors"
-	"sync"
 	"time"
 
 	"github.com/attestantio/go-builder-client/api/capella"
@@ -20,11 +19,8 @@ type Boost interface {
 }
 
 type DefaultBoost struct {
-	config          Config
-	pMu             sync.RWMutex
-	currentMetaData *Metadata
-	pushChannel     chan Metadata
-	// payload *boostTypes.ExecutionPayload
+	config      Config
+	pushChannel chan Metadata
 }
 
 type Transaction struct {

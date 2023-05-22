@@ -11,10 +11,6 @@ import (
 )
 
 func TestDefaultBoost_SubmitBlock(t *testing.T) {
-	type args struct {
-		ctx  context.Context
-		name capella.SubmitBlockRequest
-	}
 	tests := []struct {
 		name             string
 		jsonPayload      string
