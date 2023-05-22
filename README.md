@@ -19,33 +19,31 @@
 A contract is currently deployed here:
 - https://sepolia.etherscan.io/address/0xc38e581D0403b4065F4d61A838431B143ceE4c81
 
-**Step 1.** Go [here](https://sepolia.etherscan.io/address/0xc38e581D0403b4065F4d61A838431B143ceE4c81#writeContract) and click on the `setMinimalStake`. Here you can connect the wallet associated with the builder and set the minimal stake needed to connect to you to get execution hints.
-
-**Step 2.** Disconnect your builder wallet, this can be done by going to the wallet and clicking on the "Connected" indicator next to your account name in the wallet modal. Now click the 3 dots to the right of the account and press disconnect.
-
-**Step 3.** Connect with the searcher wallet and add the required funds to the `deposit` function. The amount should  be equal to or greater than the minimum amount you set in step 1.
-
-**Step 4.** Build `boost` command:
+**Step 1.** Build `boost` command:
 ```
 $ make all
 ```
 
-**Step 5.** Run boost command:
+**Step 2.** Run `boost` command:
 ```
 $ ./boost --addr :8080 --rollupkey `<Builder-Private-Key>`
 ```
 You can get the builder private key from step 6 in the wallet setup section.
 
-**Step 6.** connect as a searcher, you can use the following boostrap script:
-```javascript
-let {WebSocket} = await import('ws')
+**Step 3.** Go [here](https://sepolia.etherscan.io/address/0xc38e581D0403b4065F4d61A838431B143ceE4c81#writeContract) and click on the `setMinimalStake`. Here you can connect the wallet associated with the builder and set the minimal stake needed to connect to you to get execution hints.
 
+**Step 4.** Disconnect your builder wallet, this can be done by going to the wallet and clicking on the "Connected" indicator next to your account name in the wallet modal. Now click the 3 dots to the right of the account and press disconnect.
 
-let searcherconn = new WebSocket("ws://127.0.0.1:8080/ws?searcherAddress=<your-searcher-address>&commitmentAddress=<your-commitment-address>");
-
-searcherconn.on('message', function message(data) {
-  console.log("recieved: %s", data);
-})
+**Step 5.** Receive commitment hash from builder:
+```
+$ curl "http://localhost:8080/commitment?searcherAddress=<your-searcher-address>"
 ```
 
-**Step 7.** Connect to the local env in [this](https://primev.postman.co/workspace/Team-Workspace~18870d84-94f0-4d1e-8163-db558f83d7e8/request/27192304-32af6ec4-013b-423f-aff6-44226090fcf6) postman workspace and send the request under `create a block`
+**Step 6.** Connect any wallet (to preserve privacy, do not use searcher address) and add the required funds to the `deposit` function. In commitment field input hash returned from **Step 5**. The amount should be equal to or greater than the minimum amount you set in **Step 3**.
+
+**Step 7.** Connect as a searcher:
+```
+$ ./searcher --boostaddr localhost:8080 --searcherkey <your-searcher-address>
+```
+
+**Step 8.** Connect to the local env in [this](https://primev.postman.co/workspace/Team-Workspace~18870d84-94f0-4d1e-8163-db558f83d7e8/request/27192304-32af6ec4-013b-423f-aff6-44226090fcf6) postman workspace and send the request under `create a block`
