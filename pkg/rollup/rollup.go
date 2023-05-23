@@ -27,7 +27,7 @@ const (
 )
 
 var (
-	ErrNoMinimalStakeSet = errors.New("R0001: no minimal stake set")
+	ErrNoMinimalStakeSet = errors.New("R0001: no minimal stake set, to fix set minimal stake for builder on payment contract")
 )
 
 //go:generate mockery --name Rollup
