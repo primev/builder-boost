@@ -111,7 +111,7 @@ func TestConnectSearcher(t *testing.T) {
 		commitment := utils.GetCommitment(builderKey, searcherAddress)
 
 		mockRollup.On("GetBuilderAddress").Return(builderAddress)
-		mockRollup.On("GetMinimalStake", builderAddress).Return(big.NewInt(100))
+		mockRollup.On("GetMinimalStake", builderAddress).Return(big.NewInt(100), nil)
 		mockRollup.On("GetCommitment", searcherAddress).Return(commitment)
 		mockRollup.On("GetAggregaredStake", searcherAddress).Return(big.NewInt(100))
 		api.Rollup = &mockRollup
@@ -134,7 +134,7 @@ func TestConnectSearcher(t *testing.T) {
 		commitment := utils.GetCommitment(builderKey, searcherAddress)
 
 		mockRollup.On("GetBuilderAddress").Return(builderAddress)
-		mockRollup.On("GetMinimalStake", builderAddress).Return(big.NewInt(100))
+		mockRollup.On("GetMinimalStake", builderAddress).Return(big.NewInt(100), nil)
 		mockRollup.On("GetCommitment", searcherAddress).Return(commitment)
 		mockRollup.On("GetAggregaredStake", searcherAddress).Return(big.NewInt(100))
 		api.Rollup = &mockRollup
@@ -176,7 +176,7 @@ func TestConnectSearcher(t *testing.T) {
 			panic(err)
 		}
 		mockRollup.On("GetBuilderAddress").Return(builderAddress)
-		mockRollup.On("GetMinimalStake", builderAddress).Return(big.NewInt(101))
+		mockRollup.On("GetMinimalStake", builderAddress).Return(big.NewInt(101), nil)
 		mockRollup.On("GetCommitment", searcherAddress).Return(commitment)
 		mockRollup.On("GetAggregaredStake", searcherAddress).Return(big.NewInt(100))
 		api.Rollup = &mockRollup
@@ -197,7 +197,7 @@ func TestConnectSearcher(t *testing.T) {
 			panic(err)
 		}
 		mockRollup.On("GetBuilderAddress").Return(builderAddress)
-		mockRollup.On("GetMinimalStake", builderAddress).Return(big.NewInt(100))
+		mockRollup.On("GetMinimalStake", builderAddress).Return(big.NewInt(100), nil)
 		mockRollup.On("GetCommitment", searcherAddress).Return(commitment)
 		mockRollup.On("GetAggregaredStake", searcherAddress).Return(big.NewInt(100))
 		api.Rollup = &mockRollup
@@ -226,7 +226,7 @@ func TestConnectSearcher(t *testing.T) {
 			panic(err)
 		}
 		mockRollup.On("GetBuilderAddress").Return(builderAddress)
-		mockRollup.On("GetMinimalStake", builderAddress).Return(big.NewInt(100))
+		mockRollup.On("GetMinimalStake", builderAddress).Return(big.NewInt(100), nil)
 		mockRollup.On("GetCommitment", searcherAddress).Return(commitment)
 		mockRollup.On("GetAggregaredStake", searcherAddress).Return(big.NewInt(100))
 		api.Rollup = &mockRollup
