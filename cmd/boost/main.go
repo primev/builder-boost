@@ -158,13 +158,18 @@ func run() cli.ActionFunc {
 
 		contractAddress := common.HexToAddress(c.String("rollupcontract"))
 		statePath := c.String("rollupstate")
-		rollup, err := rollup.New(client, contractAddress, builderKey, rollupBlock, statePath, config.Log)
+		ru, err := rollup.New(client, contractAddress, builderKey, rollupBlock, statePath, config.Log)
+		if err != nil {
+			return err
+		}
+
+		_, err = ru.GetMinimalStake(ru.GetBuilderAddress())
 		if err != nil {
 			return err
 		}
 
 		g.Go(func() error {
-			return rollup.Run(ctx)
+			return ru.Run(ctx)
 		})
 
 		// setup the boost service
@@ -172,6 +177,7 @@ func run() cli.ActionFunc {
 			Log:    config.Log,
 			Config: config,
 		}
+
 		g.Go(func() error {
 			return service.Run(ctx)
 		})
@@ -220,7 +226,7 @@ func run() cli.ActionFunc {
 				Service: service,
 				Log:     config.Log,
 				Worker:  masterWorker,
-				Rollup:  rollup,
+				Rollup:  ru,
 			}
 
 			config.Log.Info("http server listening")

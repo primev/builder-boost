@@ -156,10 +156,14 @@ func (_c *MockRollup_GetCommitment_Call) RunAndReturn(run func(common.Address) c
 }
 
 // GetMinimalStake provides a mock function with given fields: builder
-func (_m *MockRollup) GetMinimalStake(builder common.Address) *big.Int {
+func (_m *MockRollup) GetMinimalStake(builder common.Address) (*big.Int, error) {
 	ret := _m.Called(builder)
 
 	var r0 *big.Int
+	var r1 error
+	if rf, ok := ret.Get(0).(func(common.Address) (*big.Int, error)); ok {
+		return rf(builder)
+	}
 	if rf, ok := ret.Get(0).(func(common.Address) *big.Int); ok {
 		r0 = rf(builder)
 	} else {
@@ -168,7 +172,13 @@ func (_m *MockRollup) GetMinimalStake(builder common.Address) *big.Int {
 		}
 	}
 
-	return r0
+	if rf, ok := ret.Get(1).(func(common.Address) error); ok {
+		r1 = rf(builder)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }
 
 // MockRollup_GetMinimalStake_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetMinimalStake'
@@ -189,12 +199,12 @@ func (_c *MockRollup_GetMinimalStake_Call) Run(run func(builder common.Address))
 	return _c
 }
 
-func (_c *MockRollup_GetMinimalStake_Call) Return(_a0 *big.Int) *MockRollup_GetMinimalStake_Call {
-	_c.Call.Return(_a0)
+func (_c *MockRollup_GetMinimalStake_Call) Return(_a0 *big.Int, _a1 error) *MockRollup_GetMinimalStake_Call {
+	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *MockRollup_GetMinimalStake_Call) RunAndReturn(run func(common.Address) *big.Int) *MockRollup_GetMinimalStake_Call {
+func (_c *MockRollup_GetMinimalStake_Call) RunAndReturn(run func(common.Address) (*big.Int, error)) *MockRollup_GetMinimalStake_Call {
 	_c.Call.Return(run)
 	return _c
 }

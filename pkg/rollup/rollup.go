@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"math/big"
 	"os"
@@ -23,6 +24,10 @@ const (
 	blockSyncStateThreshold = 4
 	blockProcessBatchSize   = 2048
 	blockProcessPeriod      = time.Second * 3
+)
+
+var (
+	ErrNoMinimalStakeSet = errors.New("R0001: no minimal stake set, to fix set minimal stake for builder on payment contract")
 )
 
 //go:generate mockery --name Rollup
@@ -45,7 +50,7 @@ type Rollup interface {
 	GetStakeRemote(searcher common.Address, commitment common.Hash) (*big.Int, error)
 
 	// GetMinimalStake returns cached minimal stake of specified builder
-	GetMinimalStake(builder common.Address) *big.Int
+	GetMinimalStake(builder common.Address) (*big.Int, error)
 
 	// GetCommitment calculates commitment hash for this builder by searcher address
 	GetCommitment(searcher common.Address) common.Hash
@@ -161,7 +166,7 @@ func (r *rollup) GetStakeRemote(searcher common.Address, commitment common.Hash)
 }
 
 // GetMinimalStake returns cached minimal stake of specified builder
-func (r *rollup) GetMinimalStake(builder common.Address) *big.Int {
+func (r *rollup) GetMinimalStake(builder common.Address) (*big.Int, error) {
 	return r.getMinimalStake(builder)
 }
 
@@ -383,16 +388,16 @@ func (r *rollup) setStake(searcher common.Address, commitment common.Hash, stake
 }
 
 // getMinimalStake returns stake value staked for particular builder by searcher
-func (r *rollup) getMinimalStake(builder common.Address) *big.Int {
+func (r *rollup) getMinimalStake(builder common.Address) (*big.Int, error) {
 	r.stateMutex.Lock()
 	defer r.stateMutex.Unlock()
 
 	stake, ok := r.state.MinimalStakes[builder]
 	if !ok {
-		return big.NewInt(0)
+		return big.NewInt(0), ErrNoMinimalStakeSet
 	}
 
-	return &stake.Int
+	return &stake.Int, nil
 }
 
 // setMinimalStake updates minimal stake value for particular builder

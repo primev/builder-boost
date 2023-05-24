@@ -170,7 +170,17 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	minimalStake := a.Rollup.GetMinimalStake(builderAddress)
+	minimalStake, err := a.Rollup.GetMinimalStake(builderAddress)
+	if err != nil {
+		if errors.Is(rollup.ErrNoMinimalStakeSet, err) {
+			a.Log.WithError(err).WithField("builder_address", builderAddress).Error("no minimal stake is set, in order to allow searchers to connect, set minimal stake in the rollup contract")
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		a.Log.WithError(err).Error("failed to get minimal stake")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	balance := a.Rollup.GetAggregaredStake(searcherAddress)
 	searcherAddressParam := searcherAddress.Hex()
 	a.Log.WithFields(logrus.Fields{"searcher": searcherAddressParam, "balance": balance}).
