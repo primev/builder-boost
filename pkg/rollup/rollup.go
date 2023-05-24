@@ -132,7 +132,7 @@ func (r *rollup) Run(ctx context.Context) error {
 		if !r.IsSyncing() {
 			_, err = r.getMinimalStake(r.builderAddress)
 			if err != nil {
-				r.log.WithField("builder", r.builderAddress).Error("minimal stake is not set")
+				r.log.WithField("builder", r.builderAddress).WithField("err", err.Error()).Error("minimal stake is not set")
 			}
 		}
 
