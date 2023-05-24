@@ -39,15 +39,12 @@ type Rollup interface {
 	// GetBuilderAddress returns current builder address
 	GetBuilderAddress() common.Address
 
-	// GetStake returns cached stake of searcher commited to specified builder
-	GetStake(searcher common.Address, commitment common.Hash) *big.Int
-
-	// GetAggregaredStake returns aggregated cached stake by searcher address
-	GetAggregaredStake(searcher common.Address) *big.Int
+	// GetStake returns cached stake commited to specified builder
+	GetStake(commitment common.Hash) *big.Int
 
 	// GetStakeRemote fetches and returns balance of searcher commited to this builder from remote contract.
 	// After fetching result is cached.
-	GetStakeRemote(searcher common.Address, commitment common.Hash) (*big.Int, error)
+	GetStakeRemote(commitment common.Hash) (*big.Int, error)
 
 	// GetMinimalStake returns cached minimal stake of specified builder
 	GetMinimalStake(builder common.Address) (*big.Int, error)
@@ -131,6 +128,14 @@ func (r *rollup) Run(ctx context.Context) error {
 			return err
 		}
 
+		// check if minimal stake is set for current builder after sync
+		if !r.IsSyncing() {
+			_, err = r.getMinimalStake(r.builderAddress)
+			if err != nil {
+				r.log.WithField("builder", r.builderAddress).WithField("err", err.Error()).Error("minimal stake is not set")
+			}
+		}
+
 		// delay processing new batch of blocks to meet RPC rate limits
 		<-blockProcessTimer
 	}
@@ -141,26 +146,20 @@ func (r *rollup) GetBuilderAddress() common.Address {
 	return r.builderAddress
 }
 
-// GetStake returns cached stake of searcher commited to specified builder
-func (r *rollup) GetStake(searcher common.Address, commitment common.Hash) *big.Int {
-	return r.getStake(searcher, commitment)
+// GetStake returns cached stake commited to specified builder
+func (r *rollup) GetStake(commitment common.Hash) *big.Int {
+	return r.getStake(commitment)
 }
 
-// GetAggregaredStake returns aggregated cached stake by commitment hash
-func (r *rollup) GetAggregaredStake(searcher common.Address) *big.Int {
-	commitment := utils.GetCommitment(r.builderKey, searcher)
-	return r.getAggregatedStake(commitment)
-}
-
-// GetStakeRemote fetches and returns balance of searcher commited to this builder from remote contract.
+// GetStakeRemote fetches and returns stake commited from remote contract.
 // After fetching result is cached.
-func (r *rollup) GetStakeRemote(searcher common.Address, commitment common.Hash) (*big.Int, error) {
-	stake, err := r.contract.Stakes(nil, searcher, commitment)
+func (r *rollup) GetStakeRemote(commitment common.Hash) (*big.Int, error) {
+	stake, err := r.contract.Stakes(nil, commitment)
 	if err != nil {
 		return nil, err
 	}
 
-	r.setStake(searcher, commitment, stake)
+	r.setStake(commitment, stake)
 
 	return stake, nil
 }
@@ -269,12 +268,11 @@ func (r *rollup) processStakeUpdatedEvents(it *contracts.BuilderStakingStakeUpda
 
 		blockNumber := it.Event.Raw.BlockNumber
 		commitment := common.Hash(it.Event.Commitment)
-		searcher := it.Event.Searcher
 		stake := it.Event.Stake
 
-		r.setStake(searcher, commitment, stake)
+		r.setStake(commitment, stake)
 
-		r.log.WithField("searcher", searcher).WithField("commitment", commitment).
+		r.log.WithField("commitment", commitment).
 			WithField("stake", stake).WithField("block", blockNumber).
 			Info("processed stake updated event")
 	}
@@ -289,8 +287,7 @@ func (r *rollup) loadState() error {
 		r.state = State{
 			LatestProcessedBlock: r.startBlock,
 			LatestKnownBlock:     r.startBlock,
-			Stakes:               make(map[common.Address]map[common.Hash]BigInt),
-			AggregatedStakes:     make(map[common.Hash]BigInt),
+			Stakes:               make(map[common.Hash]BigInt),
 			MinimalStakes:        make(map[common.Address]BigInt),
 		}
 
@@ -315,7 +312,7 @@ func (r *rollup) loadState() error {
 	}
 
 	if state.Stakes == nil {
-		state.Stakes = make(map[common.Address]map[common.Hash]BigInt)
+		state.Stakes = make(map[common.Hash]BigInt)
 	}
 
 	if state.MinimalStakes == nil {
@@ -340,29 +337,11 @@ func (r *rollup) saveState() error {
 }
 
 // getStake returns stake value staked for particular builder by searcher
-func (r *rollup) getStake(searcher common.Address, commitment common.Hash) *big.Int {
+func (r *rollup) getStake(commitment common.Hash) *big.Int {
 	r.stateMutex.Lock()
 	defer r.stateMutex.Unlock()
 
-	searcherStakes, ok := r.state.Stakes[searcher]
-	if !ok {
-		return big.NewInt(0)
-	}
-
-	stake, ok := searcherStakes[commitment]
-	if !ok {
-		return big.NewInt(0)
-	}
-
-	return &stake.Int
-}
-
-// getAggregatedStake returns aggregated stake value staked for commitment
-func (r *rollup) getAggregatedStake(commitment common.Hash) *big.Int {
-	r.stateMutex.Lock()
-	defer r.stateMutex.Unlock()
-
-	stake, ok := r.state.AggregatedStakes[commitment]
+	stake, ok := r.state.Stakes[commitment]
 	if !ok {
 		return big.NewInt(0)
 	}
@@ -371,20 +350,11 @@ func (r *rollup) getAggregatedStake(commitment common.Hash) *big.Int {
 }
 
 // setStake updates stake value staked for particular builder by searcher
-func (r *rollup) setStake(searcher common.Address, commitment common.Hash, stake *big.Int) {
+func (r *rollup) setStake(commitment common.Hash, stake *big.Int) {
 	r.stateMutex.Lock()
 	defer r.stateMutex.Unlock()
 
-	if _, ok := r.state.Stakes[searcher]; !ok {
-		r.state.Stakes[searcher] = make(map[common.Hash]BigInt)
-	}
-
-	oldStake := r.state.Stakes[searcher][commitment].Int
-	oldAggregatedStake := r.state.AggregatedStakes[commitment].Int
-	diff := stake.Sub(stake, &oldStake)
-
-	r.state.Stakes[searcher][commitment] = BigInt{*stake}
-	r.state.AggregatedStakes[commitment] = BigInt{*big.NewInt(0).Add(&oldAggregatedStake, diff)}
+	r.state.Stakes[commitment] = BigInt{*stake}
 }
 
 // getMinimalStake returns stake value staked for particular builder by searcher

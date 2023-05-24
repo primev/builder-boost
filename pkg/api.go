@@ -114,9 +114,9 @@ func (a *API) handleSearcherCommitment(w http.ResponseWriter, r *http.Request) {
 	// TODO(@ckartik): Move to middleware
 	token := r.URL.Query().Get("token")
 	if token == "" {
-		a.Log.WithField("token", token).Error("token is not valid")
+		a.Log.WithField("token", token).Error("token parameter is missing")
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("token is not valid"))
+		w.Write([]byte("token parameter is missing"))
 		return
 	}
 	builderAddress := a.Rollup.GetBuilderAddress()
@@ -181,7 +181,9 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	balance := a.Rollup.GetAggregaredStake(searcherAddress)
+
+	commitment := a.Rollup.GetCommitment(searcherAddress)
+	balance := a.Rollup.GetStake(commitment)
 	searcherAddressParam := searcherAddress.Hex()
 	a.Log.WithFields(logrus.Fields{"searcher": searcherAddressParam, "balance": balance}).
 		Info("searcher attempting connection")

@@ -8,11 +8,10 @@ import (
 )
 
 type State struct {
-	LatestProcessedBlock uint64                                    `json:"latestProcessedBlock"`
-	LatestKnownBlock     uint64                                    `json:"latestKnownBlock"`
-	Stakes               map[common.Address]map[common.Hash]BigInt `json:"stakes"`
-	AggregatedStakes     map[common.Hash]BigInt                    `json:"aggregatedStakes"`
-	MinimalStakes        map[common.Address]BigInt                 `json:"minimalStakes"`
+	LatestProcessedBlock uint64                    `json:"latestProcessedBlock"`
+	LatestKnownBlock     uint64                    `json:"latestKnownBlock"`
+	Stakes               map[common.Hash]BigInt    `json:"stakes"`
+	MinimalStakes        map[common.Address]BigInt `json:"minimalStakes"`
 }
 
 type BigInt struct {

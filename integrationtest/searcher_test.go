@@ -113,7 +113,7 @@ func TestConnectSearcher(t *testing.T) {
 		mockRollup.On("GetBuilderAddress").Return(builderAddress)
 		mockRollup.On("GetMinimalStake", builderAddress).Return(big.NewInt(100), nil)
 		mockRollup.On("GetCommitment", searcherAddress).Return(commitment)
-		mockRollup.On("GetAggregaredStake", searcherAddress).Return(big.NewInt(100))
+		mockRollup.On("GetStake", commitment).Return(big.NewInt(100))
 		api.Rollup = &mockRollup
 
 		conn, resp, _ := dialer.Dial(getWebSocketURL(token), nil)
@@ -136,7 +136,7 @@ func TestConnectSearcher(t *testing.T) {
 		mockRollup.On("GetBuilderAddress").Return(builderAddress)
 		mockRollup.On("GetMinimalStake", builderAddress).Return(big.NewInt(100), nil)
 		mockRollup.On("GetCommitment", searcherAddress).Return(commitment)
-		mockRollup.On("GetAggregaredStake", searcherAddress).Return(big.NewInt(100))
+		mockRollup.On("GetStake", commitment).Return(big.NewInt(100))
 		api.Rollup = &mockRollup
 
 		conn, resp, _ := dialer.Dial(getWebSocketURL(token), nil)
@@ -178,7 +178,7 @@ func TestConnectSearcher(t *testing.T) {
 		mockRollup.On("GetBuilderAddress").Return(builderAddress)
 		mockRollup.On("GetMinimalStake", builderAddress).Return(big.NewInt(101), nil)
 		mockRollup.On("GetCommitment", searcherAddress).Return(commitment)
-		mockRollup.On("GetAggregaredStake", searcherAddress).Return(big.NewInt(100))
+		mockRollup.On("GetStake", commitment).Return(big.NewInt(100))
 		api.Rollup = &mockRollup
 
 		_, resp, _ := dialer.Dial(getWebSocketURL(token), nil)
@@ -199,7 +199,7 @@ func TestConnectSearcher(t *testing.T) {
 		mockRollup.On("GetBuilderAddress").Return(builderAddress)
 		mockRollup.On("GetMinimalStake", builderAddress).Return(big.NewInt(100), nil)
 		mockRollup.On("GetCommitment", searcherAddress).Return(commitment)
-		mockRollup.On("GetAggregaredStake", searcherAddress).Return(big.NewInt(100))
+		mockRollup.On("GetStake", commitment).Return(big.NewInt(100))
 		api.Rollup = &mockRollup
 
 		conn, resp, err := dialer.Dial(getWebSocketURL(token), nil)
@@ -228,7 +228,7 @@ func TestConnectSearcher(t *testing.T) {
 		mockRollup.On("GetBuilderAddress").Return(builderAddress)
 		mockRollup.On("GetMinimalStake", builderAddress).Return(big.NewInt(100), nil)
 		mockRollup.On("GetCommitment", searcherAddress).Return(commitment)
-		mockRollup.On("GetAggregaredStake", searcherAddress).Return(big.NewInt(100))
+		mockRollup.On("GetStake", commitment).Return(big.NewInt(100))
 		api.Rollup = &mockRollup
 
 		conn, resp, err := dialer.Dial(getWebSocketURL(token), nil)
