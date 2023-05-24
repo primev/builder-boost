@@ -37,12 +37,13 @@ type jsonError struct {
 }
 
 type API struct {
-	Service BoostService
-	Worker  *Worker
-	Rollup  rollup.Rollup
-	Log     log.Logger
-	once    sync.Once
-	mux     http.Handler
+	Service      BoostService
+	Worker       *Worker
+	Rollup       rollup.Rollup
+	Log          log.Logger
+	once         sync.Once
+	mux          http.Handler
+	BuilderToken string
 }
 
 func (a *API) init() {
@@ -268,6 +269,12 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 
 // builder related handlers
 func (a *API) submitBlock(w http.ResponseWriter, r *http.Request) (int, error) {
+	authToken := r.Header.Get("X-BUIlDER-TOKEN")
+
+	if authToken != a.BuilderToken {
+		return http.StatusUnauthorized, errors.New("invalid auth token")
+	}
+
 	var br capella.SubmitBlockRequest
 	if err := json.NewDecoder(r.Body).Decode(&br); err != nil {
 		return http.StatusBadRequest, err
