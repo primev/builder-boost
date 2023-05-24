@@ -26,6 +26,7 @@ func VerifyToken(token string, msg string) (common.Address, bool) {
 	if err != nil {
 		return common.Address{}, false
 	}
+
 	hm := crypto.Keccak256Hash([]byte(msg))
 	pubkey, err := crypto.SigToPub(hm[:], signature)
 	if err != nil {

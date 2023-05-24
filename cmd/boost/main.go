@@ -73,13 +73,13 @@ var flags = []cli.Flag{
 	&cli.StringFlag{
 		Name:    "rollupcontract",
 		Usage:   "Rollup contract address",
-		Value:   "0xc38e581D0403b4065F4d61A838431B143ceE4c81",
+		Value:   "0xB5D94Cc323f791ddAB2Cf4c7dD38Fc85ebbF2C3F",
 		EnvVars: []string{"ROLLUP_CONTRACT"},
 	},
 	&cli.StringFlag{
 		Name:    "rollupblock",
 		Usage:   "Block at which rollup contract was deployed",
-		Value:   "3500791",
+		Value:   "3550666",
 		EnvVars: []string{"ROLLUP_BLOCK"},
 	},
 	&cli.StringFlag{
@@ -159,11 +159,6 @@ func run() cli.ActionFunc {
 		contractAddress := common.HexToAddress(c.String("rollupcontract"))
 		statePath := c.String("rollupstate")
 		ru, err := rollup.New(client, contractAddress, builderKey, rollupBlock, statePath, config.Log)
-		if err != nil {
-			return err
-		}
-
-		_, err = ru.GetMinimalStake(ru.GetBuilderAddress())
 		if err != nil {
 			return err
 		}

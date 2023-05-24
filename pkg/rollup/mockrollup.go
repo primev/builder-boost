@@ -24,50 +24,6 @@ func (_m *MockRollup) EXPECT() *MockRollup_Expecter {
 	return &MockRollup_Expecter{mock: &_m.Mock}
 }
 
-// GetAggregaredStake provides a mock function with given fields: searcher
-func (_m *MockRollup) GetAggregaredStake(searcher common.Address) *big.Int {
-	ret := _m.Called(searcher)
-
-	var r0 *big.Int
-	if rf, ok := ret.Get(0).(func(common.Address) *big.Int); ok {
-		r0 = rf(searcher)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*big.Int)
-		}
-	}
-
-	return r0
-}
-
-// MockRollup_GetAggregaredStake_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetAggregaredStake'
-type MockRollup_GetAggregaredStake_Call struct {
-	*mock.Call
-}
-
-// GetAggregaredStake is a helper method to define mock.On call
-//   - searcher common.Address
-func (_e *MockRollup_Expecter) GetAggregaredStake(searcher interface{}) *MockRollup_GetAggregaredStake_Call {
-	return &MockRollup_GetAggregaredStake_Call{Call: _e.mock.On("GetAggregaredStake", searcher)}
-}
-
-func (_c *MockRollup_GetAggregaredStake_Call) Run(run func(searcher common.Address)) *MockRollup_GetAggregaredStake_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(common.Address))
-	})
-	return _c
-}
-
-func (_c *MockRollup_GetAggregaredStake_Call) Return(_a0 *big.Int) *MockRollup_GetAggregaredStake_Call {
-	_c.Call.Return(_a0)
-	return _c
-}
-
-func (_c *MockRollup_GetAggregaredStake_Call) RunAndReturn(run func(common.Address) *big.Int) *MockRollup_GetAggregaredStake_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
 // GetBuilderAddress provides a mock function with given fields:
 func (_m *MockRollup) GetBuilderAddress() common.Address {
 	ret := _m.Called()
@@ -209,13 +165,13 @@ func (_c *MockRollup_GetMinimalStake_Call) RunAndReturn(run func(common.Address)
 	return _c
 }
 
-// GetStake provides a mock function with given fields: searcher, commitment
-func (_m *MockRollup) GetStake(searcher common.Address, commitment common.Hash) *big.Int {
-	ret := _m.Called(searcher, commitment)
+// GetStake provides a mock function with given fields: commitment
+func (_m *MockRollup) GetStake(commitment common.Hash) *big.Int {
+	ret := _m.Called(commitment)
 
 	var r0 *big.Int
-	if rf, ok := ret.Get(0).(func(common.Address, common.Hash) *big.Int); ok {
-		r0 = rf(searcher, commitment)
+	if rf, ok := ret.Get(0).(func(common.Hash) *big.Int); ok {
+		r0 = rf(commitment)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*big.Int)
@@ -231,15 +187,14 @@ type MockRollup_GetStake_Call struct {
 }
 
 // GetStake is a helper method to define mock.On call
-//   - searcher common.Address
 //   - commitment common.Hash
-func (_e *MockRollup_Expecter) GetStake(searcher interface{}, commitment interface{}) *MockRollup_GetStake_Call {
-	return &MockRollup_GetStake_Call{Call: _e.mock.On("GetStake", searcher, commitment)}
+func (_e *MockRollup_Expecter) GetStake(commitment interface{}) *MockRollup_GetStake_Call {
+	return &MockRollup_GetStake_Call{Call: _e.mock.On("GetStake", commitment)}
 }
 
-func (_c *MockRollup_GetStake_Call) Run(run func(searcher common.Address, commitment common.Hash)) *MockRollup_GetStake_Call {
+func (_c *MockRollup_GetStake_Call) Run(run func(commitment common.Hash)) *MockRollup_GetStake_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(common.Address), args[1].(common.Hash))
+		run(args[0].(common.Hash))
 	})
 	return _c
 }
@@ -249,30 +204,30 @@ func (_c *MockRollup_GetStake_Call) Return(_a0 *big.Int) *MockRollup_GetStake_Ca
 	return _c
 }
 
-func (_c *MockRollup_GetStake_Call) RunAndReturn(run func(common.Address, common.Hash) *big.Int) *MockRollup_GetStake_Call {
+func (_c *MockRollup_GetStake_Call) RunAndReturn(run func(common.Hash) *big.Int) *MockRollup_GetStake_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
-// GetStakeRemote provides a mock function with given fields: searcher, commitment
-func (_m *MockRollup) GetStakeRemote(searcher common.Address, commitment common.Hash) (*big.Int, error) {
-	ret := _m.Called(searcher, commitment)
+// GetStakeRemote provides a mock function with given fields: commitment
+func (_m *MockRollup) GetStakeRemote(commitment common.Hash) (*big.Int, error) {
+	ret := _m.Called(commitment)
 
 	var r0 *big.Int
 	var r1 error
-	if rf, ok := ret.Get(0).(func(common.Address, common.Hash) (*big.Int, error)); ok {
-		return rf(searcher, commitment)
+	if rf, ok := ret.Get(0).(func(common.Hash) (*big.Int, error)); ok {
+		return rf(commitment)
 	}
-	if rf, ok := ret.Get(0).(func(common.Address, common.Hash) *big.Int); ok {
-		r0 = rf(searcher, commitment)
+	if rf, ok := ret.Get(0).(func(common.Hash) *big.Int); ok {
+		r0 = rf(commitment)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*big.Int)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(common.Address, common.Hash) error); ok {
-		r1 = rf(searcher, commitment)
+	if rf, ok := ret.Get(1).(func(common.Hash) error); ok {
+		r1 = rf(commitment)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -286,15 +241,14 @@ type MockRollup_GetStakeRemote_Call struct {
 }
 
 // GetStakeRemote is a helper method to define mock.On call
-//   - searcher common.Address
 //   - commitment common.Hash
-func (_e *MockRollup_Expecter) GetStakeRemote(searcher interface{}, commitment interface{}) *MockRollup_GetStakeRemote_Call {
-	return &MockRollup_GetStakeRemote_Call{Call: _e.mock.On("GetStakeRemote", searcher, commitment)}
+func (_e *MockRollup_Expecter) GetStakeRemote(commitment interface{}) *MockRollup_GetStakeRemote_Call {
+	return &MockRollup_GetStakeRemote_Call{Call: _e.mock.On("GetStakeRemote", commitment)}
 }
 
-func (_c *MockRollup_GetStakeRemote_Call) Run(run func(searcher common.Address, commitment common.Hash)) *MockRollup_GetStakeRemote_Call {
+func (_c *MockRollup_GetStakeRemote_Call) Run(run func(commitment common.Hash)) *MockRollup_GetStakeRemote_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(common.Address), args[1].(common.Hash))
+		run(args[0].(common.Hash))
 	})
 	return _c
 }
@@ -304,7 +258,7 @@ func (_c *MockRollup_GetStakeRemote_Call) Return(_a0 *big.Int, _a1 error) *MockR
 	return _c
 }
 
-func (_c *MockRollup_GetStakeRemote_Call) RunAndReturn(run func(common.Address, common.Hash) (*big.Int, error)) *MockRollup_GetStakeRemote_Call {
+func (_c *MockRollup_GetStakeRemote_Call) RunAndReturn(run func(common.Hash) (*big.Int, error)) *MockRollup_GetStakeRemote_Call {
 	_c.Call.Return(run)
 	return _c
 }
