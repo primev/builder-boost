@@ -266,6 +266,11 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}()
+
+	a.Log.
+		WithField("searcher_count", len(a.Worker.connectedSearchers)).
+		WithField("searcher_address", searcherAddressParam).
+		Info("new searcher connected")
 }
 
 // builder related handlers
