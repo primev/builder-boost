@@ -26,7 +26,12 @@ jobs:
 
     - name: Build Boost
       run: |
-        sudo apt update && sudo apt install -y golang make
+        sudo apt update && sudo apt install -y make
+        wget  https://go.dev/dl/go1.20.2.linux-amd64.tar.gz
+        tar -xvf go1.20.2.linux-amd64.tar.gz
+        mv go /usr/local
+        export GOROOT=/usr/local/go
+        export PATH=$GOROOT/bin:$PATH
         make
         CGO_ENABLED=0 make build
 
