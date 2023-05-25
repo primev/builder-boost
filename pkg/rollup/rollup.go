@@ -84,7 +84,6 @@ func New(
 
 		log: log.WithField("service", "rollup"),
 	}
-
 	// load rollup state
 	err = r.loadState()
 	if err != nil {
@@ -133,6 +132,7 @@ func (r *rollup) Run(ctx context.Context) error {
 			_, err = r.getMinimalStake(r.builderAddress)
 			if err != nil {
 				r.log.WithField("builder", r.builderAddress).WithField("err", err.Error()).Error("minimal stake is not set")
+				return err
 			}
 		}
 
