@@ -164,12 +164,7 @@ func run() cli.ActionFunc {
 		}
 
 		g.Go(func() error {
-			var rollupErr error
-			for {
-				rollupErr = ru.Run(ctx)
-				config.Log.WithField("error", rollupErr).Error("rollup service errored, will reattempt")
-				time.Sleep(time.Second * 3)
-			}
+			return ru.Run(ctx)
 		})
 
 		// setup the boost service
