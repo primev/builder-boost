@@ -88,6 +88,12 @@ var flags = []cli.Flag{
 		Value:   "rollup.json",
 		EnvVars: []string{"ROLLUP_STATE"},
 	},
+	&cli.StringFlag{
+		Name:    "buildertoken",
+		Usage:   "Token used to authenticate request as originating from builder",
+		Value:   "tmptoken",
+		EnvVars: []string{"BUILDER_AUTH_TOKEN"},
+	},
 }
 
 var (
@@ -223,10 +229,11 @@ func run() cli.ActionFunc {
 			}
 
 			svr.Handler = &boost.API{
-				Service: service,
-				Log:     config.Log,
-				Worker:  masterWorker,
-				Rollup:  ru,
+				Service:      service,
+				Log:          config.Log,
+				Worker:       masterWorker,
+				Rollup:       ru,
+				BuilderToken: c.String("buildertoken"),
 			}
 
 			config.Log.Info("http server listening")
