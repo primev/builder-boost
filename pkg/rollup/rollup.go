@@ -118,7 +118,7 @@ func (r *rollup) Run(ctx context.Context) error {
 		// process events from next batch of blocks
 		err := r.processNextBlocks(ctx)
 		if err != nil {
-			return err
+			r.log.WithField("err", err.Error()).Error("failed to process next blocks")
 		}
 
 		// save rollup state after processing events
@@ -132,7 +132,6 @@ func (r *rollup) Run(ctx context.Context) error {
 			_, err = r.getMinimalStake(r.builderAddress)
 			if err != nil {
 				r.log.WithField("builder", r.builderAddress).WithField("err", err.Error()).Error("minimal stake is not set")
-				return err
 			}
 		}
 
