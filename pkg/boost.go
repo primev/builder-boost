@@ -3,7 +3,6 @@ package boost
 import (
 	"context"
 	"encoding/binary"
-	"encoding/json"
 	"errors"
 	"time"
 
@@ -68,7 +67,7 @@ func (as *DefaultBoost) SubmitBlock(ctx context.Context, msg *capella.SubmitBloc
 	defer span.Finish()
 	defer func() {
 		if r := recover(); r != nil {
-			log.Error(ErrBlockUnprocessable.Error())
+			as.config.Log.Error(ErrBlockUnprocessable.Error())
 			err = ErrBlockUnprocessable
 		}
 	}()
@@ -105,13 +104,15 @@ func (as *DefaultBoost) SubmitBlock(ctx context.Context, msg *capella.SubmitBloc
 	}
 
 	as.pushChannel <- blockMetadata
-	json, err := json.Marshal(blockMetadata)
 
-	if err != nil {
-		log.Error("could not marshal block metadata", "err", err)
-		return err
-	}
-	log.Debug("submitting block", "block=", string(json))
+	as.config.Log.
+		WithField("block_hash", blockMetadata.BlockHash).
+		WithField("base_fee", blockMetadata.BaseFee).
+		WithField("min_priority_fee", blockMetadata.Transactions.MinPriorityFee).
+		WithField("max_priority_fee", blockMetadata.Transactions.MaxPriorityFee).
+		WithField("txn_count", blockMetadata.Transactions.Count).
+		WithField("builder", blockMetadata.Builder).
+		Info("Block metadata processed")
 
 	return nil
 }
