@@ -192,7 +192,7 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 	// Check for sufficent balance
 	if balance.Cmp(minimalStake) < 0 {
 		a.Log.WithFields(logrus.Fields{"balance": balance, "required": minimalStake}).
-			Error("searcher has insufficient balance")
+			Warn("searcher has insufficient balance")
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}
