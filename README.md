@@ -1,4 +1,8 @@
-# build-boost
+# Builder Boost
+
+Builder boost is sidecar software meant to be used to enable a builder to participate as a builder in the primev network. The following diagram showcases how it fits into a Builders local build environment.
+
+![Builder Boost Diagram](./diagrams/bb-highlevel.png)
 
 ## Build Process
 
