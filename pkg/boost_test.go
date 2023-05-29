@@ -8,6 +8,7 @@ import (
 
 	"github.com/alecthomas/assert"
 	"github.com/attestantio/go-builder-client/api/capella"
+	"github.com/lthibault/log"
 )
 
 func TestDefaultBoost_SubmitBlock(t *testing.T) {
@@ -136,7 +137,7 @@ func TestDefaultBoost_SubmitBlock(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			service, err := NewBoost(Config{})
+			service, err := NewBoost(Config{log.New()})
 			if err != nil {
 				t.Fatal(err)
 			}
