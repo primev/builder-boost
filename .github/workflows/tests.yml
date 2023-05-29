@@ -1,4 +1,4 @@
-name: Go Test
+name: Tests
 
 on:
   pull_request:
@@ -10,7 +10,7 @@ jobs:
     name: Run Tests
     runs-on: ubuntu-latest
     steps:
-    - name: Check out code into the Go module directory
+    - name: Checkout repository
       uses: actions/checkout@v2
 
     - name: Set up Go
@@ -23,7 +23,10 @@ jobs:
         go version
         go mod download
 
+    - name: Build
+      run: |
+        make build
+
     - name: Test
       run: |
-        cd pkg/
-        go test -v ./...
+        make test
