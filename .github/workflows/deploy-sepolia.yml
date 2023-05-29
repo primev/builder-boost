@@ -41,6 +41,7 @@ jobs:
         ssh -i private_key.pem $USER@$HOST "sudo systemctl stop searcher-1"
         ssh -i private_key.pem $USER@$HOST "sudo systemctl stop searcher-2"
         ssh -i private_key.pem $USER@$HOST "sudo systemctl stop searcher-3"
+        ssh -i private_key.pem $USER@$HOST "sudo systemctl daemon-reload"
         ssh -i private_key.pem $USER@$HOST "mkdir -p ~/builder-boost"
         scp -i private_key.pem -r ./boost $USER@$HOST:~/builder-boost
         scp -i private_key.pem -r ./searcher $USER@$HOST:~/builder-boost
