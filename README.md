@@ -1,10 +1,20 @@
 # Builder Boost
 
-Builder boost is sidecar software meant to be used to enable a builder to participate as a builder in the primev network. The following diagram showcases how it fits into a Builders local build environment.
+Builder boost is sidecar software meant to be used to enable a builder to participate in the primev network. The following diagram showcases how it fits into a Builders local build environment.
 
-![Builder Boost Diagram](./diagrams/bb-highlevel.png)
+![Builder Boost Diagram](./diagrams/bb-vhighlevel.png)
 
-## Build Process
+You can run builder-boost as both a docker container or as a binary. We recommend you run it as an independent EC2 instance.
+The network configurations should be permesive since arbitrary searchers will be connecting across a variety of IP addresses.
+
+The first step towards setting up Builder Boost is to go through the instructions in the Builder Reference Implementation [here](https://hackmd.io/wmmCgKJdTom9WXht2PcdLA).
+
+Once you've made the necessary Modifications, you can set up boost.
+
+
+
+## Searcher Testing
+To test your local setup with searchers in mind, we've included systemctl files to emulate running multiple searchers locally. This Boost repository contains a dummy searcher implementation that will serve as a good starting point for testing your local setup. You can find the searcher implementation in the `searcher` directory. When you build this project, you will be able to access the searcher binary in the root directory of the project.
 
 ### Pre-Requistes
 - A browser wallet with two accounts
