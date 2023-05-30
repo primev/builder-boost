@@ -1,0 +1,16 @@
+version: '3'
+services:
+  boost:
+    build:
+      context: .
+    ports:
+      - '18550:18550'
+    env_file: .env
+    restart: unless-stopped
+    command: ['boost']
+  searcher:
+    build:
+      context: .
+    env_file: .env
+    restart: unless-stopped
+    command: ['searcher']
