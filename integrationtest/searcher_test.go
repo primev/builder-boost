@@ -11,6 +11,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/attestantio/go-builder-client/api/capella"
 	"github.com/ethereum/go-ethereum/common"
@@ -236,6 +237,8 @@ func TestConnectSearcher(t *testing.T) {
 		assert.NotNil(t, resp)
 		assert.Nil(t, err)
 		conn.Close()
+
+		time.Sleep(1 * time.Second)
 
 		_, resp2, err2 := dialer.Dial(getWebSocketURL(token), nil)
 		assert.Equal(t, http.StatusSwitchingProtocols, resp2.StatusCode)
