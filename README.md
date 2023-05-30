@@ -1,4 +1,5 @@
 # Builder Boost
+![tests](https://github.com/primevprotocol/builder-boost/actions/workflows/tests.yml/badge.svg?branch=main)
 
 Builder boost is sidecar software meant to be used to enable a builder to participate in the primev network. The following diagram showcases how it fits into a Builders local build environment.
 
