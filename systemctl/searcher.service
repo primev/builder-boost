@@ -1,0 +1,14 @@
+[Unit]
+Description=<searcher-name> service
+After=network.target
+
+[Service]
+User=ec2-user
+ExecStart=/home/ec2-user/builder-boost/searcher
+restart=always
+Environment="ENV=sepolia"
+Environment="AGENT_ADDR=<datadog-address>"
+Environment="SEARCHER_KEY=<searcher-private-key>"
+
+[Install]
+WantedBy=multi-user.target
