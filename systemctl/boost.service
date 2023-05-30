@@ -1,0 +1,17 @@
+[Unit]
+Description=boost service
+After=network.target
+
+[Service]
+User=ec2-user
+ExecStart=/home/ec2-user/builder-boost/boost
+restart=always
+Environment="ENV=<sepolia>"
+Environment="AGENT_ADDR=<Datadog Agent>"
+Environment="ROLLUP_KEY=<Builder Rollup Key>"
+Environment="ROLLUP_STATE=/home/ec2-user/builder-boost/rollup.json"
+Environment="BUILDER_AUTH_TOKEN=<builder-auth-token>"
+Environment="ROLLUP_ADDR=<RPC Endpoint for rollup (currently sepolia)>"
+
+[Install]
+WantedBy=multi-user.target
