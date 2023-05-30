@@ -1,21 +1,22 @@
 # Builder Boost
 ![tests](https://github.com/primevprotocol/builder-boost/actions/workflows/tests.yml/badge.svg?branch=main)
 
-Builder boost is sidecar software meant to be used to enable a builder to participate in the primev network. The following diagram showcases how it fits into a Builders local build environment.
+Builder Boost is an sidecar software developed to facilitate a builder's participation in the Primev network. The provided diagram outlines the software's position within a builder's local build environment.
+
+Builder Boost Diagram
 
 ![Builder Boost Diagram](./diagrams/bb-vhighlevel.png)
 
 You can run builder-boost as both a docker container or as a binary. We recommend you run it as an independent EC2 instance.
-The network configurations should be permesive since arbitrary searchers will be connecting across a variety of IP addresses.
+Considering the variability of IP addresses of arbitrary searchers, the network configurations should be permissive.
 
-The first step towards setting up Builder Boost is to go through the instructions in the Builder Reference Implementation [here](https://hackmd.io/wmmCgKJdTom9WXht2PcdLA).
 
-Once you've made the necessary Modifications, you can set up boost.
-
+## Setting Up Builder Boost
+Begin by reviewing the Builder Reference Implementation instructions provided [here](https://hackmd.io/wmmCgKJdTom9WXht2PcdLA). Following the necessary modifications, you can proceed to set up Builder Boost.
 
 
 ## Searcher Testing
-To test your local setup with searchers in mind, we've included systemctl files to emulate running multiple searchers locally. This Boost repository contains a dummy searcher implementation that will serve as a good starting point for testing your local setup. You can find the searcher implementation in the `searcher` directory. When you build this project, you will be able to access the searcher binary in the root directory of the project.
+In order to emulate multiple searchers locally and testing your setup, systemctl files have been included. The Boost repository also contains a dummy searcher implementation, a useful tool for validating your local configuration and monitoring for uptime. The searcher implementation can be found in the searcher directory, with the binary accessible in the root directory upon successful project build.
 
 ### Pre-Requistes
 - A browser wallet with two accounts
