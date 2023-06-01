@@ -111,6 +111,49 @@ func (_c *MockRollup_GetCommitment_Call) RunAndReturn(run func(common.Address) c
 	return _c
 }
 
+// GetLatestBlock provides a mock function with given fields:
+func (_m *MockRollup) GetLatestBlock() *big.Int {
+	ret := _m.Called()
+
+	var r0 *big.Int
+	if rf, ok := ret.Get(0).(func() *big.Int); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*big.Int)
+		}
+	}
+
+	return r0
+}
+
+// MockRollup_GetLatestBlock_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetLatestBlock'
+type MockRollup_GetLatestBlock_Call struct {
+	*mock.Call
+}
+
+// GetLatestBlock is a helper method to define mock.On call
+func (_e *MockRollup_Expecter) GetLatestBlock() *MockRollup_GetLatestBlock_Call {
+	return &MockRollup_GetLatestBlock_Call{Call: _e.mock.On("GetLatestBlock")}
+}
+
+func (_c *MockRollup_GetLatestBlock_Call) Run(run func()) *MockRollup_GetLatestBlock_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *MockRollup_GetLatestBlock_Call) Return(_a0 *big.Int) *MockRollup_GetLatestBlock_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockRollup_GetLatestBlock_Call) RunAndReturn(run func() *big.Int) *MockRollup_GetLatestBlock_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetMinimalStake provides a mock function with given fields: builder
 func (_m *MockRollup) GetMinimalStake(builder common.Address) (*big.Int, error) {
 	ret := _m.Called(builder)
@@ -165,8 +208,8 @@ func (_c *MockRollup_GetMinimalStake_Call) RunAndReturn(run func(common.Address)
 	return _c
 }
 
-// GetStake provides a mock function with given fields: commitment
-func (_m *MockRollup) GetStake(commitment common.Hash) *big.Int {
+// GetSubscriptionEnd provides a mock function with given fields: commitment
+func (_m *MockRollup) GetSubscriptionEnd(commitment common.Hash) *big.Int {
 	ret := _m.Called(commitment)
 
 	var r0 *big.Int
@@ -181,36 +224,36 @@ func (_m *MockRollup) GetStake(commitment common.Hash) *big.Int {
 	return r0
 }
 
-// MockRollup_GetStake_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetStake'
-type MockRollup_GetStake_Call struct {
+// MockRollup_GetSubscriptionEnd_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetSubscriptionEnd'
+type MockRollup_GetSubscriptionEnd_Call struct {
 	*mock.Call
 }
 
-// GetStake is a helper method to define mock.On call
+// GetSubscriptionEnd is a helper method to define mock.On call
 //   - commitment common.Hash
-func (_e *MockRollup_Expecter) GetStake(commitment interface{}) *MockRollup_GetStake_Call {
-	return &MockRollup_GetStake_Call{Call: _e.mock.On("GetStake", commitment)}
+func (_e *MockRollup_Expecter) GetSubscriptionEnd(commitment interface{}) *MockRollup_GetSubscriptionEnd_Call {
+	return &MockRollup_GetSubscriptionEnd_Call{Call: _e.mock.On("GetSubscriptionEnd", commitment)}
 }
 
-func (_c *MockRollup_GetStake_Call) Run(run func(commitment common.Hash)) *MockRollup_GetStake_Call {
+func (_c *MockRollup_GetSubscriptionEnd_Call) Run(run func(commitment common.Hash)) *MockRollup_GetSubscriptionEnd_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		run(args[0].(common.Hash))
 	})
 	return _c
 }
 
-func (_c *MockRollup_GetStake_Call) Return(_a0 *big.Int) *MockRollup_GetStake_Call {
+func (_c *MockRollup_GetSubscriptionEnd_Call) Return(_a0 *big.Int) *MockRollup_GetSubscriptionEnd_Call {
 	_c.Call.Return(_a0)
 	return _c
 }
 
-func (_c *MockRollup_GetStake_Call) RunAndReturn(run func(common.Hash) *big.Int) *MockRollup_GetStake_Call {
+func (_c *MockRollup_GetSubscriptionEnd_Call) RunAndReturn(run func(common.Hash) *big.Int) *MockRollup_GetSubscriptionEnd_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
-// GetStakeRemote provides a mock function with given fields: commitment
-func (_m *MockRollup) GetStakeRemote(commitment common.Hash) (*big.Int, error) {
+// GetSubscriptionEndRemote provides a mock function with given fields: commitment
+func (_m *MockRollup) GetSubscriptionEndRemote(commitment common.Hash) (*big.Int, error) {
 	ret := _m.Called(commitment)
 
 	var r0 *big.Int
@@ -235,30 +278,30 @@ func (_m *MockRollup) GetStakeRemote(commitment common.Hash) (*big.Int, error) {
 	return r0, r1
 }
 
-// MockRollup_GetStakeRemote_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetStakeRemote'
-type MockRollup_GetStakeRemote_Call struct {
+// MockRollup_GetSubscriptionEndRemote_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetSubscriptionEndRemote'
+type MockRollup_GetSubscriptionEndRemote_Call struct {
 	*mock.Call
 }
 
-// GetStakeRemote is a helper method to define mock.On call
+// GetSubscriptionEndRemote is a helper method to define mock.On call
 //   - commitment common.Hash
-func (_e *MockRollup_Expecter) GetStakeRemote(commitment interface{}) *MockRollup_GetStakeRemote_Call {
-	return &MockRollup_GetStakeRemote_Call{Call: _e.mock.On("GetStakeRemote", commitment)}
+func (_e *MockRollup_Expecter) GetSubscriptionEndRemote(commitment interface{}) *MockRollup_GetSubscriptionEndRemote_Call {
+	return &MockRollup_GetSubscriptionEndRemote_Call{Call: _e.mock.On("GetSubscriptionEndRemote", commitment)}
 }
 
-func (_c *MockRollup_GetStakeRemote_Call) Run(run func(commitment common.Hash)) *MockRollup_GetStakeRemote_Call {
+func (_c *MockRollup_GetSubscriptionEndRemote_Call) Run(run func(commitment common.Hash)) *MockRollup_GetSubscriptionEndRemote_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		run(args[0].(common.Hash))
 	})
 	return _c
 }
 
-func (_c *MockRollup_GetStakeRemote_Call) Return(_a0 *big.Int, _a1 error) *MockRollup_GetStakeRemote_Call {
+func (_c *MockRollup_GetSubscriptionEndRemote_Call) Return(_a0 *big.Int, _a1 error) *MockRollup_GetSubscriptionEndRemote_Call {
 	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *MockRollup_GetStakeRemote_Call) RunAndReturn(run func(common.Hash) (*big.Int, error)) *MockRollup_GetStakeRemote_Call {
+func (_c *MockRollup_GetSubscriptionEndRemote_Call) RunAndReturn(run func(common.Hash) (*big.Int, error)) *MockRollup_GetSubscriptionEndRemote_Call {
 	_c.Call.Return(run)
 	return _c
 }
