@@ -1,7 +1,7 @@
 # Builder Boost
 ![tests](https://github.com/primevprotocol/builder-boost/actions/workflows/tests.yml/badge.svg?branch=main)
 
-Builder Boost is an sidecar software developed to facilitate a builder's participation in the Primev network. The provided diagram outlines the software's position within a builder's local build environment.
+Builder Boost is sidecar software that facilitates a blockbuilder's participation in the Primev network. The diagram below outlines the module's position within a builder's local build environment.
 
 Builder Boost Diagram
 
@@ -12,19 +12,19 @@ Considering the variability of IP addresses of arbitrary searchers, the network 
 
 
 ## Setting Up Builder Boost
-Begin by reviewing the Builder Reference Implementation instructions provided [here](https://hackmd.io/wmmCgKJdTom9WXht2PcdLA). Following the necessary modifications, you can proceed to set up Builder Boost.
+Begin by reviewing the Builder Reference Implementation instructions provided [here](https://hackmd.io/wmmCgKJdTom9WXht2PcdLA). After performing the necessary modifications, you can proceed to set up Builder Boost to receive block templates from your builder.
 
 
 ## Searcher Testing
 In order to emulate multiple searchers locally and testing your setup, systemctl files have been included. The Boost repository also contains a dummy searcher implementation, a useful tool for validating your local configuration and monitoring for uptime. The searcher implementation can be found in the searcher directory, with the binary accessible in the root directory upon successful project build.
 
-### Pre-Requistes
+### Pre-Requisites
 - A browser wallet with two accounts
-  - One account will be used to emulate the searcher (this account will need to hold significant funds)
+  - For testing, one account will be used to emulate the searcher (this account will need to hold funds to deposit)
   - The other account will be used to for the builder (this account will needs sufficient funds to send a transaction to the contract)
 
 ## Wallet Setup
-1. First let's start by funding a few accounts with sepolia ETH
+1. Start by funding a few accounts with sepolia ETH
 2. Download a wallet provider, you can find the one we will use for this demo [here](https://metamask.io/download/), proceed to hit install. Follow any steps requested.
 3. Once your metmask extention has been added to the browswer, click on the icon and proceed to create a new wallet. It will ask you for a password and provide you with a seed phrase that you will want to keep safe.
 4. Once you have created your wallet, you will need to add the sepolia network to your wallet. To do this, click on the network dropdown and you should see show/hide Testnets. Hit the link, and toggle testnets. You should now see sepolia and other testnets in the network dropdown.
