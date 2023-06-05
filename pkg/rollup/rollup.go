@@ -39,18 +39,21 @@ type Rollup interface {
 	// GetBuilderAddress returns current builder address
 	GetBuilderAddress() common.Address
 
-	// GetStake returns cached stake commited to specified builder
-	GetStake(commitment common.Hash) *big.Int
+	// GetSubscriptionEnd returns cached subscription end for specified commitment
+	GetSubscriptionEnd(commitment common.Hash) *big.Int
 
-	// GetStakeRemote fetches and returns balance of searcher commited to this builder from remote contract.
+	// GetSubscriptionEndRemote fetches and returns subscription end for specified commitment from remote contract.
 	// After fetching result is cached.
-	GetStakeRemote(commitment common.Hash) (*big.Int, error)
+	GetSubscriptionEndRemote(commitment common.Hash) (*big.Int, error)
 
 	// GetMinimalStake returns cached minimal stake of specified builder
 	GetMinimalStake(builder common.Address) (*big.Int, error)
 
 	// GetCommitment calculates commitment hash for this builder by searcher address
 	GetCommitment(searcher common.Address) common.Hash
+
+	// GetLatestBlock returns latest blocks number from rollup
+	GetLatestBlock() *big.Int
 
 	// IsSyncing returns true if service is in sync state
 	IsSyncing() bool
@@ -145,22 +148,22 @@ func (r *rollup) GetBuilderAddress() common.Address {
 	return r.builderAddress
 }
 
-// GetStake returns cached stake commited to specified builder
-func (r *rollup) GetStake(commitment common.Hash) *big.Int {
-	return r.getStake(commitment)
+// GetSubscriptionEnd returns cached subscription end for specified commitment
+func (r *rollup) GetSubscriptionEnd(commitment common.Hash) *big.Int {
+	return r.getSubscriptionEnd(commitment)
 }
 
-// GetStakeRemote fetches and returns stake commited from remote contract.
+// GetSubscriptionEndRemote fetches and returns subscription end for specified commitment from remote contract.
 // After fetching result is cached.
-func (r *rollup) GetStakeRemote(commitment common.Hash) (*big.Int, error) {
+func (r *rollup) GetSubscriptionEndRemote(commitment common.Hash) (*big.Int, error) {
 	stake, err := r.contract.Stakes(nil, commitment)
 	if err != nil {
 		return nil, err
 	}
 
-	r.setStake(commitment, stake)
+	r.setSubscriptionEnd(commitment, stake.SubscriptionEnd)
 
-	return stake, nil
+	return stake.Stake, nil
 }
 
 // GetMinimalStake returns cached minimal stake of specified builder
@@ -171,6 +174,14 @@ func (r *rollup) GetMinimalStake(builder common.Address) (*big.Int, error) {
 // GetCommitment calculates commitment hash for this builder by searcher address
 func (r *rollup) GetCommitment(searcher common.Address) common.Hash {
 	return utils.GetCommitment(r.builderKey, searcher)
+}
+
+// GetLatestBlock returns latest blocks number from rollup
+func (r *rollup) GetLatestBlock() *big.Int {
+	r.stateMutex.Lock()
+	defer r.stateMutex.Unlock()
+
+	return new(big.Int).SetUint64(r.state.LatestKnownBlock)
 }
 
 // IsSyncing returns true if service is still synced rollup
@@ -207,13 +218,13 @@ func (r *rollup) processNextBlocks(ctx context.Context) error {
 			Info("processing old rollup blocks in batch")
 	}
 
-	// process minimal stake updated events
-	minimalStakeUpdatedIterator, err := r.contract.FilterMinimalStakeUpdated(&bind.FilterOpts{Start: startBlock, End: &endBlock, Context: ctx})
+	// process builder updated events
+	builderUpdatedIterator, err := r.contract.FilterBuilderUpdated(&bind.FilterOpts{Start: startBlock, End: &endBlock, Context: ctx})
 	if err != nil {
 		return err
 	}
 
-	err = r.processMinimalStakeUpdatedEvents(minimalStakeUpdatedIterator)
+	err = r.processBuilderUpdatedEvents(builderUpdatedIterator)
 	if err != nil {
 		return err
 	}
@@ -238,8 +249,8 @@ func (r *rollup) processNextBlocks(ctx context.Context) error {
 	return nil
 }
 
-// processMinimalStakeUpdatedEvents processes minimal stake updated events and saves data to state
-func (r *rollup) processMinimalStakeUpdatedEvents(it *contracts.BuilderStakingMinimalStakeUpdatedIterator) error {
+// processBuilderUpdatedEvents processes builder updates and saves data to state
+func (r *rollup) processBuilderUpdatedEvents(it *contracts.BuilderStakingBuilderUpdatedIterator) error {
 	for it.Next() {
 		if it.Error() != nil {
 			return it.Error()
@@ -269,7 +280,7 @@ func (r *rollup) processStakeUpdatedEvents(it *contracts.BuilderStakingStakeUpda
 		commitment := common.Hash(it.Event.Commitment)
 		stake := it.Event.Stake
 
-		r.setStake(commitment, stake)
+		r.setSubscriptionEnd(commitment, stake)
 
 		r.log.WithField("commitment", commitment).
 			WithField("stake", stake).WithField("block", blockNumber).
@@ -286,7 +297,7 @@ func (r *rollup) loadState() error {
 		r.state = State{
 			LatestProcessedBlock: r.startBlock,
 			LatestKnownBlock:     r.startBlock,
-			Stakes:               make(map[common.Hash]BigInt),
+			Subscriptions:        make(map[common.Hash]BigInt),
 			MinimalStakes:        make(map[common.Address]BigInt),
 		}
 
@@ -310,8 +321,8 @@ func (r *rollup) loadState() error {
 		return err
 	}
 
-	if state.Stakes == nil {
-		state.Stakes = make(map[common.Hash]BigInt)
+	if state.Subscriptions == nil {
+		state.Subscriptions = make(map[common.Hash]BigInt)
 	}
 
 	if state.MinimalStakes == nil {
@@ -335,25 +346,25 @@ func (r *rollup) saveState() error {
 	return encoder.Encode(r.state)
 }
 
-// getStake returns stake value staked for particular builder by searcher
-func (r *rollup) getStake(commitment common.Hash) *big.Int {
+// getSubscriptionEnd returns stake value staked for particular builder by searcher
+func (r *rollup) getSubscriptionEnd(commitment common.Hash) *big.Int {
 	r.stateMutex.Lock()
 	defer r.stateMutex.Unlock()
 
-	stake, ok := r.state.Stakes[commitment]
+	subscription, ok := r.state.Subscriptions[commitment]
 	if !ok {
 		return big.NewInt(0)
 	}
 
-	return &stake.Int
+	return &subscription.Int
 }
 
-// setStake updates stake value staked for particular builder by searcher
-func (r *rollup) setStake(commitment common.Hash, stake *big.Int) {
+// setSubscriptionEnd updates stake value staked for particular builder by searcher
+func (r *rollup) setSubscriptionEnd(commitment common.Hash, subscriptionEnd *big.Int) {
 	r.stateMutex.Lock()
 	defer r.stateMutex.Unlock()
 
-	r.state.Stakes[commitment] = BigInt{*stake}
+	r.state.Subscriptions[commitment] = BigInt{*subscriptionEnd}
 }
 
 // getMinimalStake returns stake value staked for particular builder by searcher

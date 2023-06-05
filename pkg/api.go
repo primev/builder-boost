@@ -171,7 +171,7 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	minimalStake, err := a.Rollup.GetMinimalStake(builderAddress)
+	_, err := a.Rollup.GetMinimalStake(builderAddress)
 	if err != nil {
 		if errors.Is(rollup.ErrNoMinimalStakeSet, err) {
 			a.Log.WithError(err).WithField("builder_address", builderAddress).Error("no minimal stake is set, in order to allow searchers to connect, set minimal stake in the rollup contract")
@@ -184,15 +184,16 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 	}
 
 	commitment := a.Rollup.GetCommitment(searcherAddress)
-	balance := a.Rollup.GetStake(commitment)
+	latestBlock := a.Rollup.GetLatestBlock()
+	subscriptionEnd := a.Rollup.GetSubscriptionEnd(commitment)
 	searcherAddressParam := searcherAddress.Hex()
-	a.Log.WithFields(logrus.Fields{"searcher": searcherAddressParam, "balance": balance}).
+	a.Log.WithFields(logrus.Fields{"searcher": searcherAddressParam, "latest_block": latestBlock, "subscription_end": subscriptionEnd}).
 		Info("searcher attempting connection")
 
 	// Check for sufficent balance
-	if balance.Cmp(minimalStake) < 0 {
-		a.Log.WithFields(logrus.Fields{"balance": balance, "required": minimalStake}).
-			Warn("searcher has insufficient balance")
+	if subscriptionEnd.Cmp(latestBlock) < 0 {
+		a.Log.WithField("searcher", searcherAddressParam).
+			Warn("subscription is expired")
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}

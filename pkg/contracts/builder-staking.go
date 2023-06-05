@@ -30,7 +30,7 @@ var (
 
 // BuilderStakingMetaData contains all meta data concerning the BuilderStaking contract.
 var BuilderStakingMetaData = &bind.MetaData{
-	ABI: "[{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"builder\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"balance\",\"type\":\"uint256\"}],\"name\":\"BalanceUpdated\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"builder\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"minimalStake\",\"type\":\"uint256\"}],\"name\":\"MinimalStakeUpdated\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"previousOwner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"OwnershipTransferred\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"builder\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"bytes32\",\"name\":\"commitment\",\"type\":\"bytes32\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"stake\",\"type\":\"uint256\"}],\"name\":\"StakeUpdated\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"balances\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_builder\",\"type\":\"address\"},{\"internalType\":\"bytes32\",\"name\":\"_commitment\",\"type\":\"bytes32\"}],\"name\":\"deposit\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_builder\",\"type\":\"address\"},{\"internalType\":\"bytes32\",\"name\":\"_commitment\",\"type\":\"bytes32\"}],\"name\":\"hasMinimalStake\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"minimalStakes\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"renounceOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_minimalStake\",\"type\":\"uint256\"}],\"name\":\"setMinimalStake\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"name\":\"stakes\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"transferOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"withdraw\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]",
+	ABI: "[{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"builder\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"minimalStake\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"minimalSubsriptionPeriod\",\"type\":\"uint256\"}],\"name\":\"BuilderUpdated\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"previousOwner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"OwnershipTransferred\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"builder\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"bytes32\",\"name\":\"commitment\",\"type\":\"bytes32\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"stake\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"subscriptionEnd\",\"type\":\"uint256\"}],\"name\":\"StakeUpdated\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"builder\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"Withdrawal\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"builders\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"minimalStake\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"minimalSubscriptionPeriod\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_builder\",\"type\":\"address\"},{\"internalType\":\"bytes32\",\"name\":\"_commitment\",\"type\":\"bytes32\"}],\"name\":\"deposit\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_builder\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_stakeAmount\",\"type\":\"uint256\"}],\"name\":\"getSubscriptionPeriod\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_builder\",\"type\":\"address\"},{\"internalType\":\"bytes32\",\"name\":\"_commitment\",\"type\":\"bytes32\"}],\"name\":\"hasMinimalStake\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"renounceOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"name\":\"stakes\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"subscriptionEnd\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"stake\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"timeLocks\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"initialAmount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"remainingAmount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"startTime\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"lockDuration\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_address\",\"type\":\"address\"}],\"name\":\"timeLocksCount\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"transferOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_minimalStake\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"_minimalSubscriptionPeriod\",\"type\":\"uint256\"}],\"name\":\"updateBuilder\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"withdraw\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"withdrawableAmount\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"}]",
 }
 
 // BuilderStakingABI is the input ABI used to generate the binding from.
@@ -179,12 +179,57 @@ func (_BuilderStaking *BuilderStakingTransactorRaw) Transact(opts *bind.Transact
 	return _BuilderStaking.Contract.contract.Transact(opts, method, params...)
 }
 
-// Balances is a free data retrieval call binding the contract method 0x27e235e3.
+// Builders is a free data retrieval call binding the contract method 0x144ddefc.
 //
-// Solidity: function balances(address ) view returns(uint256)
-func (_BuilderStaking *BuilderStakingCaller) Balances(opts *bind.CallOpts, arg0 common.Address) (*big.Int, error) {
+// Solidity: function builders(address ) view returns(uint256 minimalStake, uint256 minimalSubscriptionPeriod)
+func (_BuilderStaking *BuilderStakingCaller) Builders(opts *bind.CallOpts, arg0 common.Address) (struct {
+	MinimalStake              *big.Int
+	MinimalSubscriptionPeriod *big.Int
+}, error) {
 	var out []interface{}
-	err := _BuilderStaking.contract.Call(opts, &out, "balances", arg0)
+	err := _BuilderStaking.contract.Call(opts, &out, "builders", arg0)
+
+	outstruct := new(struct {
+		MinimalStake              *big.Int
+		MinimalSubscriptionPeriod *big.Int
+	})
+	if err != nil {
+		return *outstruct, err
+	}
+
+	outstruct.MinimalStake = *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+	outstruct.MinimalSubscriptionPeriod = *abi.ConvertType(out[1], new(*big.Int)).(**big.Int)
+
+	return *outstruct, err
+
+}
+
+// Builders is a free data retrieval call binding the contract method 0x144ddefc.
+//
+// Solidity: function builders(address ) view returns(uint256 minimalStake, uint256 minimalSubscriptionPeriod)
+func (_BuilderStaking *BuilderStakingSession) Builders(arg0 common.Address) (struct {
+	MinimalStake              *big.Int
+	MinimalSubscriptionPeriod *big.Int
+}, error) {
+	return _BuilderStaking.Contract.Builders(&_BuilderStaking.CallOpts, arg0)
+}
+
+// Builders is a free data retrieval call binding the contract method 0x144ddefc.
+//
+// Solidity: function builders(address ) view returns(uint256 minimalStake, uint256 minimalSubscriptionPeriod)
+func (_BuilderStaking *BuilderStakingCallerSession) Builders(arg0 common.Address) (struct {
+	MinimalStake              *big.Int
+	MinimalSubscriptionPeriod *big.Int
+}, error) {
+	return _BuilderStaking.Contract.Builders(&_BuilderStaking.CallOpts, arg0)
+}
+
+// GetSubscriptionPeriod is a free data retrieval call binding the contract method 0xb0c346b8.
+//
+// Solidity: function getSubscriptionPeriod(address _builder, uint256 _stakeAmount) view returns(uint256)
+func (_BuilderStaking *BuilderStakingCaller) GetSubscriptionPeriod(opts *bind.CallOpts, _builder common.Address, _stakeAmount *big.Int) (*big.Int, error) {
+	var out []interface{}
+	err := _BuilderStaking.contract.Call(opts, &out, "getSubscriptionPeriod", _builder, _stakeAmount)
 
 	if err != nil {
 		return *new(*big.Int), err
@@ -196,18 +241,18 @@ func (_BuilderStaking *BuilderStakingCaller) Balances(opts *bind.CallOpts, arg0 
 
 }
 
-// Balances is a free data retrieval call binding the contract method 0x27e235e3.
+// GetSubscriptionPeriod is a free data retrieval call binding the contract method 0xb0c346b8.
 //
-// Solidity: function balances(address ) view returns(uint256)
-func (_BuilderStaking *BuilderStakingSession) Balances(arg0 common.Address) (*big.Int, error) {
-	return _BuilderStaking.Contract.Balances(&_BuilderStaking.CallOpts, arg0)
+// Solidity: function getSubscriptionPeriod(address _builder, uint256 _stakeAmount) view returns(uint256)
+func (_BuilderStaking *BuilderStakingSession) GetSubscriptionPeriod(_builder common.Address, _stakeAmount *big.Int) (*big.Int, error) {
+	return _BuilderStaking.Contract.GetSubscriptionPeriod(&_BuilderStaking.CallOpts, _builder, _stakeAmount)
 }
 
-// Balances is a free data retrieval call binding the contract method 0x27e235e3.
+// GetSubscriptionPeriod is a free data retrieval call binding the contract method 0xb0c346b8.
 //
-// Solidity: function balances(address ) view returns(uint256)
-func (_BuilderStaking *BuilderStakingCallerSession) Balances(arg0 common.Address) (*big.Int, error) {
-	return _BuilderStaking.Contract.Balances(&_BuilderStaking.CallOpts, arg0)
+// Solidity: function getSubscriptionPeriod(address _builder, uint256 _stakeAmount) view returns(uint256)
+func (_BuilderStaking *BuilderStakingCallerSession) GetSubscriptionPeriod(_builder common.Address, _stakeAmount *big.Int) (*big.Int, error) {
+	return _BuilderStaking.Contract.GetSubscriptionPeriod(&_BuilderStaking.CallOpts, _builder, _stakeAmount)
 }
 
 // HasMinimalStake is a free data retrieval call binding the contract method 0x0ff55db7.
@@ -239,37 +284,6 @@ func (_BuilderStaking *BuilderStakingSession) HasMinimalStake(_builder common.Ad
 // Solidity: function hasMinimalStake(address _builder, bytes32 _commitment) view returns(bool)
 func (_BuilderStaking *BuilderStakingCallerSession) HasMinimalStake(_builder common.Address, _commitment [32]byte) (bool, error) {
 	return _BuilderStaking.Contract.HasMinimalStake(&_BuilderStaking.CallOpts, _builder, _commitment)
-}
-
-// MinimalStakes is a free data retrieval call binding the contract method 0x136fc2b3.
-//
-// Solidity: function minimalStakes(address ) view returns(uint256)
-func (_BuilderStaking *BuilderStakingCaller) MinimalStakes(opts *bind.CallOpts, arg0 common.Address) (*big.Int, error) {
-	var out []interface{}
-	err := _BuilderStaking.contract.Call(opts, &out, "minimalStakes", arg0)
-
-	if err != nil {
-		return *new(*big.Int), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
-
-	return out0, err
-
-}
-
-// MinimalStakes is a free data retrieval call binding the contract method 0x136fc2b3.
-//
-// Solidity: function minimalStakes(address ) view returns(uint256)
-func (_BuilderStaking *BuilderStakingSession) MinimalStakes(arg0 common.Address) (*big.Int, error) {
-	return _BuilderStaking.Contract.MinimalStakes(&_BuilderStaking.CallOpts, arg0)
-}
-
-// MinimalStakes is a free data retrieval call binding the contract method 0x136fc2b3.
-//
-// Solidity: function minimalStakes(address ) view returns(uint256)
-func (_BuilderStaking *BuilderStakingCallerSession) MinimalStakes(arg0 common.Address) (*big.Int, error) {
-	return _BuilderStaking.Contract.MinimalStakes(&_BuilderStaking.CallOpts, arg0)
 }
 
 // Owner is a free data retrieval call binding the contract method 0x8da5cb5b.
@@ -305,10 +319,110 @@ func (_BuilderStaking *BuilderStakingCallerSession) Owner() (common.Address, err
 
 // Stakes is a free data retrieval call binding the contract method 0x8fee6407.
 //
-// Solidity: function stakes(bytes32 ) view returns(uint256)
-func (_BuilderStaking *BuilderStakingCaller) Stakes(opts *bind.CallOpts, arg0 [32]byte) (*big.Int, error) {
+// Solidity: function stakes(bytes32 ) view returns(uint256 subscriptionEnd, uint256 stake)
+func (_BuilderStaking *BuilderStakingCaller) Stakes(opts *bind.CallOpts, arg0 [32]byte) (struct {
+	SubscriptionEnd *big.Int
+	Stake           *big.Int
+}, error) {
 	var out []interface{}
 	err := _BuilderStaking.contract.Call(opts, &out, "stakes", arg0)
+
+	outstruct := new(struct {
+		SubscriptionEnd *big.Int
+		Stake           *big.Int
+	})
+	if err != nil {
+		return *outstruct, err
+	}
+
+	outstruct.SubscriptionEnd = *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+	outstruct.Stake = *abi.ConvertType(out[1], new(*big.Int)).(**big.Int)
+
+	return *outstruct, err
+
+}
+
+// Stakes is a free data retrieval call binding the contract method 0x8fee6407.
+//
+// Solidity: function stakes(bytes32 ) view returns(uint256 subscriptionEnd, uint256 stake)
+func (_BuilderStaking *BuilderStakingSession) Stakes(arg0 [32]byte) (struct {
+	SubscriptionEnd *big.Int
+	Stake           *big.Int
+}, error) {
+	return _BuilderStaking.Contract.Stakes(&_BuilderStaking.CallOpts, arg0)
+}
+
+// Stakes is a free data retrieval call binding the contract method 0x8fee6407.
+//
+// Solidity: function stakes(bytes32 ) view returns(uint256 subscriptionEnd, uint256 stake)
+func (_BuilderStaking *BuilderStakingCallerSession) Stakes(arg0 [32]byte) (struct {
+	SubscriptionEnd *big.Int
+	Stake           *big.Int
+}, error) {
+	return _BuilderStaking.Contract.Stakes(&_BuilderStaking.CallOpts, arg0)
+}
+
+// TimeLocks is a free data retrieval call binding the contract method 0x2c479711.
+//
+// Solidity: function timeLocks(address , uint256 ) view returns(uint256 initialAmount, uint256 remainingAmount, uint256 startTime, uint256 lockDuration)
+func (_BuilderStaking *BuilderStakingCaller) TimeLocks(opts *bind.CallOpts, arg0 common.Address, arg1 *big.Int) (struct {
+	InitialAmount   *big.Int
+	RemainingAmount *big.Int
+	StartTime       *big.Int
+	LockDuration    *big.Int
+}, error) {
+	var out []interface{}
+	err := _BuilderStaking.contract.Call(opts, &out, "timeLocks", arg0, arg1)
+
+	outstruct := new(struct {
+		InitialAmount   *big.Int
+		RemainingAmount *big.Int
+		StartTime       *big.Int
+		LockDuration    *big.Int
+	})
+	if err != nil {
+		return *outstruct, err
+	}
+
+	outstruct.InitialAmount = *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+	outstruct.RemainingAmount = *abi.ConvertType(out[1], new(*big.Int)).(**big.Int)
+	outstruct.StartTime = *abi.ConvertType(out[2], new(*big.Int)).(**big.Int)
+	outstruct.LockDuration = *abi.ConvertType(out[3], new(*big.Int)).(**big.Int)
+
+	return *outstruct, err
+
+}
+
+// TimeLocks is a free data retrieval call binding the contract method 0x2c479711.
+//
+// Solidity: function timeLocks(address , uint256 ) view returns(uint256 initialAmount, uint256 remainingAmount, uint256 startTime, uint256 lockDuration)
+func (_BuilderStaking *BuilderStakingSession) TimeLocks(arg0 common.Address, arg1 *big.Int) (struct {
+	InitialAmount   *big.Int
+	RemainingAmount *big.Int
+	StartTime       *big.Int
+	LockDuration    *big.Int
+}, error) {
+	return _BuilderStaking.Contract.TimeLocks(&_BuilderStaking.CallOpts, arg0, arg1)
+}
+
+// TimeLocks is a free data retrieval call binding the contract method 0x2c479711.
+//
+// Solidity: function timeLocks(address , uint256 ) view returns(uint256 initialAmount, uint256 remainingAmount, uint256 startTime, uint256 lockDuration)
+func (_BuilderStaking *BuilderStakingCallerSession) TimeLocks(arg0 common.Address, arg1 *big.Int) (struct {
+	InitialAmount   *big.Int
+	RemainingAmount *big.Int
+	StartTime       *big.Int
+	LockDuration    *big.Int
+}, error) {
+	return _BuilderStaking.Contract.TimeLocks(&_BuilderStaking.CallOpts, arg0, arg1)
+}
+
+// TimeLocksCount is a free data retrieval call binding the contract method 0x2f7ce4ad.
+//
+// Solidity: function timeLocksCount(address _address) view returns(uint256)
+func (_BuilderStaking *BuilderStakingCaller) TimeLocksCount(opts *bind.CallOpts, _address common.Address) (*big.Int, error) {
+	var out []interface{}
+	err := _BuilderStaking.contract.Call(opts, &out, "timeLocksCount", _address)
 
 	if err != nil {
 		return *new(*big.Int), err
@@ -320,18 +434,49 @@ func (_BuilderStaking *BuilderStakingCaller) Stakes(opts *bind.CallOpts, arg0 [3
 
 }
 
-// Stakes is a free data retrieval call binding the contract method 0x8fee6407.
+// TimeLocksCount is a free data retrieval call binding the contract method 0x2f7ce4ad.
 //
-// Solidity: function stakes(bytes32 ) view returns(uint256)
-func (_BuilderStaking *BuilderStakingSession) Stakes(arg0 [32]byte) (*big.Int, error) {
-	return _BuilderStaking.Contract.Stakes(&_BuilderStaking.CallOpts, arg0)
+// Solidity: function timeLocksCount(address _address) view returns(uint256)
+func (_BuilderStaking *BuilderStakingSession) TimeLocksCount(_address common.Address) (*big.Int, error) {
+	return _BuilderStaking.Contract.TimeLocksCount(&_BuilderStaking.CallOpts, _address)
 }
 
-// Stakes is a free data retrieval call binding the contract method 0x8fee6407.
+// TimeLocksCount is a free data retrieval call binding the contract method 0x2f7ce4ad.
 //
-// Solidity: function stakes(bytes32 ) view returns(uint256)
-func (_BuilderStaking *BuilderStakingCallerSession) Stakes(arg0 [32]byte) (*big.Int, error) {
-	return _BuilderStaking.Contract.Stakes(&_BuilderStaking.CallOpts, arg0)
+// Solidity: function timeLocksCount(address _address) view returns(uint256)
+func (_BuilderStaking *BuilderStakingCallerSession) TimeLocksCount(_address common.Address) (*big.Int, error) {
+	return _BuilderStaking.Contract.TimeLocksCount(&_BuilderStaking.CallOpts, _address)
+}
+
+// WithdrawableAmount is a free data retrieval call binding the contract method 0x951303f5.
+//
+// Solidity: function withdrawableAmount() view returns(uint256)
+func (_BuilderStaking *BuilderStakingCaller) WithdrawableAmount(opts *bind.CallOpts) (*big.Int, error) {
+	var out []interface{}
+	err := _BuilderStaking.contract.Call(opts, &out, "withdrawableAmount")
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// WithdrawableAmount is a free data retrieval call binding the contract method 0x951303f5.
+//
+// Solidity: function withdrawableAmount() view returns(uint256)
+func (_BuilderStaking *BuilderStakingSession) WithdrawableAmount() (*big.Int, error) {
+	return _BuilderStaking.Contract.WithdrawableAmount(&_BuilderStaking.CallOpts)
+}
+
+// WithdrawableAmount is a free data retrieval call binding the contract method 0x951303f5.
+//
+// Solidity: function withdrawableAmount() view returns(uint256)
+func (_BuilderStaking *BuilderStakingCallerSession) WithdrawableAmount() (*big.Int, error) {
+	return _BuilderStaking.Contract.WithdrawableAmount(&_BuilderStaking.CallOpts)
 }
 
 // Deposit is a paid mutator transaction binding the contract method 0xb9e1aa03.
@@ -376,27 +521,6 @@ func (_BuilderStaking *BuilderStakingTransactorSession) RenounceOwnership() (*ty
 	return _BuilderStaking.Contract.RenounceOwnership(&_BuilderStaking.TransactOpts)
 }
 
-// SetMinimalStake is a paid mutator transaction binding the contract method 0x3d6ec65e.
-//
-// Solidity: function setMinimalStake(uint256 _minimalStake) returns()
-func (_BuilderStaking *BuilderStakingTransactor) SetMinimalStake(opts *bind.TransactOpts, _minimalStake *big.Int) (*types.Transaction, error) {
-	return _BuilderStaking.contract.Transact(opts, "setMinimalStake", _minimalStake)
-}
-
-// SetMinimalStake is a paid mutator transaction binding the contract method 0x3d6ec65e.
-//
-// Solidity: function setMinimalStake(uint256 _minimalStake) returns()
-func (_BuilderStaking *BuilderStakingSession) SetMinimalStake(_minimalStake *big.Int) (*types.Transaction, error) {
-	return _BuilderStaking.Contract.SetMinimalStake(&_BuilderStaking.TransactOpts, _minimalStake)
-}
-
-// SetMinimalStake is a paid mutator transaction binding the contract method 0x3d6ec65e.
-//
-// Solidity: function setMinimalStake(uint256 _minimalStake) returns()
-func (_BuilderStaking *BuilderStakingTransactorSession) SetMinimalStake(_minimalStake *big.Int) (*types.Transaction, error) {
-	return _BuilderStaking.Contract.SetMinimalStake(&_BuilderStaking.TransactOpts, _minimalStake)
-}
-
 // TransferOwnership is a paid mutator transaction binding the contract method 0xf2fde38b.
 //
 // Solidity: function transferOwnership(address newOwner) returns()
@@ -416,6 +540,27 @@ func (_BuilderStaking *BuilderStakingSession) TransferOwnership(newOwner common.
 // Solidity: function transferOwnership(address newOwner) returns()
 func (_BuilderStaking *BuilderStakingTransactorSession) TransferOwnership(newOwner common.Address) (*types.Transaction, error) {
 	return _BuilderStaking.Contract.TransferOwnership(&_BuilderStaking.TransactOpts, newOwner)
+}
+
+// UpdateBuilder is a paid mutator transaction binding the contract method 0x963a40e2.
+//
+// Solidity: function updateBuilder(uint256 _minimalStake, uint256 _minimalSubscriptionPeriod) returns()
+func (_BuilderStaking *BuilderStakingTransactor) UpdateBuilder(opts *bind.TransactOpts, _minimalStake *big.Int, _minimalSubscriptionPeriod *big.Int) (*types.Transaction, error) {
+	return _BuilderStaking.contract.Transact(opts, "updateBuilder", _minimalStake, _minimalSubscriptionPeriod)
+}
+
+// UpdateBuilder is a paid mutator transaction binding the contract method 0x963a40e2.
+//
+// Solidity: function updateBuilder(uint256 _minimalStake, uint256 _minimalSubscriptionPeriod) returns()
+func (_BuilderStaking *BuilderStakingSession) UpdateBuilder(_minimalStake *big.Int, _minimalSubscriptionPeriod *big.Int) (*types.Transaction, error) {
+	return _BuilderStaking.Contract.UpdateBuilder(&_BuilderStaking.TransactOpts, _minimalStake, _minimalSubscriptionPeriod)
+}
+
+// UpdateBuilder is a paid mutator transaction binding the contract method 0x963a40e2.
+//
+// Solidity: function updateBuilder(uint256 _minimalStake, uint256 _minimalSubscriptionPeriod) returns()
+func (_BuilderStaking *BuilderStakingTransactorSession) UpdateBuilder(_minimalStake *big.Int, _minimalSubscriptionPeriod *big.Int) (*types.Transaction, error) {
+	return _BuilderStaking.Contract.UpdateBuilder(&_BuilderStaking.TransactOpts, _minimalStake, _minimalSubscriptionPeriod)
 }
 
 // Withdraw is a paid mutator transaction binding the contract method 0x3ccfd60b.
@@ -439,9 +584,9 @@ func (_BuilderStaking *BuilderStakingTransactorSession) Withdraw() (*types.Trans
 	return _BuilderStaking.Contract.Withdraw(&_BuilderStaking.TransactOpts)
 }
 
-// BuilderStakingBalanceUpdatedIterator is returned from FilterBalanceUpdated and is used to iterate over the raw logs and unpacked data for BalanceUpdated events raised by the BuilderStaking contract.
-type BuilderStakingBalanceUpdatedIterator struct {
-	Event *BuilderStakingBalanceUpdated // Event containing the contract specifics and raw log
+// BuilderStakingBuilderUpdatedIterator is returned from FilterBuilderUpdated and is used to iterate over the raw logs and unpacked data for BuilderUpdated events raised by the BuilderStaking contract.
+type BuilderStakingBuilderUpdatedIterator struct {
+	Event *BuilderStakingBuilderUpdated // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -455,7 +600,7 @@ type BuilderStakingBalanceUpdatedIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *BuilderStakingBalanceUpdatedIterator) Next() bool {
+func (it *BuilderStakingBuilderUpdatedIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -464,7 +609,7 @@ func (it *BuilderStakingBalanceUpdatedIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(BuilderStakingBalanceUpdated)
+			it.Event = new(BuilderStakingBuilderUpdated)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -479,7 +624,7 @@ func (it *BuilderStakingBalanceUpdatedIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(BuilderStakingBalanceUpdated)
+		it.Event = new(BuilderStakingBuilderUpdated)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -495,42 +640,43 @@ func (it *BuilderStakingBalanceUpdatedIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *BuilderStakingBalanceUpdatedIterator) Error() error {
+func (it *BuilderStakingBuilderUpdatedIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *BuilderStakingBalanceUpdatedIterator) Close() error {
+func (it *BuilderStakingBuilderUpdatedIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// BuilderStakingBalanceUpdated represents a BalanceUpdated event raised by the BuilderStaking contract.
-type BuilderStakingBalanceUpdated struct {
-	Builder common.Address
-	Balance *big.Int
-	Raw     types.Log // Blockchain specific contextual infos
+// BuilderStakingBuilderUpdated represents a BuilderUpdated event raised by the BuilderStaking contract.
+type BuilderStakingBuilderUpdated struct {
+	Builder                  common.Address
+	MinimalStake             *big.Int
+	MinimalSubsriptionPeriod *big.Int
+	Raw                      types.Log // Blockchain specific contextual infos
 }
 
-// FilterBalanceUpdated is a free log retrieval operation binding the contract event 0x8ad64a0ac7700dd8425ab0499f107cb6e2cd1581d803c5b8c1c79dcb8190b1af.
+// FilterBuilderUpdated is a free log retrieval operation binding the contract event 0x676767c63431a9f3ee32e335f01479a12fadf779b27ff442e88722fb80a77c7e.
 //
-// Solidity: event BalanceUpdated(address builder, uint256 balance)
-func (_BuilderStaking *BuilderStakingFilterer) FilterBalanceUpdated(opts *bind.FilterOpts) (*BuilderStakingBalanceUpdatedIterator, error) {
+// Solidity: event BuilderUpdated(address builder, uint256 minimalStake, uint256 minimalSubsriptionPeriod)
+func (_BuilderStaking *BuilderStakingFilterer) FilterBuilderUpdated(opts *bind.FilterOpts) (*BuilderStakingBuilderUpdatedIterator, error) {
 
-	logs, sub, err := _BuilderStaking.contract.FilterLogs(opts, "BalanceUpdated")
+	logs, sub, err := _BuilderStaking.contract.FilterLogs(opts, "BuilderUpdated")
 	if err != nil {
 		return nil, err
 	}
-	return &BuilderStakingBalanceUpdatedIterator{contract: _BuilderStaking.contract, event: "BalanceUpdated", logs: logs, sub: sub}, nil
+	return &BuilderStakingBuilderUpdatedIterator{contract: _BuilderStaking.contract, event: "BuilderUpdated", logs: logs, sub: sub}, nil
 }
 
-// WatchBalanceUpdated is a free log subscription operation binding the contract event 0x8ad64a0ac7700dd8425ab0499f107cb6e2cd1581d803c5b8c1c79dcb8190b1af.
+// WatchBuilderUpdated is a free log subscription operation binding the contract event 0x676767c63431a9f3ee32e335f01479a12fadf779b27ff442e88722fb80a77c7e.
 //
-// Solidity: event BalanceUpdated(address builder, uint256 balance)
-func (_BuilderStaking *BuilderStakingFilterer) WatchBalanceUpdated(opts *bind.WatchOpts, sink chan<- *BuilderStakingBalanceUpdated) (event.Subscription, error) {
+// Solidity: event BuilderUpdated(address builder, uint256 minimalStake, uint256 minimalSubsriptionPeriod)
+func (_BuilderStaking *BuilderStakingFilterer) WatchBuilderUpdated(opts *bind.WatchOpts, sink chan<- *BuilderStakingBuilderUpdated) (event.Subscription, error) {
 
-	logs, sub, err := _BuilderStaking.contract.WatchLogs(opts, "BalanceUpdated")
+	logs, sub, err := _BuilderStaking.contract.WatchLogs(opts, "BuilderUpdated")
 	if err != nil {
 		return nil, err
 	}
@@ -540,8 +686,8 @@ func (_BuilderStaking *BuilderStakingFilterer) WatchBalanceUpdated(opts *bind.Wa
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(BuilderStakingBalanceUpdated)
-				if err := _BuilderStaking.contract.UnpackLog(event, "BalanceUpdated", log); err != nil {
+				event := new(BuilderStakingBuilderUpdated)
+				if err := _BuilderStaking.contract.UnpackLog(event, "BuilderUpdated", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -562,147 +708,12 @@ func (_BuilderStaking *BuilderStakingFilterer) WatchBalanceUpdated(opts *bind.Wa
 	}), nil
 }
 
-// ParseBalanceUpdated is a log parse operation binding the contract event 0x8ad64a0ac7700dd8425ab0499f107cb6e2cd1581d803c5b8c1c79dcb8190b1af.
+// ParseBuilderUpdated is a log parse operation binding the contract event 0x676767c63431a9f3ee32e335f01479a12fadf779b27ff442e88722fb80a77c7e.
 //
-// Solidity: event BalanceUpdated(address builder, uint256 balance)
-func (_BuilderStaking *BuilderStakingFilterer) ParseBalanceUpdated(log types.Log) (*BuilderStakingBalanceUpdated, error) {
-	event := new(BuilderStakingBalanceUpdated)
-	if err := _BuilderStaking.contract.UnpackLog(event, "BalanceUpdated", log); err != nil {
-		return nil, err
-	}
-	event.Raw = log
-	return event, nil
-}
-
-// BuilderStakingMinimalStakeUpdatedIterator is returned from FilterMinimalStakeUpdated and is used to iterate over the raw logs and unpacked data for MinimalStakeUpdated events raised by the BuilderStaking contract.
-type BuilderStakingMinimalStakeUpdatedIterator struct {
-	Event *BuilderStakingMinimalStakeUpdated // Event containing the contract specifics and raw log
-
-	contract *bind.BoundContract // Generic contract to use for unpacking event data
-	event    string              // Event name to use for unpacking event data
-
-	logs chan types.Log        // Log channel receiving the found contract events
-	sub  ethereum.Subscription // Subscription for errors, completion and termination
-	done bool                  // Whether the subscription completed delivering logs
-	fail error                 // Occurred error to stop iteration
-}
-
-// Next advances the iterator to the subsequent event, returning whether there
-// are any more events found. In case of a retrieval or parsing error, false is
-// returned and Error() can be queried for the exact failure.
-func (it *BuilderStakingMinimalStakeUpdatedIterator) Next() bool {
-	// If the iterator failed, stop iterating
-	if it.fail != nil {
-		return false
-	}
-	// If the iterator completed, deliver directly whatever's available
-	if it.done {
-		select {
-		case log := <-it.logs:
-			it.Event = new(BuilderStakingMinimalStakeUpdated)
-			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-				it.fail = err
-				return false
-			}
-			it.Event.Raw = log
-			return true
-
-		default:
-			return false
-		}
-	}
-	// Iterator still in progress, wait for either a data or an error event
-	select {
-	case log := <-it.logs:
-		it.Event = new(BuilderStakingMinimalStakeUpdated)
-		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-			it.fail = err
-			return false
-		}
-		it.Event.Raw = log
-		return true
-
-	case err := <-it.sub.Err():
-		it.done = true
-		it.fail = err
-		return it.Next()
-	}
-}
-
-// Error returns any retrieval or parsing error occurred during filtering.
-func (it *BuilderStakingMinimalStakeUpdatedIterator) Error() error {
-	return it.fail
-}
-
-// Close terminates the iteration process, releasing any pending underlying
-// resources.
-func (it *BuilderStakingMinimalStakeUpdatedIterator) Close() error {
-	it.sub.Unsubscribe()
-	return nil
-}
-
-// BuilderStakingMinimalStakeUpdated represents a MinimalStakeUpdated event raised by the BuilderStaking contract.
-type BuilderStakingMinimalStakeUpdated struct {
-	Builder      common.Address
-	MinimalStake *big.Int
-	Raw          types.Log // Blockchain specific contextual infos
-}
-
-// FilterMinimalStakeUpdated is a free log retrieval operation binding the contract event 0x5980f614bd0d5d26f55eef7ec350fc66b080cd09bd38c87bcac4c4c7853d76f7.
-//
-// Solidity: event MinimalStakeUpdated(address builder, uint256 minimalStake)
-func (_BuilderStaking *BuilderStakingFilterer) FilterMinimalStakeUpdated(opts *bind.FilterOpts) (*BuilderStakingMinimalStakeUpdatedIterator, error) {
-
-	logs, sub, err := _BuilderStaking.contract.FilterLogs(opts, "MinimalStakeUpdated")
-	if err != nil {
-		return nil, err
-	}
-	return &BuilderStakingMinimalStakeUpdatedIterator{contract: _BuilderStaking.contract, event: "MinimalStakeUpdated", logs: logs, sub: sub}, nil
-}
-
-// WatchMinimalStakeUpdated is a free log subscription operation binding the contract event 0x5980f614bd0d5d26f55eef7ec350fc66b080cd09bd38c87bcac4c4c7853d76f7.
-//
-// Solidity: event MinimalStakeUpdated(address builder, uint256 minimalStake)
-func (_BuilderStaking *BuilderStakingFilterer) WatchMinimalStakeUpdated(opts *bind.WatchOpts, sink chan<- *BuilderStakingMinimalStakeUpdated) (event.Subscription, error) {
-
-	logs, sub, err := _BuilderStaking.contract.WatchLogs(opts, "MinimalStakeUpdated")
-	if err != nil {
-		return nil, err
-	}
-	return event.NewSubscription(func(quit <-chan struct{}) error {
-		defer sub.Unsubscribe()
-		for {
-			select {
-			case log := <-logs:
-				// New log arrived, parse the event and forward to the user
-				event := new(BuilderStakingMinimalStakeUpdated)
-				if err := _BuilderStaking.contract.UnpackLog(event, "MinimalStakeUpdated", log); err != nil {
-					return err
-				}
-				event.Raw = log
-
-				select {
-				case sink <- event:
-				case err := <-sub.Err():
-					return err
-				case <-quit:
-					return nil
-				}
-			case err := <-sub.Err():
-				return err
-			case <-quit:
-				return nil
-			}
-		}
-	}), nil
-}
-
-// ParseMinimalStakeUpdated is a log parse operation binding the contract event 0x5980f614bd0d5d26f55eef7ec350fc66b080cd09bd38c87bcac4c4c7853d76f7.
-//
-// Solidity: event MinimalStakeUpdated(address builder, uint256 minimalStake)
-func (_BuilderStaking *BuilderStakingFilterer) ParseMinimalStakeUpdated(log types.Log) (*BuilderStakingMinimalStakeUpdated, error) {
-	event := new(BuilderStakingMinimalStakeUpdated)
-	if err := _BuilderStaking.contract.UnpackLog(event, "MinimalStakeUpdated", log); err != nil {
+// Solidity: event BuilderUpdated(address builder, uint256 minimalStake, uint256 minimalSubsriptionPeriod)
+func (_BuilderStaking *BuilderStakingFilterer) ParseBuilderUpdated(log types.Log) (*BuilderStakingBuilderUpdated, error) {
+	event := new(BuilderStakingBuilderUpdated)
+	if err := _BuilderStaking.contract.UnpackLog(event, "BuilderUpdated", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
@@ -931,15 +942,16 @@ func (it *BuilderStakingStakeUpdatedIterator) Close() error {
 
 // BuilderStakingStakeUpdated represents a StakeUpdated event raised by the BuilderStaking contract.
 type BuilderStakingStakeUpdated struct {
-	Builder    common.Address
-	Commitment [32]byte
-	Stake      *big.Int
-	Raw        types.Log // Blockchain specific contextual infos
+	Builder         common.Address
+	Commitment      [32]byte
+	Stake           *big.Int
+	SubscriptionEnd *big.Int
+	Raw             types.Log // Blockchain specific contextual infos
 }
 
-// FilterStakeUpdated is a free log retrieval operation binding the contract event 0x57401ebf3558e31f2eca30da2a7ee84bf3448e52fea178abdcd7b9442dbc8b2e.
+// FilterStakeUpdated is a free log retrieval operation binding the contract event 0x336b0d4818c64063eba1267244b015a6454a97222039ba75b092b2a6c522d334.
 //
-// Solidity: event StakeUpdated(address builder, bytes32 commitment, uint256 stake)
+// Solidity: event StakeUpdated(address builder, bytes32 commitment, uint256 stake, uint256 subscriptionEnd)
 func (_BuilderStaking *BuilderStakingFilterer) FilterStakeUpdated(opts *bind.FilterOpts) (*BuilderStakingStakeUpdatedIterator, error) {
 
 	logs, sub, err := _BuilderStaking.contract.FilterLogs(opts, "StakeUpdated")
@@ -949,9 +961,9 @@ func (_BuilderStaking *BuilderStakingFilterer) FilterStakeUpdated(opts *bind.Fil
 	return &BuilderStakingStakeUpdatedIterator{contract: _BuilderStaking.contract, event: "StakeUpdated", logs: logs, sub: sub}, nil
 }
 
-// WatchStakeUpdated is a free log subscription operation binding the contract event 0x57401ebf3558e31f2eca30da2a7ee84bf3448e52fea178abdcd7b9442dbc8b2e.
+// WatchStakeUpdated is a free log subscription operation binding the contract event 0x336b0d4818c64063eba1267244b015a6454a97222039ba75b092b2a6c522d334.
 //
-// Solidity: event StakeUpdated(address builder, bytes32 commitment, uint256 stake)
+// Solidity: event StakeUpdated(address builder, bytes32 commitment, uint256 stake, uint256 subscriptionEnd)
 func (_BuilderStaking *BuilderStakingFilterer) WatchStakeUpdated(opts *bind.WatchOpts, sink chan<- *BuilderStakingStakeUpdated) (event.Subscription, error) {
 
 	logs, sub, err := _BuilderStaking.contract.WatchLogs(opts, "StakeUpdated")
@@ -986,12 +998,147 @@ func (_BuilderStaking *BuilderStakingFilterer) WatchStakeUpdated(opts *bind.Watc
 	}), nil
 }
 
-// ParseStakeUpdated is a log parse operation binding the contract event 0x57401ebf3558e31f2eca30da2a7ee84bf3448e52fea178abdcd7b9442dbc8b2e.
+// ParseStakeUpdated is a log parse operation binding the contract event 0x336b0d4818c64063eba1267244b015a6454a97222039ba75b092b2a6c522d334.
 //
-// Solidity: event StakeUpdated(address builder, bytes32 commitment, uint256 stake)
+// Solidity: event StakeUpdated(address builder, bytes32 commitment, uint256 stake, uint256 subscriptionEnd)
 func (_BuilderStaking *BuilderStakingFilterer) ParseStakeUpdated(log types.Log) (*BuilderStakingStakeUpdated, error) {
 	event := new(BuilderStakingStakeUpdated)
 	if err := _BuilderStaking.contract.UnpackLog(event, "StakeUpdated", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// BuilderStakingWithdrawalIterator is returned from FilterWithdrawal and is used to iterate over the raw logs and unpacked data for Withdrawal events raised by the BuilderStaking contract.
+type BuilderStakingWithdrawalIterator struct {
+	Event *BuilderStakingWithdrawal // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *BuilderStakingWithdrawalIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(BuilderStakingWithdrawal)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(BuilderStakingWithdrawal)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *BuilderStakingWithdrawalIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *BuilderStakingWithdrawalIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// BuilderStakingWithdrawal represents a Withdrawal event raised by the BuilderStaking contract.
+type BuilderStakingWithdrawal struct {
+	Builder common.Address
+	Amount  *big.Int
+	Raw     types.Log // Blockchain specific contextual infos
+}
+
+// FilterWithdrawal is a free log retrieval operation binding the contract event 0x7fcf532c15f0a6db0bd6d0e038bea71d30d808c7d98cb3bf7268a95bf5081b65.
+//
+// Solidity: event Withdrawal(address builder, uint256 amount)
+func (_BuilderStaking *BuilderStakingFilterer) FilterWithdrawal(opts *bind.FilterOpts) (*BuilderStakingWithdrawalIterator, error) {
+
+	logs, sub, err := _BuilderStaking.contract.FilterLogs(opts, "Withdrawal")
+	if err != nil {
+		return nil, err
+	}
+	return &BuilderStakingWithdrawalIterator{contract: _BuilderStaking.contract, event: "Withdrawal", logs: logs, sub: sub}, nil
+}
+
+// WatchWithdrawal is a free log subscription operation binding the contract event 0x7fcf532c15f0a6db0bd6d0e038bea71d30d808c7d98cb3bf7268a95bf5081b65.
+//
+// Solidity: event Withdrawal(address builder, uint256 amount)
+func (_BuilderStaking *BuilderStakingFilterer) WatchWithdrawal(opts *bind.WatchOpts, sink chan<- *BuilderStakingWithdrawal) (event.Subscription, error) {
+
+	logs, sub, err := _BuilderStaking.contract.WatchLogs(opts, "Withdrawal")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(BuilderStakingWithdrawal)
+				if err := _BuilderStaking.contract.UnpackLog(event, "Withdrawal", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseWithdrawal is a log parse operation binding the contract event 0x7fcf532c15f0a6db0bd6d0e038bea71d30d808c7d98cb3bf7268a95bf5081b65.
+//
+// Solidity: event Withdrawal(address builder, uint256 amount)
+func (_BuilderStaking *BuilderStakingFilterer) ParseWithdrawal(log types.Log) (*BuilderStakingWithdrawal, error) {
+	event := new(BuilderStakingWithdrawal)
+	if err := _BuilderStaking.contract.UnpackLog(event, "Withdrawal", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
