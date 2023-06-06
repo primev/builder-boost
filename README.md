@@ -53,7 +53,6 @@ restart=always
 Environment="ENV=sepolia"
 Environment="AGENT_ADDR=localhost:8126"
 Environment="ROLLUP_KEY=<builder-key>"
-Environment="ROLLUP_STATE=<path-to-cache>/rollup.json"
 Environment="BUILDER_AUTH_TOKEN=<builder-x-boost-token>"
 
 [Install]
@@ -61,9 +60,6 @@ WantedBy=multi-user.target
 ```
 
 Note, the `BUILDER_AUTH_TOKEN` should be set to the same value set for `--builder-auth-key` in your modified builder implementation. This token is used to authenticate your builders to boost, to ensure no threat actor can send false payloads.
-
-## Troubleshooting
-If you're having issues with your boost instance, the first thing worth trying is deleting the rollup cache, stored at `<path-to-cache>/rollup.json`
 
 ## More Links
 [Searcher Testing Guide](docs/searcher-testing.md) - This guide walks you through the setup process for connecting searcher emulators to your boost for e2e testing and monitoring.
