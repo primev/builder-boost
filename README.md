@@ -51,7 +51,6 @@ User=ec2-user
 ExecStart=/home/ec2-user/builder-boost/boost
 restart=always
 Environment="ENV=sepolia"
-Environment="AGENT_ADDR=localhost:8126"
 Environment="ROLLUP_KEY=<builder-key>"
 Environment="BUILDER_AUTH_TOKEN=<builder-x-boost-token>"
 
