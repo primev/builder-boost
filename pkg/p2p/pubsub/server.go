@@ -295,7 +295,10 @@ func (pss *PubSubServer) optAuthentication(cpeer peer.ID, bytes []byte, sendauth
 	}
 
 	// get stake amount
-	stake := pss.rollup.GetMinimalStake(address)
+	stake, err := pss.rollup.GetMinimalStake(address)
+	if err != nil {
+		return
+	}
 
 	// check builder stake amount
 	if stake.Cmp(big.NewInt(0)) > 0 {

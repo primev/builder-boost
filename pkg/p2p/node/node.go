@@ -191,7 +191,10 @@ func CreateNode(logger log.Logger, peerKey *ecdsa.PrivateKey, rollup rollup.Roll
 	}
 
 	// get stake amount
-	stake := rollup.GetMinimalStake(am.Address)
+	stake, err := rollup.GetMinimalStake(am.Address)
+	if err != nil {
+		panic(err)
+	}
 
 	// create pubsub server
 	psio := pubsubio.NewPubsubServer(
