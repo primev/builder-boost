@@ -14,3 +14,5 @@ services:
     env_file: .env
     restart: unless-stopped
     command: ['searcher']
+    depends_on:
+      - boost
