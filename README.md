@@ -64,3 +64,8 @@ $ ./searcher --boostaddr localhost:8080 --searcherkey <searcher-private-key>
 ```
 
 **Step 8.** Connect to the local env in [this](https://primev.postman.co/workspace/Team-Workspace~18870d84-94f0-4d1e-8163-db558f83d7e8/request/27192304-32af6ec4-013b-423f-aff6-44226090fcf6) postman workspace and send the request under `create a block`
+
+## Running builder and searcher in docker-compose
+
+1. Copy `.env.example` to `.env` and set required variables
+2. Run `docker-compose up --build` to run builder and searcher connected to builder
