@@ -25,7 +25,7 @@ var (
 	ErrNoMinimalStakeSet = errors.New("R0001: no minimal stake set, to fix set minimal stake for builder on payment contract")
 )
 
-//go:generate mockery --name Rollup
+//go:generate mockery --name Rollup --filename mockrollup.go
 
 type Rollup interface {
 	// Run starts rollup contract event listener
