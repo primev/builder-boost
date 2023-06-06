@@ -33,7 +33,7 @@ $ ./boost --addr :8080 --rollupkey `<builder-private-key>` --buildertoken `<buil
 You can get the builder private key from step 6 in the wallet setup section.
 You come up with you're own builder auth token, you will want to set this value as a header `X-BUILDER-TOKEN` in your Builder instance while posting data to Boost.
 
-**Step 3.** Go [here](https://sepolia.etherscan.io/address/0xc38e581D0403b4065F4d61A838431B143ceE4c81#writeContract) and click on the `setMinimalStake`. Here you can connect the wallet associated with the builder and set the minimal stake needed to connect to you to get execution hints.
+**Step 3.** Go [here](https://sepolia.etherscan.io/address/0x6e100446995f4456773Cd3e96FA201266c44d4B8#writeContract) and click on the `updateBuilder`. Here you can connect the wallet associated with the builder and set the minimal stake needed to connect to you to get execution hints.
 
 **Step 4.** Disconnect your builder wallet, this can be done by going to the wallet and clicking on the "Connected" indicator next to your account name in the wallet modal. Now click the 3 dots to the right of the account and press disconnect.
 
