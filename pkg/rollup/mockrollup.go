@@ -24,6 +24,59 @@ func (_m *MockRollup) EXPECT() *MockRollup_Expecter {
 	return &MockRollup_Expecter{mock: &_m.Mock}
 }
 
+// GetBlockNumber provides a mock function with given fields:
+func (_m *MockRollup) GetBlockNumber() (*big.Int, error) {
+	ret := _m.Called()
+
+	var r0 *big.Int
+	var r1 error
+	if rf, ok := ret.Get(0).(func() (*big.Int, error)); ok {
+		return rf()
+	}
+	if rf, ok := ret.Get(0).(func() *big.Int); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*big.Int)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func() error); ok {
+		r1 = rf()
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockRollup_GetBlockNumber_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetBlockNumber'
+type MockRollup_GetBlockNumber_Call struct {
+	*mock.Call
+}
+
+// GetBlockNumber is a helper method to define mock.On call
+func (_e *MockRollup_Expecter) GetBlockNumber() *MockRollup_GetBlockNumber_Call {
+	return &MockRollup_GetBlockNumber_Call{Call: _e.mock.On("GetBlockNumber")}
+}
+
+func (_c *MockRollup_GetBlockNumber_Call) Run(run func()) *MockRollup_GetBlockNumber_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *MockRollup_GetBlockNumber_Call) Return(_a0 *big.Int, _a1 error) *MockRollup_GetBlockNumber_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockRollup_GetBlockNumber_Call) RunAndReturn(run func() (*big.Int, error)) *MockRollup_GetBlockNumber_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetBuilderAddress provides a mock function with given fields:
 func (_m *MockRollup) GetBuilderAddress() common.Address {
 	ret := _m.Called()
@@ -111,49 +164,6 @@ func (_c *MockRollup_GetCommitment_Call) RunAndReturn(run func(common.Address) c
 	return _c
 }
 
-// GetLatestBlock provides a mock function with given fields:
-func (_m *MockRollup) GetLatestBlock() *big.Int {
-	ret := _m.Called()
-
-	var r0 *big.Int
-	if rf, ok := ret.Get(0).(func() *big.Int); ok {
-		r0 = rf()
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*big.Int)
-		}
-	}
-
-	return r0
-}
-
-// MockRollup_GetLatestBlock_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetLatestBlock'
-type MockRollup_GetLatestBlock_Call struct {
-	*mock.Call
-}
-
-// GetLatestBlock is a helper method to define mock.On call
-func (_e *MockRollup_Expecter) GetLatestBlock() *MockRollup_GetLatestBlock_Call {
-	return &MockRollup_GetLatestBlock_Call{Call: _e.mock.On("GetLatestBlock")}
-}
-
-func (_c *MockRollup_GetLatestBlock_Call) Run(run func()) *MockRollup_GetLatestBlock_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run()
-	})
-	return _c
-}
-
-func (_c *MockRollup_GetLatestBlock_Call) Return(_a0 *big.Int) *MockRollup_GetLatestBlock_Call {
-	_c.Call.Return(_a0)
-	return _c
-}
-
-func (_c *MockRollup_GetLatestBlock_Call) RunAndReturn(run func() *big.Int) *MockRollup_GetLatestBlock_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
 // GetMinimalStake provides a mock function with given fields: builder
 func (_m *MockRollup) GetMinimalStake(builder common.Address) (*big.Int, error) {
 	ret := _m.Called(builder)
@@ -209,51 +219,7 @@ func (_c *MockRollup_GetMinimalStake_Call) RunAndReturn(run func(common.Address)
 }
 
 // GetSubscriptionEnd provides a mock function with given fields: commitment
-func (_m *MockRollup) GetSubscriptionEnd(commitment common.Hash) *big.Int {
-	ret := _m.Called(commitment)
-
-	var r0 *big.Int
-	if rf, ok := ret.Get(0).(func(common.Hash) *big.Int); ok {
-		r0 = rf(commitment)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*big.Int)
-		}
-	}
-
-	return r0
-}
-
-// MockRollup_GetSubscriptionEnd_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetSubscriptionEnd'
-type MockRollup_GetSubscriptionEnd_Call struct {
-	*mock.Call
-}
-
-// GetSubscriptionEnd is a helper method to define mock.On call
-//   - commitment common.Hash
-func (_e *MockRollup_Expecter) GetSubscriptionEnd(commitment interface{}) *MockRollup_GetSubscriptionEnd_Call {
-	return &MockRollup_GetSubscriptionEnd_Call{Call: _e.mock.On("GetSubscriptionEnd", commitment)}
-}
-
-func (_c *MockRollup_GetSubscriptionEnd_Call) Run(run func(commitment common.Hash)) *MockRollup_GetSubscriptionEnd_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(common.Hash))
-	})
-	return _c
-}
-
-func (_c *MockRollup_GetSubscriptionEnd_Call) Return(_a0 *big.Int) *MockRollup_GetSubscriptionEnd_Call {
-	_c.Call.Return(_a0)
-	return _c
-}
-
-func (_c *MockRollup_GetSubscriptionEnd_Call) RunAndReturn(run func(common.Hash) *big.Int) *MockRollup_GetSubscriptionEnd_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// GetSubscriptionEndRemote provides a mock function with given fields: commitment
-func (_m *MockRollup) GetSubscriptionEndRemote(commitment common.Hash) (*big.Int, error) {
+func (_m *MockRollup) GetSubscriptionEnd(commitment common.Hash) (*big.Int, error) {
 	ret := _m.Called(commitment)
 
 	var r0 *big.Int
@@ -278,71 +244,30 @@ func (_m *MockRollup) GetSubscriptionEndRemote(commitment common.Hash) (*big.Int
 	return r0, r1
 }
 
-// MockRollup_GetSubscriptionEndRemote_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetSubscriptionEndRemote'
-type MockRollup_GetSubscriptionEndRemote_Call struct {
+// MockRollup_GetSubscriptionEnd_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetSubscriptionEnd'
+type MockRollup_GetSubscriptionEnd_Call struct {
 	*mock.Call
 }
 
-// GetSubscriptionEndRemote is a helper method to define mock.On call
+// GetSubscriptionEnd is a helper method to define mock.On call
 //   - commitment common.Hash
-func (_e *MockRollup_Expecter) GetSubscriptionEndRemote(commitment interface{}) *MockRollup_GetSubscriptionEndRemote_Call {
-	return &MockRollup_GetSubscriptionEndRemote_Call{Call: _e.mock.On("GetSubscriptionEndRemote", commitment)}
+func (_e *MockRollup_Expecter) GetSubscriptionEnd(commitment interface{}) *MockRollup_GetSubscriptionEnd_Call {
+	return &MockRollup_GetSubscriptionEnd_Call{Call: _e.mock.On("GetSubscriptionEnd", commitment)}
 }
 
-func (_c *MockRollup_GetSubscriptionEndRemote_Call) Run(run func(commitment common.Hash)) *MockRollup_GetSubscriptionEndRemote_Call {
+func (_c *MockRollup_GetSubscriptionEnd_Call) Run(run func(commitment common.Hash)) *MockRollup_GetSubscriptionEnd_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		run(args[0].(common.Hash))
 	})
 	return _c
 }
 
-func (_c *MockRollup_GetSubscriptionEndRemote_Call) Return(_a0 *big.Int, _a1 error) *MockRollup_GetSubscriptionEndRemote_Call {
+func (_c *MockRollup_GetSubscriptionEnd_Call) Return(_a0 *big.Int, _a1 error) *MockRollup_GetSubscriptionEnd_Call {
 	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *MockRollup_GetSubscriptionEndRemote_Call) RunAndReturn(run func(common.Hash) (*big.Int, error)) *MockRollup_GetSubscriptionEndRemote_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// IsSyncing provides a mock function with given fields:
-func (_m *MockRollup) IsSyncing() bool {
-	ret := _m.Called()
-
-	var r0 bool
-	if rf, ok := ret.Get(0).(func() bool); ok {
-		r0 = rf()
-	} else {
-		r0 = ret.Get(0).(bool)
-	}
-
-	return r0
-}
-
-// MockRollup_IsSyncing_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'IsSyncing'
-type MockRollup_IsSyncing_Call struct {
-	*mock.Call
-}
-
-// IsSyncing is a helper method to define mock.On call
-func (_e *MockRollup_Expecter) IsSyncing() *MockRollup_IsSyncing_Call {
-	return &MockRollup_IsSyncing_Call{Call: _e.mock.On("IsSyncing")}
-}
-
-func (_c *MockRollup_IsSyncing_Call) Run(run func()) *MockRollup_IsSyncing_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run()
-	})
-	return _c
-}
-
-func (_c *MockRollup_IsSyncing_Call) Return(_a0 bool) *MockRollup_IsSyncing_Call {
-	_c.Call.Return(_a0)
-	return _c
-}
-
-func (_c *MockRollup_IsSyncing_Call) RunAndReturn(run func() bool) *MockRollup_IsSyncing_Call {
+func (_c *MockRollup_GetSubscriptionEnd_Call) RunAndReturn(run func(common.Hash) (*big.Int, error)) *MockRollup_GetSubscriptionEnd_Call {
 	_c.Call.Return(run)
 	return _c
 }

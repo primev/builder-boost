@@ -114,9 +114,8 @@ func TestConnectSearcher(t *testing.T) {
 		mockRollup.On("GetBuilderAddress").Return(builderAddress)
 		mockRollup.On("GetMinimalStake", builderAddress).Return(big.NewInt(100), nil)
 		mockRollup.On("GetCommitment", searcherAddress).Return(commitment)
-		mockRollup.On("GetStake", commitment).Return(big.NewInt(100))
-		mockRollup.On("GetLatestBlock").Return(big.NewInt(100))
-		mockRollup.On("GetSubscriptionEnd", commitment).Return(big.NewInt(200))
+		mockRollup.On("GetBlockNumber").Return(big.NewInt(100), nil)
+		mockRollup.On("GetSubscriptionEnd", commitment).Return(big.NewInt(200), nil)
 		api.Rollup = &mockRollup
 
 		conn, resp, _ := dialer.Dial(getWebSocketURL(token), nil)
@@ -139,9 +138,8 @@ func TestConnectSearcher(t *testing.T) {
 		mockRollup.On("GetBuilderAddress").Return(builderAddress)
 		mockRollup.On("GetMinimalStake", builderAddress).Return(big.NewInt(100), nil)
 		mockRollup.On("GetCommitment", searcherAddress).Return(commitment)
-		mockRollup.On("GetStake", commitment).Return(big.NewInt(100))
-		mockRollup.On("GetLatestBlock").Return(big.NewInt(100))
-		mockRollup.On("GetSubscriptionEnd", commitment).Return(big.NewInt(200))
+		mockRollup.On("GetBlockNumber").Return(big.NewInt(100), nil)
+		mockRollup.On("GetSubscriptionEnd", commitment).Return(big.NewInt(200), nil)
 		api.Rollup = &mockRollup
 
 		conn, resp, _ := dialer.Dial(getWebSocketURL(token), nil)
@@ -183,9 +181,8 @@ func TestConnectSearcher(t *testing.T) {
 		mockRollup.On("GetBuilderAddress").Return(builderAddress)
 		mockRollup.On("GetMinimalStake", builderAddress).Return(big.NewInt(101), nil)
 		mockRollup.On("GetCommitment", searcherAddress).Return(commitment)
-		mockRollup.On("GetStake", commitment).Return(big.NewInt(100))
-		mockRollup.On("GetLatestBlock").Return(big.NewInt(100))
-		mockRollup.On("GetSubscriptionEnd", commitment).Return(big.NewInt(50))
+		mockRollup.On("GetBlockNumber").Return(big.NewInt(100), nil)
+		mockRollup.On("GetSubscriptionEnd", commitment).Return(big.NewInt(50), nil)
 		api.Rollup = &mockRollup
 
 		_, resp, _ := dialer.Dial(getWebSocketURL(token), nil)
@@ -206,9 +203,8 @@ func TestConnectSearcher(t *testing.T) {
 		mockRollup.On("GetBuilderAddress").Return(builderAddress)
 		mockRollup.On("GetMinimalStake", builderAddress).Return(big.NewInt(100), nil)
 		mockRollup.On("GetCommitment", searcherAddress).Return(commitment)
-		mockRollup.On("GetStake", commitment).Return(big.NewInt(100))
-		mockRollup.On("GetLatestBlock").Return(big.NewInt(100))
-		mockRollup.On("GetSubscriptionEnd", commitment).Return(big.NewInt(200))
+		mockRollup.On("GetBlockNumber").Return(big.NewInt(100), nil)
+		mockRollup.On("GetSubscriptionEnd", commitment).Return(big.NewInt(200), nil)
 		api.Rollup = &mockRollup
 
 		conn, resp, err := dialer.Dial(getWebSocketURL(token), nil)
@@ -237,9 +233,8 @@ func TestConnectSearcher(t *testing.T) {
 		mockRollup.On("GetBuilderAddress").Return(builderAddress)
 		mockRollup.On("GetMinimalStake", builderAddress).Return(big.NewInt(100), nil)
 		mockRollup.On("GetCommitment", searcherAddress).Return(commitment)
-		mockRollup.On("GetStake", commitment).Return(big.NewInt(100))
-		mockRollup.On("GetLatestBlock").Return(big.NewInt(100))
-		mockRollup.On("GetSubscriptionEnd", commitment).Return(big.NewInt(200))
+		mockRollup.On("GetBlockNumber").Return(big.NewInt(100), nil)
+		mockRollup.On("GetSubscriptionEnd", commitment).Return(big.NewInt(200), nil)
 		api.Rollup = &mockRollup
 
 		conn, resp, err := dialer.Dial(getWebSocketURL(token), nil)

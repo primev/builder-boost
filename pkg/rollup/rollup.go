@@ -3,15 +3,10 @@ package rollup
 import (
 	"context"
 	"crypto/ecdsa"
-	"encoding/json"
 	"errors"
-	"io/ioutil"
 	"math/big"
-	"os"
-	"sync"
 	"time"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -39,32 +34,23 @@ type Rollup interface {
 	// GetBuilderAddress returns current builder address
 	GetBuilderAddress() common.Address
 
-	// GetSubscriptionEnd returns cached subscription end for specified commitment
-	GetSubscriptionEnd(commitment common.Hash) *big.Int
+	// GetSubscriptionEnd returns subscription end for specified commitment
+	GetSubscriptionEnd(commitment common.Hash) (*big.Int, error)
 
-	// GetSubscriptionEndRemote fetches and returns subscription end for specified commitment from remote contract.
-	// After fetching result is cached.
-	GetSubscriptionEndRemote(commitment common.Hash) (*big.Int, error)
-
-	// GetMinimalStake returns cached minimal stake of specified builder
+	// GetMinimalStake returns minimal stake of specified builder
 	GetMinimalStake(builder common.Address) (*big.Int, error)
 
 	// GetCommitment calculates commitment hash for this builder by searcher address
 	GetCommitment(searcher common.Address) common.Hash
 
-	// GetLatestBlock returns latest blocks number from rollup
-	GetLatestBlock() *big.Int
-
-	// IsSyncing returns true if service is in sync state
-	IsSyncing() bool
+	// GetBlockNumber returns latest blocks number from rollup
+	GetBlockNumber() (*big.Int, error)
 }
 
 func New(
 	client *ethclient.Client,
 	contractAddress common.Address,
 	builderKey *ecdsa.PrivateKey,
-	startBlock uint64,
-	statePath string,
 	log log.Logger,
 ) (Rollup, error) {
 	contract, err := contracts.NewBuilderStaking(contractAddress, client)
@@ -78,19 +64,8 @@ func New(
 
 		builderKey:     builderKey,
 		builderAddress: crypto.PubkeyToAddress(builderKey.PublicKey),
-		startBlock:     startBlock,
-
-		statePath:    statePath,
-		state:        State{},
-		stateMutex:   sync.Mutex{},
-		stateUpdated: false,
 
 		log: log.WithField("service", "rollup"),
-	}
-	// load rollup state
-	err = r.loadState()
-	if err != nil {
-		return nil, err
 	}
 
 	return r, nil
@@ -102,12 +77,6 @@ type rollup struct {
 
 	builderKey     *ecdsa.PrivateKey
 	builderAddress common.Address
-	startBlock     uint64
-
-	statePath    string
-	state        State
-	stateMutex   sync.Mutex
-	stateUpdated bool
 
 	log log.Logger
 }
@@ -118,24 +87,10 @@ func (r *rollup) Run(ctx context.Context) error {
 	for {
 		blockProcessTimer := time.After(blockProcessPeriod)
 
-		// process events from next batch of blocks
-		err := r.processNextBlocks(ctx)
+		// check if minimal stake is set for current builder
+		_, err := r.GetMinimalStake(r.builderAddress)
 		if err != nil {
-			r.log.WithField("err", err.Error()).Error("failed to process next blocks")
-		}
-
-		// save rollup state after processing events
-		err = r.saveState()
-		if err != nil {
-			return err
-		}
-
-		// check if minimal stake is set for current builder after sync
-		if !r.IsSyncing() {
-			_, err = r.getMinimalStake(r.builderAddress)
-			if err != nil {
-				r.log.WithField("builder", r.builderAddress).WithField("err", err.Error()).Error("minimal stake is not set")
-			}
+			r.log.WithField("builder", r.builderAddress).WithField("err", err.Error()).Error("minimal stake is not set")
 		}
 
 		// delay processing new batch of blocks to meet RPC rate limits
@@ -148,27 +103,24 @@ func (r *rollup) GetBuilderAddress() common.Address {
 	return r.builderAddress
 }
 
-// GetSubscriptionEnd returns cached subscription end for specified commitment
-func (r *rollup) GetSubscriptionEnd(commitment common.Hash) *big.Int {
-	return r.getSubscriptionEnd(commitment)
-}
-
-// GetSubscriptionEndRemote fetches and returns subscription end for specified commitment from remote contract.
-// After fetching result is cached.
-func (r *rollup) GetSubscriptionEndRemote(commitment common.Hash) (*big.Int, error) {
+// GetSubscriptionEnd returns subscription end for specified commitment
+func (r *rollup) GetSubscriptionEnd(commitment common.Hash) (*big.Int, error) {
 	stake, err := r.contract.Stakes(nil, commitment)
 	if err != nil {
 		return nil, err
 	}
 
-	r.setSubscriptionEnd(commitment, stake.SubscriptionEnd)
-
 	return stake.Stake, nil
 }
 
-// GetMinimalStake returns cached minimal stake of specified builder
+// GetMinimalStake returns minimal stake for specified builder
 func (r *rollup) GetMinimalStake(builder common.Address) (*big.Int, error) {
-	return r.getMinimalStake(builder)
+	info, err := r.contract.Builders(nil, builder)
+	if err != nil {
+		return nil, err
+	}
+
+	return info.MinimalStake, nil
 }
 
 // GetCommitment calculates commitment hash for this builder by searcher address
@@ -176,228 +128,12 @@ func (r *rollup) GetCommitment(searcher common.Address) common.Hash {
 	return utils.GetCommitment(r.builderKey, searcher)
 }
 
-// GetLatestBlock returns latest blocks number from rollup
-func (r *rollup) GetLatestBlock() *big.Int {
-	r.stateMutex.Lock()
-	defer r.stateMutex.Unlock()
-
-	return new(big.Int).SetUint64(r.state.LatestKnownBlock)
-}
-
-// IsSyncing returns true if service is still synced rollup
-func (r *rollup) IsSyncing() bool {
-	r.stateMutex.Lock()
-	defer r.stateMutex.Unlock()
-
-	return !r.stateUpdated || r.state.LatestKnownBlock > r.state.LatestProcessedBlock+blockSyncStateThreshold
-}
-
-// processNextEvents processes events from next batch of blocks and updates local state
-func (r *rollup) processNextBlocks(ctx context.Context) error {
-	// receive start and end block to process
-	startBlock := r.state.LatestProcessedBlock + 1
-	latestBlock, err := r.client.BlockNumber(ctx)
+// GetBlockNumber returns latest blocks number from rollup
+func (r *rollup) GetBlockNumber() (*big.Int, error) {
+	blockNumber, err := r.client.BlockNumber(context.TODO())
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	endBlock := latestBlock
-	if startBlock+blockProcessBatchSize < latestBlock {
-		endBlock = startBlock + blockProcessBatchSize
-	}
-
-	// no new blocks to process
-	if startBlock > endBlock {
-		return nil
-	}
-
-	if startBlock == endBlock {
-		r.log.WithField("block", startBlock).Info("processing rollup block")
-	} else {
-		r.log.WithField("from", startBlock).WithField("to", endBlock).WithField("batch", endBlock-startBlock+1).
-			Info("processing old rollup blocks in batch")
-	}
-
-	// process builder updated events
-	builderUpdatedIterator, err := r.contract.FilterBuilderUpdated(&bind.FilterOpts{Start: startBlock, End: &endBlock, Context: ctx})
-	if err != nil {
-		return err
-	}
-
-	err = r.processBuilderUpdatedEvents(builderUpdatedIterator)
-	if err != nil {
-		return err
-	}
-
-	// process stake updated events
-	stakeUpdatedIterator, err := r.contract.FilterStakeUpdated(&bind.FilterOpts{Start: startBlock, End: &endBlock, Context: ctx})
-	if err != nil {
-		return err
-	}
-
-	err = r.processStakeUpdatedEvents(stakeUpdatedIterator)
-	if err != nil {
-		return err
-	}
-
-	r.stateMutex.Lock()
-	defer r.stateMutex.Unlock()
-	r.state.LatestProcessedBlock = endBlock
-	r.state.LatestKnownBlock = latestBlock
-	r.stateUpdated = true
-
-	return nil
-}
-
-// processBuilderUpdatedEvents processes builder updates and saves data to state
-func (r *rollup) processBuilderUpdatedEvents(it *contracts.BuilderStakingBuilderUpdatedIterator) error {
-	for it.Next() {
-		if it.Error() != nil {
-			return it.Error()
-		}
-
-		blockNumber := it.Event.Raw.BlockNumber
-		builder := it.Event.Builder
-		minimalStake := it.Event.MinimalStake
-
-		r.setMinimalStake(builder, minimalStake)
-
-		r.log.WithField("builder", builder).WithField("minimalStake", minimalStake).WithField("block", blockNumber).
-			Info("processed minimal stake updated event")
-	}
-
-	return nil
-}
-
-// processStakeUpdatedEvents processes stake updated events and saves data to state
-func (r *rollup) processStakeUpdatedEvents(it *contracts.BuilderStakingStakeUpdatedIterator) error {
-	for it.Next() {
-		if it.Error() != nil {
-			return it.Error()
-		}
-
-		blockNumber := it.Event.Raw.BlockNumber
-		commitment := common.Hash(it.Event.Commitment)
-		stake := it.Event.Stake
-
-		r.setSubscriptionEnd(commitment, stake)
-
-		r.log.WithField("commitment", commitment).
-			WithField("stake", stake).WithField("block", blockNumber).
-			Info("processed stake updated event")
-	}
-
-	return nil
-}
-
-// loadState reads state from state file and stores it in local rollup instance
-func (r *rollup) loadState() error {
-	// create and save clean state if file does not exists
-	if !r.fileExists(r.statePath) {
-		r.state = State{
-			LatestProcessedBlock: r.startBlock,
-			LatestKnownBlock:     r.startBlock,
-			Subscriptions:        make(map[common.Hash]BigInt),
-			MinimalStakes:        make(map[common.Address]BigInt),
-		}
-
-		return r.saveState()
-	}
-
-	stateFile, err := os.Open(r.statePath)
-	if err != nil {
-		return err
-	}
-	defer stateFile.Close()
-
-	stateBytes, err := ioutil.ReadAll(stateFile)
-	if err != nil {
-		return err
-	}
-
-	var state State
-	err = json.Unmarshal(stateBytes, &state)
-	if err != nil {
-		return err
-	}
-
-	if state.Subscriptions == nil {
-		state.Subscriptions = make(map[common.Hash]BigInt)
-	}
-
-	if state.MinimalStakes == nil {
-		state.MinimalStakes = make(map[common.Address]BigInt)
-	}
-
-	r.state = state
-
-	return nil
-}
-
-// saveState saves local rollup state to state file
-func (r *rollup) saveState() error {
-	stateFile, err := os.OpenFile(r.statePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
-	if err != nil {
-		return err
-	}
-	defer stateFile.Close()
-
-	encoder := json.NewEncoder(stateFile)
-	return encoder.Encode(r.state)
-}
-
-// getSubscriptionEnd returns stake value staked for particular builder by searcher
-func (r *rollup) getSubscriptionEnd(commitment common.Hash) *big.Int {
-	r.stateMutex.Lock()
-	defer r.stateMutex.Unlock()
-
-	subscription, ok := r.state.Subscriptions[commitment]
-	if !ok {
-		return big.NewInt(0)
-	}
-
-	return &subscription.Int
-}
-
-// setSubscriptionEnd updates stake value staked for particular builder by searcher
-func (r *rollup) setSubscriptionEnd(commitment common.Hash, subscriptionEnd *big.Int) {
-	r.stateMutex.Lock()
-	defer r.stateMutex.Unlock()
-
-	r.state.Subscriptions[commitment] = BigInt{*subscriptionEnd}
-}
-
-// getMinimalStake returns stake value staked for particular builder by searcher
-func (r *rollup) getMinimalStake(builder common.Address) (*big.Int, error) {
-	r.stateMutex.Lock()
-	defer r.stateMutex.Unlock()
-
-	stake, ok := r.state.MinimalStakes[builder]
-	if !ok {
-		return big.NewInt(0), ErrNoMinimalStakeSet
-	}
-
-	return &stake.Int, nil
-}
-
-// setMinimalStake updates minimal stake value for particular builder
-func (r *rollup) setMinimalStake(builder common.Address, stake *big.Int) {
-	r.stateMutex.Lock()
-	defer r.stateMutex.Unlock()
-
-	r.state.MinimalStakes[builder] = BigInt{*stake}
-}
-
-// fileExists returns true if file under specified file path exists
-func (r *rollup) fileExists(filePath string) bool {
-	_, err := os.Stat(filePath)
-	if err == nil {
-		return true
-	}
-
-	if os.IsNotExist(err) {
-		return false
-	}
-
-	return false
+	return new(big.Int).SetUint64(blockNumber), nil
 }

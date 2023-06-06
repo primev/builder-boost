@@ -137,14 +137,12 @@ func (a *API) handleSearcherCommitment(w http.ResponseWriter, r *http.Request) {
 }
 
 // connectSearcher is the handler to connect a searcher to the builder for the websocket execution hints
-// TODO: Add authentication
 //
-// GET /ws?Searcher=0x123 where 0x123 is the address of the searcher (soon to be auth token)
+// GET /ws?token=abcd where "abcd" is the authentication token of the searcher
 // The handler authenticates based on the following criteria:
-// 1. The address is a valid address
-// 2. The address has sufficient balance
-// 3. The address is not already connected
-
+// 1. The token is valid
+// 2. The searcher behind the token has active subscription
+// 3. The searcher behind the token is not already connected
 func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 	a.Log.Info("searcher called")
 	ws := websocket.Upgrader{
@@ -184,14 +182,24 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 	}
 
 	commitment := a.Rollup.GetCommitment(searcherAddress)
-	latestBlock := a.Rollup.GetLatestBlock()
-	subscriptionEnd := a.Rollup.GetSubscriptionEnd(commitment)
+	blockNumber, err := a.Rollup.GetBlockNumber()
+	if err != nil {
+		a.Log.WithError(err).Error("failed to get block number")
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+
+	subscriptionEnd, err := a.Rollup.GetSubscriptionEnd(commitment)
+	if err != nil {
+		a.Log.WithError(err).Error("failed to get subscription end")
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+
 	searcherAddressParam := searcherAddress.Hex()
-	a.Log.WithFields(logrus.Fields{"searcher": searcherAddressParam, "latest_block": latestBlock, "subscription_end": subscriptionEnd}).
+	a.Log.WithFields(logrus.Fields{"searcher": searcherAddressParam, "block_number": blockNumber, "subscription_end": subscriptionEnd}).
 		Info("searcher attempting connection")
 
-	// Check for sufficent balance
-	if subscriptionEnd.Cmp(latestBlock) < 0 {
+	// Check is subscription is expired
+	if subscriptionEnd.Cmp(blockNumber) < 0 {
 		a.Log.WithField("searcher", searcherAddressParam).
 			Warn("subscription is expired")
 		w.WriteHeader(http.StatusForbidden)
