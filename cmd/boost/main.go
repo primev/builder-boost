@@ -6,7 +6,6 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"strconv"
 
 	"time"
 
@@ -77,18 +76,6 @@ var flags = []cli.Flag{
 		EnvVars: []string{"ROLLUP_CONTRACT"},
 	},
 	&cli.StringFlag{
-		Name:    "rollupblock",
-		Usage:   "Block at which rollup contract was deployed",
-		Value:   "3596335",
-		EnvVars: []string{"ROLLUP_BLOCK"},
-	},
-	&cli.StringFlag{
-		Name:    "rollupstate",
-		Usage:   "Filename of rollup state file",
-		Value:   "rollup.json",
-		EnvVars: []string{"ROLLUP_STATE"},
-	},
-	&cli.StringFlag{
 		Name:    "buildertoken",
 		Usage:   "Token used to authenticate request as originating from builder",
 		Value:   "tmptoken",
@@ -156,15 +143,8 @@ func run() cli.ActionFunc {
 			return err
 		}
 
-		rollupBlockStr := c.String("rollupblock")
-		rollupBlock, err := strconv.ParseUint(rollupBlockStr, 10, 64)
-		if err != nil {
-			return err
-		}
-
 		contractAddress := common.HexToAddress(c.String("rollupcontract"))
-		statePath := c.String("rollupstate")
-		ru, err := rollup.New(client, contractAddress, builderKey, rollupBlock, statePath, config.Log)
+		ru, err := rollup.New(client, contractAddress, builderKey, config.Log)
 		if err != nil {
 			return err
 		}
