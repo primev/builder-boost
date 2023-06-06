@@ -20,7 +20,7 @@ We recommend you run builder boost as an independent cloud instance if you're op
 Begin by reviewing the Builder Reference Implementation instructions provided [here](https://hackmd.io/wmmCgKJdTom9WXht2PcdLA). After performing the necessary modifications, you can proceed to set up Builder Boost to receive block templates from your builder.
 
 
-## Step 2. Dowload Boost via Github
+## Step 2. Download Boost via Github
 For now simply do a git clone:
 ``` shell
 $ git@github.com:primevprotocol/builder-boost.git
