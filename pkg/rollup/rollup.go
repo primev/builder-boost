@@ -16,9 +16,7 @@ import (
 )
 
 const (
-	blockSyncStateThreshold = 4
-	blockProcessBatchSize   = 2048
-	blockProcessPeriod      = time.Second * 3
+	rollupCheckPeriod = time.Second * 5
 )
 
 var (
@@ -83,9 +81,8 @@ type rollup struct {
 
 // Run starts rollup contract event listener
 func (r *rollup) Run(ctx context.Context) error {
-	// process events from rollup contract
 	for {
-		blockProcessTimer := time.After(blockProcessPeriod)
+		rollupCheckTimer := time.After(rollupCheckPeriod)
 
 		// check if minimal stake is set for current builder
 		_, err := r.GetMinimalStake(r.builderAddress)
@@ -93,8 +90,8 @@ func (r *rollup) Run(ctx context.Context) error {
 			r.log.WithField("builder", r.builderAddress).WithField("err", err.Error()).Error(ErrNoMinimalStakeSet)
 		}
 
-		// delay processing new batch of blocks to meet RPC rate limits
-		<-blockProcessTimer
+		// delay rollup check to meet RPC rate limits
+		<-rollupCheckTimer
 	}
 }
 
