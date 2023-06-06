@@ -90,7 +90,7 @@ func (r *rollup) Run(ctx context.Context) error {
 		// check if minimal stake is set for current builder
 		_, err := r.GetMinimalStake(r.builderAddress)
 		if err != nil {
-			r.log.WithField("builder", r.builderAddress).WithField("err", err.Error()).Error("minimal stake is not set")
+			r.log.WithField("builder", r.builderAddress).WithField("err", err.Error()).Error(ErrNoMinimalStakeSet)
 		}
 
 		// delay processing new batch of blocks to meet RPC rate limits
