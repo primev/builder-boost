@@ -68,5 +68,6 @@ Note, the `BUILDER_AUTH_TOKEN` should be set to the same value set for `--builde
 
 ## More Links
 [Searcher Testing Guide](docs/searcher-testing.md) - This guide walks you through the setup process for connecting searcher emulators to your boost for e2e testing and monitoring.
+
 [Builder Modifications](https://hackmd.io/wmmCgKJdTom9WXht2PcdLA) - A detailed walkthrough with example commits, to modify a builder to add the primev relay and enable boost.
 
