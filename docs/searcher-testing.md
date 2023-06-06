@@ -17,7 +17,9 @@ In order to emulate multiple searchers locally and testing your setup, systemctl
 7. Connect to the searcher account in your wallet and get some sepolia ETH from the faucet [here](https://sepolia-faucet.pk910.de/). Once you've acquired enough seploia eth, send a transaction with 5-10% of the sepolia eth to the Builder Account. You can get the builder account address that you will need from the wallet, it will appear representation, similar to the following: 0x9f2...5E40
 
 A contract is currently deployed here:
-- https://sepolia.etherscan.io/address/0xc38e581D0403b4065F4d61A838431B143ceE4c81
+- https://sepolia.etherscan.io/address/0x6e100446995f4456773Cd3e96FA201266c44d4B8
+
+You can find the current deployed contract address in `cmd/boost.go` as the default value of ROLLUP_CONTRACT
 
 **Step 1.** Build `boost` command:
 ```
