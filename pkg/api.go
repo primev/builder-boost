@@ -58,10 +58,11 @@ func (a *API) init() {
 		router.HandleFunc("/health", a.handleHealthCheck)
 
 		// Adds an endpoint to retrieve the builder ID
+		// TODO(@ckartik): Ensure this response is signed to ensure validity
 		router.HandleFunc("/builder", a.handleBuilderID)
 
 		// Adds an endpoint to get commitment to the builder by searcher address
-		router.HandleFunc("/commitment", a.handleSearcherCommitment)
+		router.HandleFunc("/authorization", a.handleSearcherCommitment)
 
 		// TODO(@ckartik): Guard this to only by a requset made form an authorized internal service
 		router.HandleFunc(PathSubmitBlock, handler(a.submitBlock))
