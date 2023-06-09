@@ -3,14 +3,17 @@ package commons
 import (
 	"bytes"
 	"crypto/ecdsa"
+	"crypto/elliptic"
 	"fmt"
 	"net"
 	"time"
 
+	"github.com/decred/dcrd/dcrec/secp256k1"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/libp2p/go-libp2p/core/peer"
 	ma "github.com/multiformats/go-multiaddr"
+	"golang.org/x/crypto/sha3"
 )
 
 func BytesCompare(a, b []byte) bool {
@@ -30,6 +33,7 @@ func GetNow() string {
 	return time.Now().Format("2006-01-02 15:04:05")
 }
 
+// it takes a private key as input and returns the corresponding Ethereum address.
 func GetAddressFromPrivateKey(privateKey *ecdsa.PrivateKey) common.Address {
 	publicKey := privateKey.Public()
 	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
@@ -38,6 +42,23 @@ func GetAddressFromPrivateKey(privateKey *ecdsa.PrivateKey) common.Address {
 	}
 
 	return crypto.PubkeyToAddress(*publicKeyECDSA)
+}
+
+// it takes compressed bytes representing a secp256k1 public key as input and returns
+// the corresponding Ethereum address.
+func Secp256k1CompressedBytesToEthAddress(compressedBytes []byte) common.Address {
+	pb1, err := crypto.DecompressPubkey(compressedBytes)
+	if err != nil {
+		return nilAddress
+	}
+
+	pubkey := elliptic.Marshal(secp256k1.S256(), pb1.X, pb1.Y)
+
+	hash := sha3.NewLegacyKeccak256()
+	hash.Write(pubkey[1:])
+	address := hash.Sum(nil)
+
+	return common.BytesToAddress(address[12:])
 }
 
 func ExtractIPFromMultiaddr(addr ma.Multiaddr) (net.IP, error) {
