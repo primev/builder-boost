@@ -113,6 +113,7 @@ func (as *DefaultBoost) SubmitBlock(ctx context.Context, msg *capella.SubmitBloc
 		WithField("max_priority_fee", blockMetadata.Transactions.MaxPriorityFee).
 		WithField("txn_count", blockMetadata.Transactions.Count).
 		WithField("builder", blockMetadata.Builder).
+		WithField("txn_dump", msg.ExecutionPayload.Transactions).
 		Info("Block metadata processed")
 
 	return nil
