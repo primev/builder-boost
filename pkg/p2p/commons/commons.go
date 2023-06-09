@@ -16,6 +16,10 @@ import (
 	"golang.org/x/crypto/sha3"
 )
 
+var (
+	nilAddress = common.Address{}
+)
+
 func BytesCompare(a, b []byte) bool {
 	return bytes.Equal(a, b)
 }
