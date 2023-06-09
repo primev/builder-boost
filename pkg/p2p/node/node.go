@@ -75,10 +75,16 @@ func CreateNode(logger log.Logger, peerKey *ecdsa.PrivateKey, rollup rollup.Roll
 	ctx, cancel := context.WithCancel(context.Background())
 
 	// Set your own keypair
-	priv, _, err := crypto.GenerateKeyPair(
-		crypto.Ed25519, // Select your key type. Ed25519 are nice short
-		-1,             // Select key length when possible (i.e. RSA).
-	)
+	//priv, _, err := crypto.GenerateKeyPair(
+	//	crypto.Ed25519, // Select your key type. Ed25519 are nice short
+	//	-1,             // Select key length when possible (i.e. RSA).
+	//)
+	//if err != nil {
+	//	panic(err)
+	//}
+
+	// Set your own keypair
+	privKey, err := crypto.UnmarshalSecp256k1PrivateKey(peerKey.D.Bytes())
 	if err != nil {
 		panic(err)
 	}
@@ -95,7 +101,7 @@ func CreateNode(logger log.Logger, peerKey *ecdsa.PrivateKey, rollup rollup.Roll
 	}
 	host, err := libp2p.New(
 		// Use the keypair we generated
-		libp2p.Identity(priv),
+		libp2p.Identity(privKey),
 		// Multiple listen addresses
 		libp2p.ListenAddrStrings(
 			"/ip4/0.0.0.0/tcp/0", // regular tcp connections
