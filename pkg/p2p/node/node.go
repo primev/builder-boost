@@ -89,7 +89,8 @@ func CreateNode(logger log.Logger, peerKey *ecdsa.PrivateKey, rollup rollup.Roll
 		panic(err)
 	}
 
-	//var idht *dht.IpfsDHT
+	// gater activated intercept secured
+	conngtr := newConnectionGater(rollup)
 
 	connmgr, err := connmgr.NewConnManager(
 		100, // Lowwater
@@ -102,6 +103,8 @@ func CreateNode(logger log.Logger, peerKey *ecdsa.PrivateKey, rollup rollup.Roll
 	host, err := libp2p.New(
 		// Use the keypair we generated
 		libp2p.Identity(privKey),
+		// Connection gater
+		libp2p.ConnectionGater(conngtr),
 		// Multiple listen addresses
 		libp2p.ListenAddrStrings(
 			"/ip4/0.0.0.0/tcp/0", // regular tcp connections
