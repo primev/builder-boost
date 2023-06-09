@@ -6,7 +6,6 @@ import (
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/multiformats/go-multiaddr"
 	ma "github.com/multiformats/go-multiaddr"
-	"github.com/primev/builder-boost/pkg/p2p/stream"
 	"github.com/primev/builder-boost/pkg/rollup"
 )
 
@@ -19,14 +18,12 @@ type ConnectionGater interface {
 }
 
 type connectionGater struct {
-	rollup      rollup.Rollup
-	gaterStream *stream.Stream
+	rollup rollup.Rollup
 }
 
-func newConnectionGater(rollup rollup.Rollup, gaterStream *stream.Stream) ConnectionGater {
+func newConnectionGater(rollup rollup.Rollup) ConnectionGater {
 	return &connectionGater{
-		rollup:      rollup,
-		gaterStream: gaterStream,
+		rollup: rollup,
 	}
 }
 
