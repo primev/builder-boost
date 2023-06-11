@@ -78,7 +78,7 @@ var flags = []cli.Flag{
 	&cli.StringFlag{
 		Name:    "buildertoken",
 		Usage:   "Token used to authenticate request as originating from builder",
-		Value:   "tmptoken",
+		Value:   "",
 		EnvVars: []string{"BUILDER_AUTH_TOKEN"},
 	},
 }
@@ -133,6 +133,10 @@ func run() cli.ActionFunc {
 		builderKeyString := c.String("rollupkey")
 		if builderKeyString == "" {
 			return errors.New("rollup key is not set, use --rollupkey option or ROLLUP_KEY env variable")
+		}
+		builderAuthToken := c.String("buildertoken")
+		if builderAuthToken == "" {
+			return errors.New("builder token is not set, use --buildertoken option or BUILDER_AUTH_TOKEN env variable")
 		}
 
 		builderKeyBytes := common.FromHex(builderKeyString)
