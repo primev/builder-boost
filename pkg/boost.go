@@ -14,12 +14,12 @@ import (
 
 type Boost interface {
 	SubmitBlock(context.Context, *capella.SubmitBlockRequest) error
-	GetWorkChannel() chan Metadata
+	GetWorkChannel() chan SuperPayload
 }
 
 type DefaultBoost struct {
 	config      Config
-	pushChannel chan Metadata
+	pushChannel chan SuperPayload
 }
 
 type Transaction struct {
@@ -38,6 +38,11 @@ type Metadata struct {
 	SenderTimestamp int64       `json:"sent_timestamp"`
 }
 
+type SuperPayload struct {
+	InternalMetadata Metadata
+	SearcherTxns     map[string][]string
+}
+
 var (
 	ErrBlockUnprocessable = errors.New("V001: block unprocessable")
 )
@@ -50,12 +55,12 @@ func NewBoost(config Config) (*DefaultBoost, error) {
 
 	as := &DefaultBoost{
 		config:      config,
-		pushChannel: make(chan Metadata, 100),
+		pushChannel: make(chan SuperPayload, 100),
 	}
 	return as, nil
 }
 
-func (rs *DefaultBoost) GetWorkChannel() chan Metadata {
+func (rs *DefaultBoost) GetWorkChannel() chan SuperPayload {
 	return rs.pushChannel
 }
 
@@ -74,14 +79,14 @@ func (as *DefaultBoost) SubmitBlock(ctx context.Context, msg *capella.SubmitBloc
 	}()
 
 	var _txn types.Transaction
-	var blockMetadata Metadata
+	var blockMetadata SuperPayload
 
-	blockMetadata.BlockHash = msg.Message.BlockHash.String()
-	blockMetadata.Number = int64(msg.ExecutionPayload.BlockNumber)
-	blockMetadata.Builder = msg.Message.BuilderPubkey.String()
-	blockMetadata.Transactions.Count = int64(len(msg.ExecutionPayload.Transactions))
-	blockMetadata.Timestamp = time.Unix(int64(msg.ExecutionPayload.Timestamp), 0).Format(time.RFC1123)
-	blockMetadata.BaseFee = binary.LittleEndian.Uint32(msg.ExecutionPayload.BaseFeePerGas[:])
+	blockMetadata.InternalMetadata.BlockHash = msg.Message.BlockHash.String()
+	blockMetadata.InternalMetadata.Number = int64(msg.ExecutionPayload.BlockNumber)
+	blockMetadata.InternalMetadata.Builder = msg.Message.BuilderPubkey.String()
+	blockMetadata.InternalMetadata.Transactions.Count = int64(len(msg.ExecutionPayload.Transactions))
+	blockMetadata.InternalMetadata.Timestamp = time.Unix(int64(msg.ExecutionPayload.Timestamp), 0).Format(time.RFC1123)
+	blockMetadata.InternalMetadata.BaseFee = binary.LittleEndian.Uint32(msg.ExecutionPayload.BaseFeePerGas[:])
 
 	// Conditionally set txn details based on txn count
 	if len(msg.ExecutionPayload.Transactions) > 0 {
@@ -90,7 +95,10 @@ func (as *DefaultBoost) SubmitBlock(ctx context.Context, msg *capella.SubmitBloc
 		maxTipTxn := _txn
 		for _, btxn := range msg.ExecutionPayload.Transactions {
 			var txn types.Transaction
-			txn.UnmarshalBinary(btxn)
+			err := txn.UnmarshalBinary(btxn)
+			if err != nil {
+				as.config.Log.WithError(err).Error("Failed to decode transaction")
+			}
 			// Extract Min/Max
 			if txn.GasTipCapCmp(&minTipTxn) < 0 {
 				minTipTxn = txn
@@ -98,10 +106,17 @@ func (as *DefaultBoost) SubmitBlock(ctx context.Context, msg *capella.SubmitBloc
 			if txn.GasTipCapCmp(&maxTipTxn) > 0 {
 				maxTipTxn = txn
 			}
+
+			from, err := types.Sender(types.LatestSignerForChainID(txn.ChainId()), &txn)
+			if err != nil {
+				as.config.Log.WithField("transaction", txn).WithError(err).Error("umnable to decode sender of transaction")
+			}
+
+			blockMetadata.SearcherTxns[from.Hex()] = append(blockMetadata.SearcherTxns[from.Hex()], txn.Hash().String())
 		}
 
-		blockMetadata.Transactions.MinPriorityFee = minTipTxn.GasTipCap().Int64()
-		blockMetadata.Transactions.MaxPriorityFee = maxTipTxn.GasTipCap().Int64()
+		blockMetadata.InternalMetadata.Transactions.MinPriorityFee = minTipTxn.GasTipCap().Int64()
+		blockMetadata.InternalMetadata.Transactions.MaxPriorityFee = maxTipTxn.GasTipCap().Int64()
 	}
 
 	as.pushChannel <- blockMetadata
@@ -117,15 +132,15 @@ func (as *DefaultBoost) SubmitBlock(ctx context.Context, msg *capella.SubmitBloc
 	}
 
 	// TODO(@ckartik): Remove dump of txn payload to logs.
-	as.config.Log.
-		WithField("block_hash", blockMetadata.BlockHash).
-		WithField("base_fee", blockMetadata.BaseFee).
-		WithField("min_priority_fee", blockMetadata.Transactions.MinPriorityFee).
-		WithField("max_priority_fee", blockMetadata.Transactions.MaxPriorityFee).
-		WithField("txn_count", blockMetadata.Transactions.Count).
-		WithField("builder", blockMetadata.Builder).
-		WithField("txn_dump", msg.ExecutionPayload.Transactions).
-		Info("Block metadata processed")
+	// as.config.Log.
+	// 	WithField("block_hash", blockMetadata.BlockHash).
+	// 	WithField("base_fee", blockMetadata.BaseFee).
+	// 	WithField("min_priority_fee", blockMetadata.Transactions.MinPriorityFee).
+	// 	WithField("max_priority_fee", blockMetadata.Transactions.MaxPriorityFee).
+	// 	WithField("txn_count", blockMetadata.Transactions.Count).
+	// 	WithField("builder", blockMetadata.Builder).
+	// 	WithField("txn_dump", msg.ExecutionPayload.Transactions).
+	// 	Info("Block metadata processed")
 
 	return nil
 }

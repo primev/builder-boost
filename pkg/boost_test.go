@@ -154,8 +154,8 @@ func TestDefaultBoost_SubmitBlock(t *testing.T) {
 			}
 			metadata := <-service.pushChannel
 
-			assert.Equal(t, metadata.Transactions.Count, tt.txnCountExpected)
-			assert.Equal(t, metadata.BaseFee, tt.expectedBaseFee)
+			assert.Equal(t, metadata.InternalMetadata.Transactions.Count, tt.txnCountExpected)
+			assert.Equal(t, metadata.InternalMetadata.BaseFee, tt.expectedBaseFee)
 		})
 	}
 }
