@@ -3,15 +3,14 @@ package utils
 import (
 	"crypto/ecdsa"
 	"encoding/base64"
-	"fmt"
 
+	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
 func GenerateToken(msg string, key *ecdsa.PrivateKey) (string, error) {
-	fmt.Println("message is: ", msg)
-	hm := crypto.Keccak256Hash([]byte(msg))
+	hm := accounts.TextHash([]byte(msg))
 	signature, err := crypto.Sign(hm[:], key)
 	if err != nil {
 		return "", err
@@ -27,7 +26,7 @@ func VerifyToken(token string, msg string) (common.Address, bool) {
 		return common.Address{}, false
 	}
 
-	hm := crypto.Keccak256Hash([]byte(msg))
+	hm := accounts.TextHash([]byte(msg))
 	pubkey, err := crypto.SigToPub(hm[:], signature)
 	if err != nil {
 		return common.Address{}, false
