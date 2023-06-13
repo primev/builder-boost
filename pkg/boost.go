@@ -29,12 +29,13 @@ type Transaction struct {
 }
 
 type Metadata struct {
-	Builder      string      `json:"builder"`
-	Number       int64       `json:"number"`
-	BlockHash    string      `json:"blockHash"`
-	Timestamp    string      `json:"timestamp"`
-	BaseFee      uint32      `json:"baseFee"`
-	Transactions Transaction `json:"transactions"`
+	Builder         string      `json:"builder"`
+	Number          int64       `json:"number"`
+	BlockHash       string      `json:"blockHash"`
+	Timestamp       string      `json:"timestamp"`
+	BaseFee         uint32      `json:"baseFee"`
+	Transactions    Transaction `json:"transactions"`
+	SenderTimestamp int64       `json:"sent_timestamp"`
 }
 
 var (

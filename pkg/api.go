@@ -137,6 +137,7 @@ func (a *API) handleSearcherCommitment(w http.ResponseWriter, r *http.Request) {
 }
 
 // connectSearcher is the handler to connect a searcher to the builder for the websocket execution hints
+// TODO(@ckartik): Move the handling of searcher connection to service layer
 //
 // GET /ws?token=abcd where "abcd" is the authentication token of the searcher
 // The handler authenticates based on the following criteria:
@@ -267,6 +268,7 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 				delete(a.Worker.connectedSearchers, searcherAddressParam)
 				return
 			case data := <-searcherConsumeChannel:
+				data.SenderTimestamp = time.Now().Unix()
 				json, err := json.Marshal(data)
 				if err != nil {
 					a.Log.Error(err)
