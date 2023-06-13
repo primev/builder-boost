@@ -136,7 +136,7 @@ func (a *API) handleSearcherCommitment(w http.ResponseWriter, r *http.Request) {
 	}
 	builderAddress := a.Rollup.GetBuilderAddress()
 
-	searcherAddress, ok := utils.VerifyToken(token, builderAddress.Hex())
+	searcherAddress, ok := utils.VerifyAuthenticationToken(token, builderAddress.Hex())
 	if !ok {
 		a.Log.WithField("token", token).Error("token is not valid")
 		w.WriteHeader(http.StatusBadRequest)
@@ -176,7 +176,7 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 	}
 	builderAddress := a.Rollup.GetBuilderAddress()
 
-	searcherAddress, ok := utils.VerifyToken(token, builderAddress.Hex())
+	searcherAddress, ok := utils.VerifyAuthenticationToken(token, builderAddress.Hex())
 	if !ok {
 		a.Log.WithField("token", token).Error("token is not valid")
 		w.WriteHeader(http.StatusBadRequest)

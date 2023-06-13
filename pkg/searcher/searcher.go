@@ -34,7 +34,7 @@ type searcher struct {
 
 func (s *searcher) Run(ctx context.Context) error {
 	// Continue attempts to connect to the builder boost service
-	token := s.generateTokenForBuilder(s.addr)
+	token := s.GenerateAuthenticationTokenForBuilder(s.addr)
 	s.log.WithField("token", token).WithField("builder", s.addr).Info("generated token for builder boost")
 
 	u := url.URL{Scheme: "ws", Host: s.addr, Path: "/ws"}
@@ -58,8 +58,8 @@ type BuilderInfoResponse struct {
 	BuilderID string `json:"id"`
 }
 
-// generateTokenForBuilder generates a token for the builder boost service represented by the url
-func (s *searcher) generateTokenForBuilder(boostBaseURL string) (token string) {
+// GenerateAuthenticationTokenForBuilder generates a token for the builder boost service represented by the url
+func (s *searcher) GenerateAuthenticationTokenForBuilder(boostBaseURL string) (token string) {
 	var builderInfo BuilderInfoResponse
 	boostURL := url.URL{Scheme: "http", Host: boostBaseURL, Path: "/builder"}
 	s.log.WithField("url", boostURL.String()).Info("connecting to builder boost to get builder ID")
@@ -90,7 +90,7 @@ func (s *searcher) generateTokenForBuilder(boostBaseURL string) (token string) {
 		log.Fatal(err)
 	}
 
-	token, err = utils.GenerateToken(builderInfo.BuilderID, s.key)
+	token, err = utils.GenerateAuthenticationToken(builderInfo.BuilderID, s.key)
 	if err != nil {
 		log.Fatal(err)
 	}

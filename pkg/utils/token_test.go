@@ -8,7 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
-func TestGenerateToken(t *testing.T) {
+func TestGenerateAuthenticationToken(t *testing.T) {
 	searcherKey, err := crypto.GenerateKey()
 	if err != nil {
 		t.Log(err)
@@ -34,12 +34,12 @@ func TestGenerateToken(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			token, err := GenerateToken(tt.args.msg, tt.args.key)
+			token, err := GenerateAuthenticationToken(tt.args.msg, tt.args.key)
 			if err != nil {
 				t.Error(err)
 				t.FailNow()
 			}
-			address, ok := VerifyToken(token, tt.args.msg)
+			address, ok := VerifyAuthenticationToken(token, tt.args.msg)
 
 			assert.Equal(t, ok, true)
 			assert.Equal(t, address.Hex(), crypto.PubkeyToAddress(tt.args.key.PublicKey).Hex())

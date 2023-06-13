@@ -105,7 +105,7 @@ func TestConnectSearcher(t *testing.T) {
 		mockRollup := rollup.MockRollup{}
 		searcherKey, searcherAddress := generatePrivateKey()
 		builderKey, builderAddress := generatePrivateKey()
-		token, err := utils.GenerateToken(builderAddress.Hex(), searcherKey)
+		token, err := utils.GenerateAuthenticationToken(builderAddress.Hex(), searcherKey)
 		if err != nil {
 			panic(err)
 		}
@@ -129,7 +129,7 @@ func TestConnectSearcher(t *testing.T) {
 		mockRollup := rollup.MockRollup{}
 		builderKey, builderAddress := generatePrivateKey()
 		searcherKey, searcherAddress := generatePrivateKey()
-		token, err := utils.GenerateToken(builderAddress.Hex(), searcherKey)
+		token, err := utils.GenerateAuthenticationToken(builderAddress.Hex(), searcherKey)
 		if err != nil {
 			panic(err)
 		}
@@ -177,7 +177,7 @@ func TestConnectSearcher(t *testing.T) {
 		searcherKey, searcherAddress := generatePrivateKey()
 		builderKey, builderAddress := generatePrivateKey()
 		commitment := utils.GetCommitment(builderKey, searcherAddress)
-		token, err := utils.GenerateToken(builderAddress.Hex(), searcherKey)
+		token, err := utils.GenerateAuthenticationToken(builderAddress.Hex(), searcherKey)
 		if err != nil {
 			panic(err)
 		}
@@ -199,7 +199,7 @@ func TestConnectSearcher(t *testing.T) {
 		searcherKey, searcherAddress := generatePrivateKey()
 		builderKey, builderAddress := generatePrivateKey()
 		commitment := utils.GetCommitment(builderKey, searcherAddress)
-		token, err := utils.GenerateToken(builderAddress.Hex(), searcherKey)
+		token, err := utils.GenerateAuthenticationToken(builderAddress.Hex(), searcherKey)
 		if err != nil {
 			panic(err)
 		}
@@ -229,7 +229,7 @@ func TestConnectSearcher(t *testing.T) {
 		searcherKey, searcherAddress := generatePrivateKey()
 		builderKey, builderAddress := generatePrivateKey()
 		commitment := utils.GetCommitment(builderKey, searcherAddress)
-		token, err := utils.GenerateToken(builderAddress.Hex(), searcherKey)
+		token, err := utils.GenerateAuthenticationToken(builderAddress.Hex(), searcherKey)
 		if err != nil {
 			panic(err)
 		}
