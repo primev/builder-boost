@@ -49,7 +49,9 @@ func VerifyAuthenticationToken(token string, digest string) (common.Address, boo
 		return common.Address{}, false
 	}
 
-	// Remove recovery id
+	// Signature is 65 bytes long, with the structure [R || S || V]
+	// We remove recovery id V from the signature as it's not needed for verification, only signature recovery.
+	// VerifySignature paramater only takes R and S
 	// https://goethereumbook.org/signature-verify/
 	return crypto.PubkeyToAddress(*pubkey), crypto.VerifySignature(crypto.FromECDSAPub(pubkey), accounts.TextHash([]byte(hashDigest)), signature[:len(signature)-1])
 }
