@@ -255,7 +255,7 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	searcherConsumeChannel := make(chan Metadata, 100)
+	searcherConsumeChannel := make(chan SuperPayload, 100)
 	a.Worker.lock.Lock()
 	a.Worker.connectedSearchers[searcherAddressParam] = searcherConsumeChannel
 	a.Worker.lock.Unlock()
@@ -277,7 +277,7 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 		closeChannel <- struct{}{}
 	}(closeSignalChannel, conn)
 
-	go func() {
+	go func(searcherID string) {
 		defer func() {
 			if r := recover(); r != nil {
 				a.Log.Error("recovered in searcher communication goroutine: closing connection", r)
