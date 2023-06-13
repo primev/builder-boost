@@ -52,13 +52,14 @@ func (a *API) init() {
 			a.Log = log.New()
 		}
 
+		// router := chi.NewRouter()
+		// router.Use(middleware.Logger)
 		// TODO(@floodcode): Add CORS middleware
 		router := http.NewServeMux()
 
-		router.HandleFunc("/health", a.handleHealthCheck)
-
+		router.Handle("/health", a.authenticateBuilder(http.HandlerFunc(a.handleHealthCheck)))
 		// Adds an endpoint to retrieve the builder ID
-		router.HandleFunc("/builder", a.handleBuilderID)
+		router.Handle("/builder", a.authenticateBuilder(http.HandlerFunc(a.handleBuilderID)))
 
 		// Adds an endpoint to get commitment to the builder by searcher address
 		router.HandleFunc("/commitment", a.handleSearcherCommitment)
@@ -75,6 +76,19 @@ func (a *API) init() {
 func (a *API) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	a.init()
 	a.mux.ServeHTTP(w, r)
+}
+
+func (a *API) authenticateBuilder(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		authToken := r.Header.Get("X-BUIlDER-TOKEN")
+		if authToken != a.BuilderToken {
+			a.Log.Error("failed to authenticate builder request")
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
 }
 
 func handler(f func(http.ResponseWriter, *http.Request) (int, error)) http.HandlerFunc {
@@ -287,12 +301,6 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 
 // builder related handlers
 func (a *API) submitBlock(w http.ResponseWriter, r *http.Request) (int, error) {
-	authToken := r.Header.Get("X-BUIlDER-TOKEN")
-
-	if authToken != a.BuilderToken {
-		return http.StatusUnauthorized, errors.New("invalid auth token")
-	}
-
 	var br capella.SubmitBlockRequest
 	if err := json.NewDecoder(r.Body).Decode(&br); err != nil {
 		return http.StatusBadRequest, err
