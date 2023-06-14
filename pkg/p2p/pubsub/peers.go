@@ -3,15 +3,25 @@ package pubsub
 import (
 	"math/big"
 	"sync"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/libp2p/go-libp2p/core/peer"
 )
 
 type info struct {
+	// start time of the peer
+	start time.Time
+	// version information of the peer
 	version string
+	// address of the peer
 	address common.Address
-	stake   *big.Int
+	// stake amount held by the peer
+	stake *big.Int
+}
+
+func (i *info) setStart(start time.Time) {
+	i.start = start
 }
 
 func (i *info) setVersion(version []byte) {
@@ -79,6 +89,15 @@ func (a approvedPeersMap) ListApprovedPeers() []peer.ID {
 	}
 
 	return approvedPeers
+}
+
+// (start) set peer info options
+func (a *approvedPeersMap) SetPeerInfoStart(peer peer.ID, start time.Time) {
+	a.Lock()
+	defer a.Unlock()
+	if val, ok := a.peers[peer]; ok {
+		val.setStart(start)
+	}
 }
 
 // (version) set peer info options
