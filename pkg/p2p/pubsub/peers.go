@@ -52,12 +52,9 @@ func (a *approvedPeersMap) DelPeer(peer peer.ID) {
 func (a approvedPeersMap) InPeers(peer peer.ID) bool {
 	a.RLock()
 	defer a.RUnlock()
-	for k, _ := range a.peers {
-		if k == peer {
-			return true
-		}
-	}
-	return false
+
+	_, ok := a.peers[peer]
+	return ok
 }
 
 func (a approvedPeersMap) GetPeers() map[peer.ID]*info {
