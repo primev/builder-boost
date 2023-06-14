@@ -9,6 +9,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
@@ -320,6 +321,7 @@ func (pss *PubSubServer) optAuthentication(cpeer peer.ID, bytes []byte, sendauth
 			}
 		}
 
+		pss.apm.SetPeerInfoStart(cpeer, time.Now())
 		pss.apm.SetPeerInfoAddress(cpeer, address)
 		pss.apm.SetPeerInfoStake(cpeer, stake)
 		if sendauth {
