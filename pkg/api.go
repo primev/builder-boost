@@ -88,7 +88,7 @@ func (a *API) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func (a *API) authenticateBuilder(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		authToken := r.Header.Get("X-BUIlDER-TOKEN")
+		authToken := r.Header.Get("X-Builder-Token")
 		if authToken != a.BuilderToken {
 			a.Log.Error("failed to authenticate builder request")
 			w.WriteHeader(http.StatusUnauthorized)
