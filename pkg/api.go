@@ -1,12 +1,14 @@
 package boost
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
 	"sync"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/websocket"
 	"github.com/sirupsen/logrus"
 
@@ -15,6 +17,13 @@ import (
 	"github.com/lthibault/log"
 	"github.com/primev/builder-boost/pkg/rollup"
 	"github.com/primev/builder-boost/pkg/utils"
+)
+
+// Context Keys
+type key int
+
+const (
+	KeySearcherAddress key = iota
 )
 
 // Router paths
@@ -60,9 +69,8 @@ func (a *API) init() {
 		router.Handle("/health", a.authenticateBuilder(http.HandlerFunc(a.handleHealthCheck)))
 		// Adds an endpoint to retrieve the builder ID
 		router.Handle("/builder", a.authenticateBuilder(http.HandlerFunc(a.handleBuilderID)))
-
 		// Adds an endpoint to get commitment to the builder by searcher address
-		router.HandleFunc("/commitment", a.handleSearcherCommitment)
+		router.Handle("/commitment", a.authSearcher(http.HandlerFunc(a.handleSearcherCommitment)))
 
 		// TODO(@ckartik): Guard this to only by a requset made form an authorized internal service
 		router.HandleFunc(PathSubmitBlock, handler(a.submitBlock))
@@ -88,6 +96,29 @@ func (a *API) authenticateBuilder(next http.Handler) http.Handler {
 		}
 
 		next.ServeHTTP(w, r)
+	})
+}
+
+func (a *API) authSearcher(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		authToken := r.Header.Get("X-Primev-Token")
+		if authToken != a.BuilderToken {
+			a.Log.Error("failed to authenticate builder request")
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+
+		builderAddress := a.Rollup.GetBuilderAddress()
+
+		searcherAddress, ok := utils.VerifyToken(authToken, builderAddress.Hex())
+		if !ok {
+			a.Log.WithField("token", authToken).Error("token is not valid")
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte("token is not valid"))
+			return
+		}
+
+		next.ServeHTTP(w, r.Clone(context.WithValue(r.Context(), KeySearcherAddress, searcherAddress)))
 	})
 }
 
@@ -126,24 +157,7 @@ type CommitmentResponse struct {
 }
 
 func (a *API) handleSearcherCommitment(w http.ResponseWriter, r *http.Request) {
-	// TODO(@ckartik): Move to middleware
-	token := r.URL.Query().Get("token")
-	if token == "" {
-		a.Log.WithField("token", token).Error("token parameter is missing")
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("token parameter is missing"))
-		return
-	}
-	builderAddress := a.Rollup.GetBuilderAddress()
-
-	searcherAddress, ok := utils.VerifyToken(token, builderAddress.Hex())
-	if !ok {
-		a.Log.WithField("token", token).Error("token is not valid")
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("token is not valid"))
-		return
-	}
-
+	searcherAddress := r.Context().Value(KeySearcherAddress).(common.Address)
 	commitment := a.Rollup.GetCommitment(searcherAddress)
 
 	w.WriteHeader(http.StatusOK)
