@@ -12,7 +12,6 @@ type info struct {
 	version string
 	address common.Address
 	stake   *big.Int
-	//mode    commons.Mode
 }
 
 func (i *info) setVersion(version []byte) {
@@ -26,10 +25,6 @@ func (i *info) setAddress(address common.Address) {
 func (i *info) setStake(stake *big.Int) {
 	i.stake = stake
 }
-
-//func (i *info) setMode(mode commons.Mode) {
-//	i.mode = mode
-//}
 
 type approvedPeersMap struct {
 	peers map[peer.ID]*info
@@ -64,56 +59,6 @@ func (a approvedPeersMap) InPeers(peer peer.ID) bool {
 	}
 	return false
 }
-
-//func (a approvedPeersMap) InSearchers(peer peer.ID) bool {
-//	a.RLock()
-//	defer a.RUnlock()
-//	for k, v := range a.peers {
-//		if k == peer && v.mode == commons.SEARCHER {
-//			return true
-//		}
-//	}
-//	return false
-//}
-//
-//func (a approvedPeersMap) InBuilders(peer peer.ID) bool {
-//	a.RLock()
-//	defer a.RUnlock()
-//	for k, v := range a.peers {
-//		if k == peer && v.mode == commons.BUILDER {
-//			return true
-//		}
-//	}
-//	return false
-//}
-
-//func (a approvedPeersMap) GetApprovedSearchers() []peer.ID {
-//	a.RLock()
-//	defer a.RUnlock()
-//
-//	approvedPeers := []peer.ID{}
-//	for k, v := range a.peers {
-//		if v.mode == commons.SEARCHER {
-//			approvedPeers = append(approvedPeers, k)
-//		}
-//	}
-//
-//	return approvedPeers
-//}
-//
-//func (a approvedPeersMap) GetApprovedBuilders() []peer.ID {
-//	a.RLock()
-//	defer a.RUnlock()
-//
-//	approvedPeers := []peer.ID{}
-//	for k, v := range a.peers {
-//		if v.mode == commons.BUILDER {
-//			approvedPeers = append(approvedPeers, k)
-//		}
-//	}
-//
-//	return approvedPeers
-//}
 
 func (a approvedPeersMap) GetPeers() map[peer.ID]*info {
 	a.RLock()
@@ -165,10 +110,3 @@ func (a *approvedPeersMap) SetPeerInfoStake(peer peer.ID, stake *big.Int) {
 		val.setStake(stake)
 	}
 }
-
-//// (mode) set peer info options
-//func (a *approvedPeersMap) SetPeerInfoMode(peer peer.ID, mode commons.Mode) {
-//	a.Lock()
-//	defer a.Unlock()
-//	a.peers[peer].setMode(mode)
-//}
