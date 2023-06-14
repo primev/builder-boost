@@ -110,7 +110,7 @@ func (a *API) authSearcher(next http.Handler) http.Handler {
 
 		builderAddress := a.Rollup.GetBuilderAddress()
 
-		searcherAddress, ok := utils.VerifyToken(authToken, builderAddress.Hex())
+		searcherAddress, ok := utils.VerifyAuthenticationToken(authToken, builderAddress.Hex())
 		if !ok {
 			a.Log.WithField("token", authToken).Error("token is not valid")
 			w.WriteHeader(http.StatusBadRequest)
