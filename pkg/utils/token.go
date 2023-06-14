@@ -29,9 +29,8 @@ func GenerateAuthenticationToken(msg string, key *ecdsa.PrivateKey) (string, err
 // We Ignore the address because we can recover the public key from the signature
 // We request the searcher address in the payload for consistency with the ecosystem
 func VerifyAuthenticationToken(token string, digest string) (common.Address, bool) {
-	// Split the string token by ":""
-	// The first part is the address
-	// The second part is the signature
+
+	// data format: <address>:<signature>
 	data := strings.Split(token, ":")
 	if len(data) != 2 {
 		return common.Address{}, false
