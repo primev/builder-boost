@@ -44,10 +44,6 @@ func (pss *PubSubServer) peerStreamHandler(stream network.Stream) {
 		}).Info("unverified peer message")
 
 		switch inMsg.Op() {
-		// temporary authentication option
-		// it is not safe for now
-		// a peer standing in listening mode can listen to all messages
-		// it means a peer that does not send a protocol message
 		case message.Authentication:
 			pss.optAuthentication(inMsg.Peer(), inMsg.Bytes(), false)
 		default:

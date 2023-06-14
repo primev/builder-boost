@@ -250,11 +250,6 @@ func CreateNode(logger log.Logger, peerKey *ecdsa.PrivateKey, rollup rollup.Roll
 	return node
 }
 
-//// get node mode: builder or searcher
-//func (n *Node) GetMode() commons.Mode {
-//	return n.mode
-//}
-
 func (n *Node) GetToken() []byte {
 	return n.token
 }

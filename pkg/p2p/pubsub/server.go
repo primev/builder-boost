@@ -87,10 +87,6 @@ func NewPubsubServer(
 		pss.peerStreamHandler,
 	)
 
-	//	if mode == commons.BUILDER && b2bt != nil {
-	//		go pss.b2bProtocol()
-	//	}
-
 	var once sync.Once
 	go pss.baseProtocol(once)
 
@@ -160,10 +156,6 @@ func (pss *PubSubServer) baseProtocol(once sync.Once) {
 				}).Info("unverified peer message")
 
 				switch inMsg.Op() {
-				// temporary authentication option
-				// it is not safe for now
-				// a peer standing in listening mode can listen to all messages
-				// it means a peer that does not send a protocol message
 				case message.Authentication:
 					pss.optAuthentication(inMsg.Peer(), inMsg.Bytes(), true)
 				default:
@@ -421,16 +413,6 @@ func (pss *PubSubServer) optPeerList(cpeer peer.ID, bytes []byte) []peer.ID {
 
 // get self peer.ID
 func (pss PubSubServer) ID() peer.ID { return pss.self }
-
-//// get approved searchers on pubsub server
-//func (pss *PubSubServer) GetApprovedSearchers() []peer.ID {
-//	return pss.apm.GetApprovedSearchers()
-//}
-//
-//// get approved builders on pubsub server
-//func (pss *PubSubServer) GetApprovedBuilders() []peer.ID {
-//	return pss.apm.GetApprovedBuilders()
-//}
 
 // get approved peers on pubsub server
 func (pss *PubSubServer) GetApprovedPeers() []peer.ID {
