@@ -18,21 +18,63 @@ type info struct {
 	address common.Address
 	// stake amount held by the peer
 	stake *big.Int
+	// protect info
+	sync.RWMutex
+}
+
+func (i *info) getStart() time.Time {
+	i.RLock()
+	defer i.RUnlock()
+
+	return i.start
+}
+
+func (i *info) getVersion() string {
+	i.RLock()
+	defer i.RUnlock()
+
+	return i.version
+}
+
+func (i *info) getAddress() common.Address {
+	i.RLock()
+	defer i.RUnlock()
+
+	return i.address
+}
+
+func (i *info) getStake() *big.Int {
+	i.RLock()
+	defer i.RUnlock()
+
+	return i.stake
 }
 
 func (i *info) setStart(start time.Time) {
+	i.Lock()
+	defer i.Unlock()
+
 	i.start = start
 }
 
 func (i *info) setVersion(version []byte) {
+	i.Lock()
+	defer i.Unlock()
+
 	i.version = string(version)
 }
 
 func (i *info) setAddress(address common.Address) {
+	i.Lock()
+	defer i.Unlock()
+
 	i.address = address
 }
 
 func (i *info) setStake(stake *big.Int) {
+	i.Lock()
+	defer i.Unlock()
+
 	i.stake = stake
 }
 
@@ -73,7 +115,14 @@ func (a *approvedPeersMap) GetPeers() map[peer.ID]*info {
 
 	var peers = make(map[peer.ID]*info)
 	for k, v := range a.peers {
-		peers[k] = v
+		infoCopy := &info{
+			start:   v.getStart(),
+			version: v.getVersion(),
+			address: v.getAddress(),
+			stake:   v.getStake(),
+		}
+
+		peers[k] = infoCopy
 	}
 
 	return peers
