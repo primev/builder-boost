@@ -22,6 +22,7 @@ type info struct {
 	sync.RWMutex
 }
 
+// getStart returns the start time of the peer.
 func (i *info) getStart() time.Time {
 	i.RLock()
 	defer i.RUnlock()
@@ -29,6 +30,7 @@ func (i *info) getStart() time.Time {
 	return i.start
 }
 
+// getVersion returns the version information of the peer.
 func (i *info) getVersion() string {
 	i.RLock()
 	defer i.RUnlock()
@@ -36,6 +38,7 @@ func (i *info) getVersion() string {
 	return i.version
 }
 
+// getAddress returns the address of the peer.
 func (i *info) getAddress() common.Address {
 	i.RLock()
 	defer i.RUnlock()
@@ -43,6 +46,7 @@ func (i *info) getAddress() common.Address {
 	return i.address
 }
 
+// getStake returns the stake amount held by the peer.
 func (i *info) getStake() *big.Int {
 	i.RLock()
 	defer i.RUnlock()
@@ -50,6 +54,7 @@ func (i *info) getStake() *big.Int {
 	return i.stake
 }
 
+// setStart sets the start time of the peer.
 func (i *info) setStart(start time.Time) {
 	i.Lock()
 	defer i.Unlock()
@@ -57,6 +62,7 @@ func (i *info) setStart(start time.Time) {
 	i.start = start
 }
 
+// setVersion sets the version information of the peer.
 func (i *info) setVersion(version []byte) {
 	i.Lock()
 	defer i.Unlock()
@@ -64,6 +70,7 @@ func (i *info) setVersion(version []byte) {
 	i.version = string(version)
 }
 
+// setAddress sets the address of the peer.
 func (i *info) setAddress(address common.Address) {
 	i.Lock()
 	defer i.Unlock()
@@ -71,6 +78,7 @@ func (i *info) setAddress(address common.Address) {
 	i.address = address
 }
 
+// setStake sets the stake amount held by the peer.
 func (i *info) setStake(stake *big.Int) {
 	i.Lock()
 	defer i.Unlock()
@@ -83,24 +91,28 @@ type approvedPeersMap struct {
 	sync.RWMutex
 }
 
+// newApprovedPeersMap creates a new instance of the approvedPeersMap.
 func newApprovedPeersMap() *approvedPeersMap {
 	return &approvedPeersMap{
 		peers: make(map[peer.ID]*info, 1024),
 	}
 }
 
+// AddPeer adds a peer to the approved peers map.
 func (a *approvedPeersMap) AddPeer(peer peer.ID) {
 	a.Lock()
 	defer a.Unlock()
 	a.peers[peer] = &info{}
 }
 
+// DelPeer removes a peer from the approved peers map.
 func (a *approvedPeersMap) DelPeer(peer peer.ID) {
 	a.Lock()
 	defer a.Unlock()
 	delete(a.peers, peer)
 }
 
+// InPeers checks if a peer is in the approved peers map.
 func (a *approvedPeersMap) InPeers(peer peer.ID) bool {
 	a.RLock()
 	defer a.RUnlock()
@@ -109,6 +121,7 @@ func (a *approvedPeersMap) InPeers(peer peer.ID) bool {
 	return ok
 }
 
+// GetPeers returns a map of all the approved peers.
 func (a *approvedPeersMap) GetPeers() map[peer.ID]*info {
 	a.RLock()
 	defer a.RUnlock()
@@ -128,19 +141,20 @@ func (a *approvedPeersMap) GetPeers() map[peer.ID]*info {
 	return peers
 }
 
+// ListApprovedPeers returns a list of all the approved peer IDs.
 func (a *approvedPeersMap) ListApprovedPeers() []peer.ID {
 	a.RLock()
 	defer a.RUnlock()
 
 	approvedPeers := []peer.ID{}
-	for k, _ := range a.peers {
+	for k := range a.peers {
 		approvedPeers = append(approvedPeers, k)
 	}
 
 	return approvedPeers
 }
 
-// (start) set peer info options
+// SetPeerInfoStart sets the start time of a peer.
 func (a *approvedPeersMap) SetPeerInfoStart(peer peer.ID, start time.Time) {
 	a.Lock()
 	defer a.Unlock()
@@ -149,7 +163,7 @@ func (a *approvedPeersMap) SetPeerInfoStart(peer peer.ID, start time.Time) {
 	}
 }
 
-// (version) set peer info options
+// SetPeerInfoVersion sets the version information of a peer.
 func (a *approvedPeersMap) SetPeerInfoVersion(peer peer.ID, version []byte) {
 	a.Lock()
 	defer a.Unlock()
@@ -158,7 +172,7 @@ func (a *approvedPeersMap) SetPeerInfoVersion(peer peer.ID, version []byte) {
 	}
 }
 
-// (address) set peer info options
+// SetPeerInfoAddress sets the address of a peer.
 func (a *approvedPeersMap) SetPeerInfoAddress(peer peer.ID, address common.Address) {
 	a.Lock()
 	defer a.Unlock()
@@ -167,7 +181,7 @@ func (a *approvedPeersMap) SetPeerInfoAddress(peer peer.ID, address common.Addre
 	}
 }
 
-// (stake) set peer info options
+// SetPeerInfoStake sets the stake amount held by a peer.
 func (a *approvedPeersMap) SetPeerInfoStake(peer peer.ID, stake *big.Int) {
 	a.Lock()
 	defer a.Unlock()
