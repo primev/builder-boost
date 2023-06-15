@@ -442,6 +442,35 @@ func (pss *PubSubServer) events(trackCh <-chan commons.ConnectionEvent) {
 					break
 				}
 			}
+
+			go func() {
+				checker := time.NewTicker(100 * time.Millisecond)
+
+				for i := 0; i < 30; i++ {
+					// wait for it to join the verified peers
+					<-checker.C
+
+					if pss.apm.InPeers(event.PeerID) {
+						// Once the peer is connected,
+						// send a message to get the version information
+						msg, err = pss.omb.GetVersion()
+						if err != nil {
+							return
+						}
+
+						msgBytes, err = msg.MarshalJSON()
+						if err != nil {
+							return
+						}
+
+						pss.psp.Send(event.PeerID, msgBytes)
+						break
+					}
+				}
+
+				checker.Stop()
+			}()
+
 		case commons.Disconnected:
 			pss.apm.DelPeer(event.PeerID)
 		}
