@@ -424,6 +424,26 @@ func (pss *PubSubServer) events(trackCh <-chan commons.ConnectionEvent) {
 	for event := range trackCh {
 		switch event.Event {
 		case commons.Connected:
+			go func() {
+				var retry = 5
+				// create authentication message and stream this message for new peer
+				msg, err := pss.omb.Authentication(pss.token)
+				if err != nil {
+					return
+				}
+
+				msgBytes, err := msg.MarshalJSON()
+				if err != nil {
+					return
+				}
+
+				for i := 0; i < retry; i++ {
+					err = pss.psp.Send(event.PeerID, msgBytes)
+					if err == nil {
+						break
+					}
+				}
+			}()
 		case commons.Disconnected:
 			pss.apm.DelPeer(event.PeerID)
 		}
