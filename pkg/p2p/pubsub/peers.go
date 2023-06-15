@@ -68,8 +68,8 @@ func (a approvedPeersMap) InPeers(peer peer.ID) bool {
 }
 
 func (a approvedPeersMap) GetPeers() map[peer.ID]*info {
-	a.RLock()
-	defer a.RUnlock()
+	a.Lock()
+	defer a.Unlock()
 
 	var peers = make(map[peer.ID]*info)
 	for k, v := range a.peers {
