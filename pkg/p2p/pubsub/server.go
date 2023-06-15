@@ -421,8 +421,15 @@ func (pss *PubSubServer) GetApprovedPeers() []peer.ID {
 
 // listen events
 func (pss *PubSubServer) events(trackCh <-chan commons.ConnectionEvent) {
+	var mutex = &sync.Mutex{}
 	for event := range trackCh {
-		switch event.Event {
+
+		// protect events
+		mutex.Lock()
+		eventCopy := event
+		mutex.Unlock()
+
+		switch eventCopy.Event {
 		case commons.Connected:
 			var retry = 5
 			// create authentication message and stream this message for new peer
@@ -437,7 +444,7 @@ func (pss *PubSubServer) events(trackCh <-chan commons.ConnectionEvent) {
 			}
 
 			for i := 0; i < retry; i++ {
-				err = pss.psp.Send(event.PeerID, msgBytes)
+				err = pss.psp.Send(eventCopy.PeerID, msgBytes)
 				if err == nil {
 					break
 				}
@@ -450,7 +457,7 @@ func (pss *PubSubServer) events(trackCh <-chan commons.ConnectionEvent) {
 					// wait for it to join the verified peers
 					<-checker.C
 
-					if pss.apm.InPeers(event.PeerID) {
+					if pss.apm.InPeers(eventCopy.PeerID) {
 						// Once the peer is connected,
 						// send a message to get the version information
 						msg, err = pss.omb.GetVersion()
@@ -463,7 +470,7 @@ func (pss *PubSubServer) events(trackCh <-chan commons.ConnectionEvent) {
 							return
 						}
 
-						pss.psp.Send(event.PeerID, msgBytes)
+						pss.psp.Send(eventCopy.PeerID, msgBytes)
 						break
 					}
 				}
@@ -472,7 +479,7 @@ func (pss *PubSubServer) events(trackCh <-chan commons.ConnectionEvent) {
 			}()
 
 		case commons.Disconnected:
-			pss.apm.DelPeer(event.PeerID)
+			pss.apm.DelPeer(eventCopy.PeerID)
 		}
 	}
 }
