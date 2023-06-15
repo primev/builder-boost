@@ -73,25 +73,21 @@ func (ct *connectionTracker) handleDisconnected(net network.Network, conn networ
 }
 
 func (ct *connectionTracker) sendConnected(peerID peer.ID) {
-	select {
-	// Send the connected peer's information to the channel
-	case ct.trackCh <- commons.ConnectionEvent{
+	// send the connected peer's information to the channel
+	ct.trackCh <- commons.ConnectionEvent{
 		PeerID: peerID,
 		Event:  commons.Connected,
-	}:
-	// Channel is full or no receiver, drop the message or handle it accordingly
-	default:
 	}
+
+	return
 }
 
 func (ct *connectionTracker) sendDisconnected(peerID peer.ID) {
-	select {
-	// Send the disconnected peer's information to the channel
-	case ct.trackCh <- commons.ConnectionEvent{
+	// send the disconnected peer's information to the channel
+	ct.trackCh <- commons.ConnectionEvent{
 		PeerID: peerID,
 		Event:  commons.Disconnected,
-	}:
-	// Channel is full or no receiver, drop the message or handle it accordingly
-	default:
 	}
+
+	return
 }
