@@ -59,7 +59,7 @@ func (a *approvedPeersMap) DelPeer(peer peer.ID) {
 	delete(a.peers, peer)
 }
 
-func (a approvedPeersMap) InPeers(peer peer.ID) bool {
+func (a *approvedPeersMap) InPeers(peer peer.ID) bool {
 	a.RLock()
 	defer a.RUnlock()
 
@@ -67,9 +67,9 @@ func (a approvedPeersMap) InPeers(peer peer.ID) bool {
 	return ok
 }
 
-func (a approvedPeersMap) GetPeers() map[peer.ID]*info {
-	a.Lock()
-	defer a.Unlock()
+func (a *approvedPeersMap) GetPeers() map[peer.ID]*info {
+	a.RLock()
+	defer a.RUnlock()
 
 	var peers = make(map[peer.ID]*info)
 	for k, v := range a.peers {
@@ -79,7 +79,7 @@ func (a approvedPeersMap) GetPeers() map[peer.ID]*info {
 	return peers
 }
 
-func (a approvedPeersMap) ListApprovedPeers() []peer.ID {
+func (a *approvedPeersMap) ListApprovedPeers() []peer.ID {
 	a.RLock()
 	defer a.RUnlock()
 
