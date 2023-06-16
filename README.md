@@ -86,10 +86,6 @@ After all required fields specified, press **Write** button and confirm transact
 
 # Depositing to Builder in Primev Contract as a Searcher
 
-## Open Primev Contract in Etherscan
-
-Head to [Deposit Method](https://sepolia.etherscan.io/address/0x6e100446995f4456773Cd3e96FA201266c44d4B8#writeContract#F1) in Etherscan. This method allows you to deposit stake to some particular builder on behalf of searcher.
-
 ## Obtain Commitment Hash from Builder
 
 Making deposit requires specifying commitment hash which is unique to every searcher-builder pair. To obtain this hash you need to send a HTTP request to builder endpoint with specified `token` parameter. Token parameter is logged when running **Searcher** instance, make sure you run Searcher with correct `SEARCHER_KEY` and `BOOST_ADDR` variables.
@@ -103,6 +99,14 @@ Output will look like this:
 ```json
 {"commitment":"0x688d0031ba0ce02c2049786ca6fd70d04869688dd84d6310b7fdb052d199612f"}
 ```
+
+## Open Primev Contract in Etherscan
+
+Head to [Deposit Method](https://sepolia.etherscan.io/address/0x6e100446995f4456773Cd3e96FA201266c44d4B8#writeContract#F1) in Etherscan. This method allows you to deposit stake to some particular builder on behalf of searcher.
+
+## Connect Web3 Wallet
+
+On top left corner of **Write Contract** section press **Connect to Web3**. Make sure you use builder address (the one you use for running builder geth instance). This address should be funded with some Sepolia ETH to cover transaction costs.
 
 ## Specify Deposit Parameters and Send Transaction
 
