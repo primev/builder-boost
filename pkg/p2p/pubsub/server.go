@@ -313,9 +313,13 @@ func (pss *PubSubServer) optAuthentication(cpeer peer.ID, bytes []byte, sendauth
 			}
 		}
 
+		addrInfo := pss.host.Peerstore().PeerInfo(cpeer)
+
 		pss.apm.SetPeerInfoStart(cpeer, time.Now())
 		pss.apm.SetPeerInfoAddress(cpeer, address)
 		pss.apm.SetPeerInfoStake(cpeer, stake)
+		pss.apm.SetPeerInfoAddrs(cpeer, addrInfo.Addrs)
+
 		if sendauth {
 			// create authentication message and stream this message for new peer
 			msg, err := pss.omb.Authentication(pss.token)
@@ -400,15 +404,19 @@ func (pss *PubSubServer) optGetPeerList(cpeer peer.ID) {
 }
 
 // get peerlist from other peers
-func (pss *PubSubServer) optPeerList(cpeer peer.ID, bytes []byte) []peer.ID {
+func (pss *PubSubServer) optPeerList(cpeer peer.ID, bytes []byte) {
 	var peerlist []peer.ID
 
 	peers := strings.Split(string(bytes), ",")
 	for _, v := range peers[:len(peers)-1] {
-		peerlist = append(peerlist, peer.ID(v))
+		//peerlist = append(peerlist, peer.ID(v))
+		if !pss.apm.InPeers(peer.ID(v)) {
+
+		}
 	}
 
-	return peerlist
+	fmt.Println(peerlist)
+	return
 }
 
 // get self peer.ID
@@ -451,9 +459,9 @@ func (pss *PubSubServer) events(trackCh <-chan commons.ConnectionEvent) {
 			}
 
 			go func() {
-				checker := time.NewTicker(100 * time.Millisecond)
+				checker := time.NewTicker(500 * time.Millisecond)
 
-				for i := 0; i < 30; i++ {
+				for i := 0; i < 10; i++ {
 					// wait for it to join the verified peers
 					<-checker.C
 
