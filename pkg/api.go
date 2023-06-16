@@ -68,7 +68,7 @@ func (a *API) init() {
 
 		router.Handle("/health", a.authenticateBuilder(http.HandlerFunc(a.handleHealthCheck)))
 		// Adds an endpoint to retrieve the builder ID
-		router.Handle("/builder", a.authenticateBuilder(http.HandlerFunc(a.handleBuilderID)))
+		router.Handle("/builder", http.HandlerFunc(a.handleBuilderID))
 		// Adds an endpoint to get commitment to the builder by searcher address
 		router.Handle("/commitment", a.authSearcher(http.HandlerFunc(a.handleSearcherCommitment)))
 
