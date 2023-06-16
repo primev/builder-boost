@@ -174,6 +174,25 @@ func (a *approvedPeersMap) ListApprovedPeers() []peer.ID {
 	return approvedPeers
 }
 
+// ListApprovedPeerAddrs returns a list of all the approved peer addrs.
+func (a *approvedPeersMap) ListApprovedPeerAddrs() []peer.AddrInfo {
+	a.RLock()
+	defer a.RUnlock()
+
+	approvedPeerAddrs := []peer.AddrInfo{}
+
+	for k, v := range a.peers {
+		addr := peer.AddrInfo{
+			ID:    k,
+			Addrs: v.getAddrs(),
+		}
+
+		approvedPeerAddrs = append(approvedPeerAddrs, addr)
+	}
+
+	return approvedPeerAddrs
+}
+
 // SetPeerInfoStart sets the start time of a peer.
 func (a *approvedPeersMap) SetPeerInfoStart(peer peer.ID, start time.Time) {
 	a.Lock()
