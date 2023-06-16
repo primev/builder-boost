@@ -148,10 +148,11 @@ func (a *approvedPeersMap) GetPeers() map[peer.ID]*info {
 	var peers = make(map[peer.ID]*info)
 	for k, v := range a.peers {
 		infoCopy := &info{
-			start:   v.getStart(),
-			version: v.getVersion(),
-			address: v.getAddress(),
-			stake:   v.getStake(),
+			start:     v.getStart(),
+			version:   v.getVersion(),
+			address:   v.getAddress(),
+			stake:     v.getStake(),
+			hostAddrs: v.getAddrs(),
 		}
 
 		peers[k] = infoCopy
