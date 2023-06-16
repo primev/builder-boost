@@ -389,7 +389,7 @@ func (pss *PubSubServer) optVersion(cpeer peer.ID, bytes []byte) {
 
 // Create a 'peerlist' message and stream it to the peer that received the 'getpeerlist' message.
 func (pss *PubSubServer) optGetPeerList(cpeer peer.ID) {
-	msg, err := pss.omb.PeerList(pss.apm.ListApprovedPeers())
+	msg, err := pss.omb.PeerList(pss.apm.ListApprovedPeerAddrs())
 	if err != nil {
 		return
 	}
@@ -405,18 +405,23 @@ func (pss *PubSubServer) optGetPeerList(cpeer peer.ID) {
 
 // get peerlist from other peers
 func (pss *PubSubServer) optPeerList(cpeer peer.ID, bytes []byte) {
-	var peerlist []peer.ID
+	var addrs []peer.AddrInfo
 
-	peers := strings.Split(string(bytes), ",")
-	for _, v := range peers[:len(peers)-1] {
-		//peerlist = append(peerlist, peer.ID(v))
-		if !pss.apm.InPeers(peer.ID(v)) {
-
-		}
+	err := json.Unmarshal(bytes, &addrs)
+	if err != nil {
+		return
 	}
 
-	fmt.Println(peerlist)
-	return
+	for _, addr := range addrs {
+		if addr.ID == pss.self {
+			continue
+		}
+
+		if !pss.apm.InPeers(addr.ID) {
+			//TODO make test without mdns
+			go pss.host.Connect(context.Background(), addr)
+		}
+	}
 }
 
 // get self peer.ID
@@ -484,6 +489,18 @@ func (pss *PubSubServer) events(trackCh <-chan commons.ConnectionEvent) {
 				}
 
 				checker.Stop()
+
+				msg, err = pss.omb.GetPeerList()
+				if err != nil {
+					return
+				}
+
+				msgBytes, err = msg.MarshalJSON()
+				if err != nil {
+					return
+				}
+
+				pss.psp.Send(eventCopy.PeerID, msgBytes)
 			}()
 
 		case commons.Disconnected:
