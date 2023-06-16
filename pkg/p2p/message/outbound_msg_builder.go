@@ -1,10 +1,10 @@
 package message
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/libp2p/go-libp2p/core/peer"
-	"github.com/primev/builder-boost/pkg/p2p/commons"
 )
 
 var _ OutboundMsgBuilder = (*outMsgBuilder)(nil)
@@ -16,7 +16,7 @@ type OutboundMsgBuilder interface {
 	GetVersion() (OutboundMessage, error)
 	Version(string) (OutboundMessage, error)
 	GetPeerList() (OutboundMessage, error)
-	PeerList([]peer.ID) (OutboundMessage, error)
+	PeerList([]peer.AddrInfo) (OutboundMessage, error)
 }
 
 type outMsgBuilder struct {
@@ -82,10 +82,16 @@ func (b *outMsgBuilder) GetPeerList() (OutboundMessage, error) {
 	)
 }
 
-func (b *outMsgBuilder) PeerList(peers []peer.ID) (OutboundMessage, error) {
+// func (b *outMsgBuilder) PeerList(peers []peer.ID) (OutboundMessage, error) {
+func (b *outMsgBuilder) PeerList(addrs []peer.AddrInfo) (OutboundMessage, error) {
+	data, err := json.Marshal(&addrs)
+	if err != nil {
+		return nil, err
+	}
+
 	return b.builder.createOutbound(
 		PeerList,
 		time.Now().UnixNano(),
-		commons.PeersToBytes(peers),
+		data,
 	)
 }
