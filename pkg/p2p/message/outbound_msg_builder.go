@@ -82,7 +82,6 @@ func (b *outMsgBuilder) GetPeerList() (OutboundMessage, error) {
 	)
 }
 
-// func (b *outMsgBuilder) PeerList(peers []peer.ID) (OutboundMessage, error) {
 func (b *outMsgBuilder) PeerList(addrs []peer.AddrInfo) (OutboundMessage, error) {
 	data, err := json.Marshal(&addrs)
 	if err != nil {
