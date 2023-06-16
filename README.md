@@ -107,7 +107,7 @@ Output will look like this:
 ## Specify Deposit Parameters and Send Transaction
 
 In `deposit` method there is 3 fields to specify:
-- `payableAmount`: the amount of stake you with to deposit for particular builder
+- `payableAmount`: the amount of stake you wish to deposit for particular builder
 - `_builder`: the builder address
 - `_commitment`: the commitment hash obtained on previous step
 
