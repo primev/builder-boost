@@ -65,6 +65,53 @@ Note, the `BUILDER_AUTH_TOKEN` should be set to the same value set for `--builde
 1. Copy `.env.example` to `.env` and set required variables
 2. Run `docker-compose up --build` to run builder and searcher connected to builder
 
+# Registering Builder in Primev Contract
+
+## Open Primev Contract in Etherscan
+
+Head to [Update Builder Method](https://sepolia.etherscan.io/address/0x6e100446995f4456773Cd3e96FA201266c44d4B8#writeContract#F4) in Etherscan. This method allows you to register new builder or update settings for existing builder.
+
+## Connect Web3 Wallet
+
+On top left corner of **Write Contract** section press **Connect to Web3**. Make sure you use builder address (the one you use for running builder geth instance). This address should be funded with some Sepolia ETH to cover transaction costs.
+
+## Specify Builder Parameters and Register
+
+
+In `updateBuilder` method there is 2 fields to specify:
+- `_minimalStake`: minimal amount for searcher to deposit to this builder in order to start receiving builder hints
+- `_minimalSubscriptionPeriod`: minimal subscription period given to searcher for depositing minimal stake. In case searcher deposits more than minimal stake, subscription period will be extended linearly.
+
+After all required fields specified, press **Write** button and confirm transaction using your Web3 provider. Once transaction is confirmed, searchers could start depositing to your builder. Make sure you run builder boost instance before registering new builder.
+
+# Depositing to Builder in Primev Contract as a Searcher
+
+## Open Primev Contract in Etherscan
+
+Head to [Deposit Method](https://sepolia.etherscan.io/address/0x6e100446995f4456773Cd3e96FA201266c44d4B8#writeContract#F1) in Etherscan. This method allows you to deposit stake to some particular builder on behalf of searcher.
+
+## Obtain Commitment Hash from Builder
+
+Making deposit requires specifying commitment hash which is unique to every searcher-builder pair. To obtain this hash you need to send a HTTP request to builder endpoint with specified `token` parameter. Token parameter is logged when running **Searcher** instance, make sure you run Searcher with correct `SEARCHER_KEY` and `BOOST_ADDR` variables.
+
+Obtain Commitment Hash, assuming `http://localhost:18550` is a builder boost endpoint and `ABCD` is a searcher token for this builder:
+```bash
+$ curl http://localhost:18550/commitment?token=ABCD
+```
+
+Output will look like this:
+```json
+{"commitment":"0x688d0031ba0ce02c2049786ca6fd70d04869688dd84d6310b7fdb052d199612f"}
+```
+
+## Specify Deposit Parameters and Send Transaction
+
+In `deposit` method there is 3 fields to specify:
+- `payableAmount`: the amount of stake you with to deposit for particular builder
+- `_builder`: the builder address
+- `_commitment`: the commitment hash obtained on previous step
+
+After all required fields specified, press **Write** button and confirm transaction using your Web3 provider. Once transaction is confirmed, searcher will be able to receive builder hints.
 
 ## More Links
 [Searcher Testing Guide](docs/searcher-testing.md) - This guide walks you through the setup process for connecting searcher emulators to your boost for e2e testing and monitoring.
