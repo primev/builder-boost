@@ -7,6 +7,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/libp2p/go-libp2p/core/peer"
+	"github.com/multiformats/go-multiaddr"
 )
 
 type info struct {
@@ -18,6 +19,8 @@ type info struct {
 	address common.Address
 	// stake amount held by the peer
 	stake *big.Int
+	// addrs list
+	hostAddrs []multiaddr.Multiaddr
 	// protect info
 	sync.RWMutex
 }
@@ -54,6 +57,14 @@ func (i *info) getStake() *big.Int {
 	return i.stake
 }
 
+// getAddrs returns the host addrs of the peer.
+func (i *info) getAddrs() []multiaddr.Multiaddr {
+	i.RLock()
+	defer i.RUnlock()
+
+	return i.hostAddrs
+}
+
 // setStart sets the start time of the peer.
 func (i *info) setStart(start time.Time) {
 	i.Lock()
@@ -84,6 +95,14 @@ func (i *info) setStake(stake *big.Int) {
 	defer i.Unlock()
 
 	i.stake = stake
+}
+
+// setAddrs returns the host addrs of the peer.
+func (i *info) setAddrs(addrs []multiaddr.Multiaddr) {
+	i.Lock()
+	defer i.Unlock()
+
+	i.hostAddrs = addrs
 }
 
 type approvedPeersMap struct {
@@ -187,5 +206,14 @@ func (a *approvedPeersMap) SetPeerInfoStake(peer peer.ID, stake *big.Int) {
 	defer a.Unlock()
 	if val, ok := a.peers[peer]; ok {
 		val.setStake(stake)
+	}
+}
+
+// SetPeerInfoAddrs sets the host addrs of a peer.
+func (a *approvedPeersMap) SetPeerInfoAddrs(peer peer.ID, addrs []multiaddr.Multiaddr) {
+	a.Lock()
+	defer a.Unlock()
+	if val, ok := a.peers[peer]; ok {
+		val.setAddrs(addrs)
 	}
 }
