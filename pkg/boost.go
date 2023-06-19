@@ -136,16 +136,15 @@ func (as *DefaultBoost) SubmitBlock(ctx context.Context, msg *capella.SubmitBloc
 		as.config.Log.WithField("from_address", from.Hex()).WithField("txn", transaction.Hash()).WithError(err).Info("Found from address for txn")
 	}
 
-	// TODO(@ckartik): Remove dump of txn payload to logs.
-	// as.config.Log.
-	// 	WithField("block_hash", blockMetadata.BlockHash).
-	// 	WithField("base_fee", blockMetadata.BaseFee).
-	// 	WithField("min_priority_fee", blockMetadata.Transactions.MinPriorityFee).
-	// 	WithField("max_priority_fee", blockMetadata.Transactions.MaxPriorityFee).
-	// 	WithField("txn_count", blockMetadata.Transactions.Count).
-	// 	WithField("builder", blockMetadata.Builder).
-	// 	WithField("txn_dump", msg.ExecutionPayload.Transactions).
-	// 	Info("Block metadata processed")
+	as.config.Log.
+		WithField("block_hash", blockMetadata.InternalMetadata.BlockHash).
+		WithField("base_fee", blockMetadata.InternalMetadata.BaseFee).
+		WithField("min_priority_fee", blockMetadata.InternalMetadata.Transactions.MinPriorityFee).
+		WithField("max_priority_fee", blockMetadata.InternalMetadata.Transactions.MaxPriorityFee).
+		WithField("txn_count", blockMetadata.InternalMetadata.Transactions.Count).
+		WithField("builder", blockMetadata.InternalMetadata.Builder).
+		WithField("txn_dump", msg.ExecutionPayload.Transactions).
+		Info("Block metadata processed")
 
 	return nil
 }
