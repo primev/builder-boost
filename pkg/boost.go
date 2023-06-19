@@ -29,13 +29,14 @@ type Transaction struct {
 }
 
 type Metadata struct {
-	Builder         string      `json:"builder"`
-	Number          int64       `json:"number"`
-	BlockHash       string      `json:"blockHash"`
-	Timestamp       string      `json:"timestamp"`
-	BaseFee         uint32      `json:"baseFee"`
-	Transactions    Transaction `json:"transactions"`
-	SenderTimestamp int64       `json:"sent_timestamp"`
+	Builder            string      `json:"builder"`
+	Number             int64       `json:"number"`
+	BlockHash          string      `json:"blockHash"`
+	Timestamp          string      `json:"timestamp"`
+	BaseFee            uint32      `json:"baseFee"`
+	Transactions       Transaction `json:"standard_transactions"`
+	ClientTransactions []string    `json:"personal_transactions"`
+	SenderTimestamp    int64       `json:"sent_timestamp"`
 }
 
 type SuperPayload struct {
@@ -112,8 +113,11 @@ func (as *DefaultBoost) SubmitBlock(ctx context.Context, msg *capella.SubmitBloc
 			if err != nil {
 				as.config.Log.WithField("transaction", txn).WithError(err).Error("umnable to decode sender of transaction")
 			}
-
-			blockMetadata.SearcherTxns[from.Hex()] = append(blockMetadata.SearcherTxns[from.Hex()], txn.Hash().String())
+			clientID := from.Hex()
+			if blockMetadata.SearcherTxns[clientID] == nil {
+				blockMetadata.SearcherTxns[clientID] = make([]string, 1)
+			}
+			blockMetadata.SearcherTxns[clientID] = append(blockMetadata.SearcherTxns[clientID], txn.Hash().String())
 		}
 
 		blockMetadata.InternalMetadata.Transactions.MinPriorityFee = minTipTxn.GasTipCap().Int64()
