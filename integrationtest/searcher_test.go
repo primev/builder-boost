@@ -132,15 +132,15 @@ func TestConnectSearcher(t *testing.T) {
 		builderKey, builderAddress := generatePrivateKey()
 		searcherKey, searcherAddress := generatePrivateKey()
 		token, err := utils.GenerateAuthenticationToken(builderAddress.Hex(), searcherKey)
-
-		tx := types.NewTransaction(uint64(0), builderAddress, big.NewInt(1000000000000000000), uint64(21000), big.NewInt(1), []byte{})
-		txn, _ := types.SignTx(tx, types.NewEIP155Signer(big.NewInt(1)), searcherKey)
-		txn2, _ := types.SignTx(tx, types.NewEIP155Signer(big.NewInt(1)), builderKey)
-		btxn, _ := txn.MarshalBinary()
-		btxn2, _ := txn2.MarshalBinary()
 		if err != nil {
-			panic(err)
+			t.Fatal(err)
 		}
+		tx := types.NewTransaction(uint64(0), builderAddress, big.NewInt(1000000000000000000), uint64(21000), big.NewInt(1), []byte{})
+		searcherTxn, _ := types.SignTx(tx, types.NewEIP155Signer(big.NewInt(1)), searcherKey)
+		builderTxn, _ := types.SignTx(tx, types.NewEIP155Signer(big.NewInt(1)), builderKey)
+		btxn, _ := searcherTxn.MarshalBinary()
+		btxn2, _ := builderTxn.MarshalBinary()
+
 		commitment := utils.GetCommitment(builderKey, searcherAddress)
 
 		mockRollup.On("GetBuilderAddress").Return(builderAddress)
@@ -174,7 +174,7 @@ func TestConnectSearcher(t *testing.T) {
 			_ = json.NewDecoder(r).Decode(&data)
 			assert.Equal(t, data.Builder, "0xaa1488eae4b06a1fff840a2b6db167afc520758dc2c8af0dfb57037954df3431b747e2f900fe8805f05d635e9a29717b")
 			assert.GreaterOrEqual(t, data.SenderTimestamp, *currTime)
-			assert.Equal(t, data.ClientTransactions, []string{txn.Hash().Hex()})
+			assert.Equal(t, data.ClientTransactions, []string{searcherTxn.Hash().Hex()})
 			wg.Done()
 		}(t)
 		tnow := time.Now().Unix()
