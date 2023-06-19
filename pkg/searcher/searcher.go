@@ -33,11 +33,21 @@ type searcher struct {
 }
 
 func (s *searcher) Run(ctx context.Context) error {
+	parsedURL, err := url.Parse(s.addr)
+	if err != nil {
+		return err
+	}
+
 	// Continue attempts to connect to the builder boost service
-	token := s.GenerateAuthenticationTokenForBuilder(s.addr)
+	token := s.GenerateAuthenticationTokenForBuilder(parsedURL)
 	s.log.WithField("token", token).WithField("builder", s.addr).Info("generated token for builder boost")
 
-	u := url.URL{Scheme: "ws", Host: s.addr, Path: "/ws"}
+	wsScheme := "ws"
+	if parsedURL.Scheme == "https" {
+		wsScheme = "wss"
+	}
+
+	u := url.URL{Scheme: wsScheme, Host: parsedURL.Host, Path: "/ws"}
 	q := u.Query()
 	q.Set("token", token)
 	u.RawQuery = q.Encode()
@@ -59,13 +69,12 @@ type BuilderInfoResponse struct {
 }
 
 // GenerateAuthenticationTokenForBuilder generates a token for the builder boost service represented by the url
-func (s *searcher) GenerateAuthenticationTokenForBuilder(boostBaseURL string) (token string) {
-	var builderInfo BuilderInfoResponse
-	boostURL := url.URL{Scheme: "http", Host: boostBaseURL, Path: "/builder"}
-	s.log.WithField("url", boostURL.String()).Info("connecting to builder boost to get builder ID")
+func (s *searcher) GenerateAuthenticationTokenForBuilder(u *url.URL) (token string) {
+	getBuilderURL := url.URL{Scheme: u.Scheme, Host: u.Host, Path: "/builder"}
+	s.log.WithField("url", getBuilderURL.String()).Info("connecting to builder boost to get builder ID")
 
 	// Make a get request to the url
-	req, err := http.NewRequest("GET", boostURL.String(), nil)
+	req, err := http.NewRequest("GET", getBuilderURL.String(), nil)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -85,6 +94,8 @@ func (s *searcher) GenerateAuthenticationTokenForBuilder(boostBaseURL string) (t
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	var builderInfo BuilderInfoResponse
 	err = json.Unmarshal(body, &builderInfo)
 	if err != nil {
 		log.Fatal(err)
