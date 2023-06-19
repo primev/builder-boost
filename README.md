@@ -88,11 +88,11 @@ After all required fields specified, press **Write** button and confirm transact
 
 ## Obtain Commitment Hash from Builder
 
-Making deposit requires specifying commitment hash which is unique to every searcher-builder pair. To obtain this hash you need to send a HTTP request to builder endpoint with specified `token` parameter. Token parameter is logged when running **Searcher** instance, make sure you run Searcher with correct `SEARCHER_KEY` and `BOOST_ADDR` variables.
+Making deposit requires specifying commitment hash which is unique to every searcher-builder pair. To obtain this hash you need to send a HTTP request to builder endpoint with specified `token` parameter. Token parameter is logged when running **Searcher** instance, make sure you run Searcher with correct `SEARCHER_KEY` and `BOOST_URL` variables.
 
 Obtain Commitment Hash, assuming `http://localhost:18550` is a builder boost endpoint and `ABCD` is a searcher token for this builder:
 ```bash
-$ curl http://localhost:18550/commitment?token=ABCD
+$ curl -H "X-Primev-Signature: ABCD" http://localhost:18550/commitment
 ```
 
 Output will look like this:
