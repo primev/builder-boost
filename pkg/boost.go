@@ -80,6 +80,7 @@ func (as *DefaultBoost) SubmitBlock(ctx context.Context, msg *capella.SubmitBloc
 
 	var _txn types.Transaction
 	var blockMetadata SuperPayload
+	blockMetadata.SearcherTxns = make(map[string][]string)
 
 	blockMetadata.InternalMetadata.BlockHash = msg.Message.BlockHash.String()
 	blockMetadata.InternalMetadata.Number = int64(msg.ExecutionPayload.BlockNumber)

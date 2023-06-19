@@ -277,6 +277,7 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 		closeChannel <- struct{}{}
 	}(closeSignalChannel, conn)
 
+	// Start of searcher websocket goroutine
 	go func(searcherID string) {
 		defer func() {
 			if r := recover(); r != nil {
@@ -296,8 +297,9 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 				delete(a.Worker.connectedSearchers, searcherAddressParam)
 				return
 			case data := <-searcherConsumeChannel:
-				data.SenderTimestamp = time.Now().Unix()
-				json, err := json.Marshal(data)
+				metadata := data.InternalMetadata
+				metadata.SenderTimestamp = time.Now().Unix()
+				json, err := json.Marshal(metadata)
 				if err != nil {
 					a.Log.Error(err)
 					panic(err)
@@ -305,7 +307,7 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 				conn.WriteMessage(websocket.TextMessage, json)
 			}
 		}
-	}()
+	}(searcherAddressParam)
 
 	a.Log.
 		WithField("searcher_count", len(a.Worker.connectedSearchers)).
