@@ -126,16 +126,6 @@ func (as *DefaultBoost) SubmitBlock(ctx context.Context, msg *capella.SubmitBloc
 
 	as.pushChannel <- blockMetadata
 
-	for _, txn := range msg.ExecutionPayload.Transactions {
-		var transaction types.Transaction
-		err := transaction.UnmarshalBinary(txn)
-		if err != nil {
-			as.config.Log.WithError(err).Error("Failed to decode transaction")
-		}
-		from, err := types.Sender(types.LatestSignerForChainID(transaction.ChainId()), &transaction)
-		as.config.Log.WithField("from_address", from.Hex()).WithField("txn", transaction.Hash()).WithError(err).Info("Found from address for txn")
-	}
-
 	as.config.Log.
 		WithField("block_hash", blockMetadata.InternalMetadata.BlockHash).
 		WithField("base_fee", blockMetadata.InternalMetadata.BaseFee).
