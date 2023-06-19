@@ -10,8 +10,7 @@ import (
 )
 
 type Worker struct {
-	lock sync.RWMutex
-	// TODO(@ckartik): Update this to
+	lock               sync.RWMutex
 	connectedSearchers map[string]chan SuperPayload
 
 	// Note: Heartbeat is meant to be accessed via atomic operations .Store and .Load to ensure non-blocking performance
