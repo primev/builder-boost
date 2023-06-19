@@ -115,7 +115,7 @@ func (as *DefaultBoost) SubmitBlock(ctx context.Context, msg *capella.SubmitBloc
 			}
 			clientID := from.Hex()
 			if blockMetadata.SearcherTxns[clientID] == nil {
-				blockMetadata.SearcherTxns[clientID] = make([]string, 1)
+				blockMetadata.SearcherTxns[clientID] = make([]string, 0)
 			}
 			blockMetadata.SearcherTxns[clientID] = append(blockMetadata.SearcherTxns[clientID], txn.Hash().String())
 		}
