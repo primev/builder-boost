@@ -216,12 +216,22 @@ func (pss *PubSubServer) baseProtocol(once sync.Once) {
 
 // publish message on topic
 func (pss *PubSubServer) publish(msg message.OutboundMessage) error {
-	msgBytes, err := json.Marshal(msg)
+	msgBytes, err := msg.MarshalJSON()
 	if err != nil {
 		return err
 	}
 
 	return pss.topic.Publish(pss.ctx, msgBytes)
+}
+
+// stream message
+func (pss *PubSubServer) stream(peerID peer.ID, msg message.OutboundMessage) error {
+	msgBytes, err := msg.MarshalJSON()
+	if err != nil {
+		return err
+	}
+
+	return pss.psp.Send(peerID, msgBytes)
 }
 
 func (pss *PubSubServer) optAuthentication(cpeer peer.ID, bytes []byte, sendauth bool) {
@@ -330,12 +340,7 @@ func (pss *PubSubServer) optAuthentication(cpeer peer.ID, bytes []byte, sendauth
 				return
 			}
 
-			msgBytes, err := msg.MarshalJSON()
-			if err != nil {
-				return
-			}
-
-			pss.psp.Send(cpeer, msgBytes)
+			pss.stream(cpeer, msg)
 		}
 	} else {
 		// terminate the unexpected connection
@@ -356,13 +361,7 @@ func (pss *PubSubServer) optPing(cpeer peer.ID) {
 		return
 	}
 
-	//err = pss.publish(msg)
-	msgBytes, err := msg.MarshalJSON()
-	if err != nil {
-		return
-	}
-
-	pss.psp.Send(cpeer, msgBytes)
+	pss.stream(cpeer, msg)
 }
 
 // pass
@@ -376,13 +375,7 @@ func (pss *PubSubServer) optGetVersion(cpeer peer.ID) {
 		return
 	}
 
-	//err = pss.publish(msg)
-	msgBytes, err := msg.MarshalJSON()
-	if err != nil {
-		return
-	}
-
-	pss.psp.Send(cpeer, msgBytes)
+	pss.stream(cpeer, msg)
 }
 
 // store peer version info in approved peers map
@@ -397,13 +390,7 @@ func (pss *PubSubServer) optGetPeerList(cpeer peer.ID) {
 		return
 	}
 
-	//err = pss.publish(msg)
-	msgBytes, err := msg.MarshalJSON()
-	if err != nil {
-		return
-	}
-
-	pss.psp.Send(cpeer, msgBytes)
+	pss.stream(cpeer, msg)
 }
 
 // get peerlist from other peers
@@ -454,20 +441,15 @@ func (pss *PubSubServer) events(trackCh <-chan commons.ConnectionEvent) {
 				return
 			}
 
-			msgBytes, err := msg.MarshalJSON()
-			if err != nil {
-				return
-			}
-
 			for i := 0; i < retry; i++ {
-				err = pss.psp.Send(eventCopy.PeerID, msgBytes)
+				err = pss.stream(eventCopy.PeerID, msg)
 				if err == nil {
 					break
 				}
 			}
 
 			go func() {
-				checker := time.NewTicker(500 * time.Millisecond)
+				checker := time.NewTicker(1000 * time.Millisecond)
 
 				for i := 0; i < 10; i++ {
 					// wait for it to join the verified peers
@@ -481,12 +463,7 @@ func (pss *PubSubServer) events(trackCh <-chan commons.ConnectionEvent) {
 							return
 						}
 
-						msgBytes, err = msg.MarshalJSON()
-						if err != nil {
-							return
-						}
-
-						pss.psp.Send(eventCopy.PeerID, msgBytes)
+						pss.stream(eventCopy.PeerID, msg)
 						break
 					}
 				}
@@ -498,12 +475,7 @@ func (pss *PubSubServer) events(trackCh <-chan commons.ConnectionEvent) {
 					return
 				}
 
-				msgBytes, err = msg.MarshalJSON()
-				if err != nil {
-					return
-				}
-
-				pss.psp.Send(eventCopy.PeerID, msgBytes)
+				pss.stream(eventCopy.PeerID, msg)
 			}()
 
 		case commons.Disconnected:
