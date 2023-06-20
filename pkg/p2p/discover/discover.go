@@ -18,16 +18,18 @@ import (
 
 // optional discovery
 type Discovery struct {
+	cfg    *config.Config
 	h      host.Host
 	ctx    context.Context
 	log    log.Logger
 	notify *discoveryNotifee
 	idht   *dht.IpfsDHT
+
 	//...
 }
 
 // Create discover method
-func NewDiscovery(h host.Host, ctx context.Context, logger log.Logger) *Discovery {
+func NewDiscovery(cfg *config.Config, h host.Host, ctx context.Context, logger log.Logger) *Discovery {
 	notify := &discoveryNotifee{
 		h:   h,
 		ctx: ctx,
@@ -47,6 +49,7 @@ func NewDiscovery(h host.Host, ctx context.Context, logger log.Logger) *Discover
 	}
 
 	return &Discovery{
+		cfg:    cfg,
 		h:      h,
 		ctx:    ctx,
 		log:    logger,
@@ -59,7 +62,8 @@ func NewDiscovery(h host.Host, ctx context.Context, logger log.Logger) *Discover
 // This lets us automatically discover peers on the same LAN and connect to them.
 func (d *Discovery) StartMdnsDiscovery() error {
 	// setup mDNS discovery to find local peers
-	s := mdns.NewMdnsService(d.h, config.DiscoveryServiceTag, d.notify)
+	s := mdns.NewMdnsService(d.h, d.cfg.DiscoveryServiceTag(), d.notify)
+
 	return s.Start()
 }
 
@@ -69,7 +73,7 @@ func (d *Discovery) StartDhtRouting() {
 
 func (d *Discovery) ConnectBootstrap() {
 	var wg sync.WaitGroup
-	for _, peerAddr := range config.DefaultBootstrapPeers {
+	for _, peerAddr := range d.cfg.BootstrapPeers() {
 		peerinfo, _ := peer.AddrInfoFromP2pAddr(peerAddr)
 		wg.Add(1)
 		go func() {
@@ -100,7 +104,7 @@ func (d *Discovery) ConnectBootstrap() {
 func (d *Discovery) discoverPeersWithRendezvous() {
 
 	routingDiscovery := drouting.NewRoutingDiscovery(d.idht)
-	dutil.Advertise(d.ctx, routingDiscovery, config.Topic)
+	dutil.Advertise(d.ctx, routingDiscovery, d.cfg.Topic())
 
 	// Look for others who have announced and attempt to connect to them
 	d.log.With(log.F{
@@ -110,7 +114,7 @@ func (d *Discovery) discoverPeersWithRendezvous() {
 
 	for i := 0; i < 60; i++ {
 		time.Sleep(time.Second)
-		peerChan, err := routingDiscovery.FindPeers(d.ctx, config.Topic)
+		peerChan, err := routingDiscovery.FindPeers(d.ctx, d.cfg.Topic())
 		if err != nil {
 			panic(err)
 		}

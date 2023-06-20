@@ -51,6 +51,7 @@ type Node struct {
 	PubSub   *pubsubio.PubSubServer
 
 	ctx       context.Context
+	cfg       *config.Config
 	token     []byte
 	rollup    rollup.Rollup
 	address   common.Address
@@ -73,6 +74,12 @@ func CreateNode(logger log.Logger, peerKey *ecdsa.PrivateKey, rollup rollup.Roll
 	}).Info("starting node...")
 
 	ctx, cancel := context.WithCancel(context.Background())
+
+	// load config
+	cfg := config.New(
+		config.WithVersion("0.0.2"),
+		config.WithDiscoveryInterval(30*time.Minute),
+	)
 
 	// Set your own keypair
 	//priv, _, err := crypto.GenerateKeyPair(
@@ -167,7 +174,7 @@ func CreateNode(logger log.Logger, peerKey *ecdsa.PrivateKey, rollup rollup.Roll
 
 	// direct publish operations are deprecated
 	// join the topic as a publisher
-	topic, err := ps.Join(config.PubSubTopic)
+	topic, err := ps.Join(cfg.PubSubTopic())
 	if err != nil {
 		panic(err)
 	}
@@ -208,6 +215,7 @@ func CreateNode(logger log.Logger, peerKey *ecdsa.PrivateKey, rollup rollup.Roll
 	// create pubsub server
 	psio := pubsubio.NewPubsubServer(
 		ctx,
+		cfg,
 		logger,
 		host,
 		trackCh,
@@ -227,6 +235,7 @@ func CreateNode(logger log.Logger, peerKey *ecdsa.PrivateKey, rollup rollup.Roll
 		MsgBuild:  omb,
 		PubSub:    psio,
 		ctx:       ctx,
+		cfg:       cfg,
 		token:     token,
 		rollup:    rollup,
 		address:   am.Address,
@@ -342,7 +351,7 @@ func (n *Node) Close(signal CloseSignal) {
 // initial discovery options
 // mdns, bootstrapt, dht etc.
 func (n *Node) initDiscovery() {
-	discovery := discover.NewDiscovery(n.Host, n.ctx, n.Log)
+	discovery := discover.NewDiscovery(n.cfg, n.Host, n.ctx, n.Log)
 
 	// setup local mDNS discovery
 	if err := discovery.StartMdnsDiscovery(); err != nil {

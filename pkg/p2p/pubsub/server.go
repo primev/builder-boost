@@ -29,6 +29,7 @@ import (
 
 type PubSubServer struct {
 	ctx     context.Context
+	cfg     *config.Config
 	log     log.Logger
 	self    peer.ID
 	host    host.Host
@@ -47,6 +48,7 @@ type PubSubServer struct {
 
 func NewPubsubServer(
 	ctx context.Context,
+	cfg *config.Config,
 	log log.Logger,
 	host host.Host,
 	trackCh chan commons.ConnectionEvent,
@@ -62,6 +64,7 @@ func NewPubsubServer(
 
 	pss = &PubSubServer{
 		ctx:     ctx,
+		cfg:     cfg,
 		log:     log,
 		self:    host.ID(),
 		host:    host,
@@ -83,7 +86,7 @@ func NewPubsubServer(
 	// create peer stream protocol
 	pss.psp = stream.New(
 		host,
-		protocol.ID(config.PeerStreamProto),
+		protocol.ID(cfg.PeerStreamProto()),
 		pss.peerStreamHandler,
 	)
 
@@ -368,7 +371,7 @@ func (pss *PubSubServer) optPong() {
 
 // Create a 'version' message and stream it to the peer that received the 'getversion' message.
 func (pss *PubSubServer) optGetVersion(cpeer peer.ID) {
-	msg, err := pss.omb.Version(config.Version)
+	msg, err := pss.omb.Version(pss.cfg.Version())
 	if err != nil {
 		return
 	}
