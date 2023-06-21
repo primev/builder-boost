@@ -34,10 +34,10 @@ var flags = []cli.Flag{
 		EnvVars: []string{"LOGFMT"},
 	},
 	&cli.StringFlag{
-		Name:    "boostaddr",
-		Usage:   "server listen address",
-		Value:   "localhost:18550",
-		EnvVars: []string{"BOOST_ADDR"},
+		Name:    "boosturl",
+		Usage:   "boost endpoint url",
+		Value:   "http://localhost:18550",
+		EnvVars: []string{"BOOST_URL"},
 	},
 	&cli.StringFlag{
 		Name:    "env",
@@ -53,7 +53,7 @@ var flags = []cli.Flag{
 	},
 	&cli.StringFlag{
 		Name:    "searcherkey",
-		Usage:   "Private key to interact with builder boost",
+		Usage:   "private key to interact with builder boost",
 		Value:   "",
 		EnvVars: []string{"SEARCHER_KEY"},
 	},
@@ -85,9 +85,9 @@ func run() cli.ActionFunc {
 			return errors.New("searcher key is not set, use --searcherkey option or SEARCHER_KEY env variable")
 		}
 
-		boostAddrString := c.String("boostaddr")
+		boostAddrString := c.String("boosturl")
 		if boostAddrString == "" {
-			return errors.New("searcher key is not set, use --boostaddr option or BOOST_ADDR env variable")
+			return errors.New("boost URL is not set, use --boosturl option or BOOST_URL env variable")
 		}
 
 		searcherKeyBytes := common.FromHex(searcherKeyString)

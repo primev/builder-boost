@@ -102,14 +102,7 @@ func (a *API) authenticateBuilder(next http.Handler) http.Handler {
 func (a *API) authSearcher(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		authToken := r.Header.Get("X-Primev-Signature")
-		if authToken != a.BuilderToken {
-			a.Log.Error("failed to authenticate builder request")
-			w.WriteHeader(http.StatusUnauthorized)
-			return
-		}
-
 		builderAddress := a.Rollup.GetBuilderAddress()
-
 		searcherAddress, ok := utils.VerifyAuthenticationToken(authToken, builderAddress.Hex())
 		if !ok {
 			a.Log.WithField("token", authToken).Error("token is not valid")
