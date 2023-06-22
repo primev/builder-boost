@@ -44,11 +44,11 @@ type CloseSignal struct {
 
 // spesific node fields
 type Node struct {
-	Log      log.Logger
-	Host     host.Host
-	Topic    *pubsub.Topic
-	MsgBuild message.OutboundMsgBuilder
-	PubSub   *pubsubio.PubSubServer
+	log      log.Logger
+	host     host.Host
+	topic    *pubsub.Topic
+	msgBuild message.OutboundMsgBuilder
+	pubSub   *pubsubio.PubSubServer
 
 	ctx       context.Context
 	cfg       *config.Config
@@ -229,11 +229,11 @@ func CreateNode(logger log.Logger, peerKey *ecdsa.PrivateKey, rollup rollup.Roll
 
 	// fill node fields
 	node := &Node{
-		Log:       logger,
-		Host:      host,
-		Topic:     topic,
-		MsgBuild:  omb,
-		PubSub:    psio,
+		log:       logger,
+		host:      host,
+		topic:     topic,
+		msgBuild:  omb,
+		pubSub:    psio,
 		ctx:       ctx,
 		cfg:       cfg,
 		token:     token,
@@ -273,27 +273,27 @@ func (n *Node) GetStake() *big.Int {
 
 // get connected peer list
 func (n *Node) GetPeers() peer.IDSlice {
-	return n.Host.Peerstore().Peers()
+	return n.host.Peerstore().Peers()
 }
 
 // get connected peer list on topic
 func (n *Node) GetPeersOnTopic() peer.IDSlice {
-	return n.Topic.ListPeers()
+	return n.topic.ListPeers()
 }
 
 // get approved peers
 func (n *Node) GetApprovedPeers() []peer.ID {
-	return n.PubSub.GetApprovedPeers()
+	return n.pubSub.GetApprovedPeers()
 }
 
 // create new stream proto
 func (n *Node) CreateStream(proto string, handler func(stream network.Stream)) {
-	n.Host.SetStreamHandler(protocol.ID(proto), handler)
+	n.host.SetStreamHandler(protocol.ID(proto), handler)
 }
 
 // send message to peer over given protocol
 func (n *Node) SendMsg(proto protocol.ID, p peer.ID, msg string) error {
-	s, err := n.Host.NewStream(n.ctx, p, proto)
+	s, err := n.host.NewStream(n.ctx, p, proto)
 	if err != nil {
 		return err
 	}
@@ -318,7 +318,7 @@ func (n *Node) SendMsg(proto protocol.ID, p peer.ID, msg string) error {
 // publish message over topic
 func (n *Node) Publish(msg []byte, err error) error {
 	if err != nil {
-		n.Log.With(log.F{
+		n.log.With(log.F{
 			"service":  "p2p publish",
 			"err time": commons.GetNow(),
 		}).Error(err)
@@ -326,12 +326,12 @@ func (n *Node) Publish(msg []byte, err error) error {
 	}
 
 	// send message to peers
-	return n.Topic.Publish(n.ctx, msg)
+	return n.topic.Publish(n.ctx, msg)
 }
 
 // authentication over node
 func (n *Node) Authentication() {
-	msg, err := n.MsgBuild.Authentication(n.GetToken())
+	msg, err := n.msgBuild.Authentication(n.GetToken())
 	if err != nil {
 		panic(err)
 	}
@@ -351,7 +351,7 @@ func (n *Node) Close(signal CloseSignal) {
 // initial discovery options
 // mdns, bootstrapt, dht etc.
 func (n *Node) initDiscovery() {
-	discovery := discover.NewDiscovery(n.cfg, n.Host, n.ctx, n.Log)
+	discovery := discover.NewDiscovery(n.cfg, n.host, n.ctx, n.log)
 
 	// setup local mDNS discovery
 	if err := discovery.StartMdnsDiscovery(); err != nil {
@@ -378,13 +378,13 @@ func (n *Node) waitSignal(cancel context.CancelFunc) {
 	// ps.Leave(config.Topic)
 
 	// close topic
-	n.Topic.Close()
+	n.topic.Close()
 	// close host
-	n.Host.Close()
+	n.host.Close()
 	// context cancel
 	cancel()
 
-	n.Log.With(log.F{
+	n.log.With(log.F{
 		"service":    "p2p node",
 		"reason":     signal.Reason,
 		"code":       signal.Code,
