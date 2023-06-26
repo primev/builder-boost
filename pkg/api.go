@@ -308,7 +308,7 @@ func (a *API) submitBlock(w http.ResponseWriter, r *http.Request) (int, error) {
 	if err := json.NewDecoder(r.Body).Decode(&br); err != nil {
 		return http.StatusBadRequest, err
 	}
-
+	log.Info().Timestamp().Str("block_hash", br.ExecutionPayload.BlockHash.String()).Msg("received block")
 	if err := a.Service.SubmitBlock(r.Context(), &br); err != nil {
 		return http.StatusBadRequest, err
 	}
