@@ -34,7 +34,7 @@ import (
 )
 
 // node shutdown signal
-type CloseSignal struct {
+type closeSignal struct {
 	Reason string
 	Code   int
 }
@@ -56,7 +56,7 @@ type Node struct {
 	rollup    rollup.Rollup
 	address   common.Address
 	stake     *big.Int
-	closeChan chan CloseSignal
+	closeChan chan closeSignal
 
 	once  sync.Once
 	ready chan struct{}
@@ -240,7 +240,7 @@ func CreateNode(logger log.Logger, peerKey *ecdsa.PrivateKey, rollup rollup.Roll
 		rollup:    rollup,
 		address:   am.Address,
 		stake:     stake,
-		closeChan: make(chan CloseSignal),
+		closeChan: make(chan closeSignal),
 	}
 
 	// start default streams
@@ -343,7 +343,12 @@ func (n *Node) Authentication() {
 }
 
 // send close signal to node
-func (n *Node) Close(signal CloseSignal) {
+func (n *Node) Close(reason string, code int) {
+	signal := closeSignal{
+		Reason: reason,
+		Code:   code,
+	}
+
 	n.closeChan <- signal
 	close(n.closeChan)
 }
