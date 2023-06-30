@@ -10,6 +10,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/websocket"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
 
 	"github.com/attestantio/go-builder-client/api/capella"
@@ -76,6 +77,8 @@ func (a *API) init() {
 		router.HandleFunc(PathSubmitBlock, handler(a.submitBlock))
 
 		router.HandleFunc(PathSearcherConnect, a.ConnectedSearcher)
+
+		router.Handle("/prometheus", promhttp.Handler())
 
 		a.mux = router
 	})
