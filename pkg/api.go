@@ -330,6 +330,7 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 				a.Worker.lock.Lock()
 				defer a.Worker.lock.Unlock()
 				delete(a.Worker.connectedSearchers, searcherAddressParam)
+				a.metrics.Searchers.Set(float64(len(a.Worker.connectedSearchers)))
 				return
 			case data := <-searcherConsumeChannel:
 				data.SenderTimestamp = time.Now().Unix()
@@ -342,9 +343,12 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}()
-
+	a.Worker.lock.RLock()
+	numSearchers := len(a.Worker.connectedSearchers)
+	a.Worker.lock.RUnlock()
+	a.metrics.Searchers.Set(float64(numSearchers))
 	a.Log.
-		WithField("searcher_count", len(a.Worker.connectedSearchers)).
+		WithField("searcher_count", numSearchers).
 		WithField("searcher_address", searcherAddressParam).
 		Info("new searcher connected")
 }
