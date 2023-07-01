@@ -81,7 +81,7 @@ func NewMetrics(reg prometheus.Registerer) *metrics {
 			Name:      "duration",
 			Help:      "Duration of the request",
 			Buckets:   []float64{0.0001, 0.0002, 0.0005, 0.001, 0.002, 0.005, 0.01, 0.02, 0.03, 0.05, 0.1, 0.15, 0.2, 0.5},
-		}, []string{"processing"}),
+		}, []string{"processing", "e2e"}),
 	}
 
 	reg.MustRegister(m.Searchers, m.PayloadsRecieved, m.Duration)
@@ -340,6 +340,7 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 					panic(err)
 				}
 				conn.WriteMessage(websocket.TextMessage, json)
+				a.metrics.Duration.WithLabelValues("e2e", searcherAddressParam).Observe(time.Since(data.RecTimestamp).Seconds())
 			}
 		}
 	}()
