@@ -81,7 +81,7 @@ func NewMetrics(reg prometheus.Registerer) *metrics {
 			Name:      "duration",
 			Help:      "Duration of the request",
 			Buckets:   []float64{0.0001, 0.0002, 0.0005, 0.001, 0.002, 0.005, 0.01, 0.02, 0.03, 0.05, 0.1, 0.15, 0.2, 0.5},
-		}, []string{"processing", "e2e"}),
+		}, []string{"processing_type", "searcher_address"}),
 	}
 
 	reg.MustRegister(m.Searchers, m.PayloadsRecieved, m.Duration)
@@ -364,7 +364,7 @@ func (a *API) submitBlock(w http.ResponseWriter, r *http.Request) (int, error) {
 	if err := a.Service.SubmitBlock(r.Context(), &br, now); err != nil {
 		return http.StatusBadRequest, err
 	}
-	a.metrics.Duration.WithLabelValues("processing").Observe(time.Since(now).Seconds())
+	a.metrics.Duration.WithLabelValues("algo_processing", "N/A").Observe(time.Since(now).Seconds())
 	a.metrics.PayloadsRecieved.Inc()
 	return http.StatusOK, nil
 }
