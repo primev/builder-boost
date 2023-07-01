@@ -333,7 +333,7 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 				a.metrics.Searchers.Set(float64(len(a.Worker.connectedSearchers)))
 				return
 			case data := <-searcherConsumeChannel:
-				data.SenderTimestamp = time.Now().Unix()
+				data.SentTimestamp = time.Now()
 				json, err := json.Marshal(data)
 				if err != nil {
 					a.Log.Error(err)
@@ -355,12 +355,12 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 
 // builder related handlers
 func (a *API) submitBlock(w http.ResponseWriter, r *http.Request) (int, error) {
+	now := time.Now()
 	var br capella.SubmitBlockRequest
 	if err := json.NewDecoder(r.Body).Decode(&br); err != nil {
 		return http.StatusBadRequest, err
 	}
-	now := time.Now()
-	if err := a.Service.SubmitBlock(r.Context(), &br); err != nil {
+	if err := a.Service.SubmitBlock(r.Context(), &br, now); err != nil {
 		return http.StatusBadRequest, err
 	}
 	a.metrics.Duration.WithLabelValues("processing").Observe(time.Since(now).Seconds())

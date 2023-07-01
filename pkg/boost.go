@@ -13,7 +13,7 @@ import (
 )
 
 type Boost interface {
-	SubmitBlock(context.Context, *capella.SubmitBlockRequest) error
+	SubmitBlock(context.Context, *capella.SubmitBlockRequest, time.Time) error
 	GetWorkChannel() chan Metadata
 }
 
@@ -29,13 +29,14 @@ type Transaction struct {
 }
 
 type Metadata struct {
-	Builder         string      `json:"builder"`
-	Number          int64       `json:"number"`
-	BlockHash       string      `json:"blockHash"`
-	Timestamp       string      `json:"timestamp"`
-	BaseFee         uint32      `json:"baseFee"`
-	Transactions    Transaction `json:"transactions"`
-	SenderTimestamp int64       `json:"sent_timestamp"`
+	Builder       string      `json:"builder"`
+	Number        int64       `json:"number"`
+	BlockHash     string      `json:"blockHash"`
+	Timestamp     string      `json:"timestamp"`
+	BaseFee       uint32      `json:"baseFee"`
+	Transactions  Transaction `json:"transactions"`
+	SentTimestamp time.Time   `json:"sent_timestamp"` // Timestamp of block sent to the searcher
+	RecTimestamp  time.Time   `json:"rec_timestamp"`  // Timestamp of block received by the builder instance
 }
 
 var (
@@ -63,7 +64,7 @@ func (rs *DefaultBoost) Log() log.Logger {
 	return rs.config.Log
 }
 
-func (as *DefaultBoost) SubmitBlock(ctx context.Context, msg *capella.SubmitBlockRequest) (err error) {
+func (as *DefaultBoost) SubmitBlock(ctx context.Context, msg *capella.SubmitBlockRequest, now time.Time) (err error) {
 	span, _ := tracer.StartSpanFromContext(ctx, "submit-block")
 	defer span.Finish()
 	defer func() {
@@ -76,6 +77,7 @@ func (as *DefaultBoost) SubmitBlock(ctx context.Context, msg *capella.SubmitBloc
 	var _txn types.Transaction
 	var blockMetadata Metadata
 
+	blockMetadata.RecTimestamp = now
 	blockMetadata.BlockHash = msg.Message.BlockHash.String()
 	blockMetadata.Number = int64(msg.ExecutionPayload.BlockNumber)
 	blockMetadata.Builder = msg.Message.BuilderPubkey.String()
