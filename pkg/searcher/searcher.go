@@ -42,7 +42,7 @@ type metrics struct {
 func NewMetrics(reg prometheus.Registerer) *metrics {
 	m := &metrics{
 		Duration: *prometheus.NewHistogramVec(prometheus.HistogramOpts{
-			Namespace: "primev",
+			Namespace: "searcher",
 			Name:      "duration",
 			Help:      "Duration of the request",
 			Buckets:   []float64{0.0001, 0.0002, 0.0005, 0.001, 0.002, 0.005, 0.01, 0.02, 0.03, 0.05, 0.1, 0.15, 0.2, 0.5},
