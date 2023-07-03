@@ -14,6 +14,7 @@ import (
 	boost "github.com/primev/builder-boost/pkg"
 	"github.com/primev/builder-boost/pkg/utils"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 type Searcher interface {
@@ -57,6 +58,14 @@ func NewMetrics(reg prometheus.Registerer) *metrics {
 func (s *searcher) Run(ctx context.Context) error {
 	reg := prometheus.NewRegistry()
 	s.m = NewMetrics(reg)
+
+	go func() {
+		// Start an http server
+		promHandler := promhttp.HandlerFor(reg, promhttp.HandlerOpts{})
+
+		http.Handle("/metrics", promHandler)
+		http.ListenAndServe(":8080", nil)
+	}()
 
 	parsedURL, err := url.Parse(s.addr)
 	if err != nil {
@@ -148,6 +157,7 @@ func (s *searcher) run(url string) error {
 }
 
 func (s *searcher) processMessages(c *websocket.Conn) error {
+
 	for {
 		_, message, err := c.ReadMessage()
 		now := time.Now()
