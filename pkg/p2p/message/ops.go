@@ -11,6 +11,7 @@ const (
 	Version
 	GetPeerList
 	PeerList
+	PreconfirmationBid
 )
 
 func (op Op) String() string {
@@ -29,6 +30,8 @@ func (op Op) String() string {
 		return "getpeerlist"
 	case PeerList:
 		return "peerlist"
+	case PreconfirmationBid:
+		return "preconfirmationbid"
 	default:
 		return "Unknown Op"
 	}

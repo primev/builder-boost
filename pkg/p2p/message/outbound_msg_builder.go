@@ -17,6 +17,7 @@ type OutboundMsgBuilder interface {
 	Version(string) (OutboundMessage, error)
 	GetPeerList() (OutboundMessage, error)
 	PeerList([]peer.AddrInfo) (OutboundMessage, error)
+	PreconfirmationBid([]byte) (OutboundMessage, error)
 }
 
 type outMsgBuilder struct {
@@ -92,5 +93,13 @@ func (b *outMsgBuilder) PeerList(addrs []peer.AddrInfo) (OutboundMessage, error)
 		PeerList,
 		time.Now().UnixNano(),
 		data,
+	)
+}
+
+func (b *outMsgBuilder) PreconfirmationBid(bid []byte) (OutboundMessage, error) {
+	return b.builder.createOutbound(
+		PreconfirmationBid,
+		time.Now().UnixNano(),
+		bid,
 	)
 }
