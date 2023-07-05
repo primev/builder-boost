@@ -209,7 +209,6 @@ func run() cli.ActionFunc {
 
 			svr.Handler = &boost.API{
 				Service:      service,
-				Log:          config.Log,
 				Worker:       masterWorker,
 				Rollup:       ru,
 				BuilderToken: c.String("buildertoken"),

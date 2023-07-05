@@ -54,7 +54,6 @@ func TestConnectSearcher(t *testing.T) {
 	api := &boost.API{
 		Service: service,
 		Worker:  boost.NewWorker(service.GetWorkChannel(), config.Log),
-		Log:     config.Log,
 	}
 
 	go api.Worker.Run(context.Background())

@@ -10,13 +10,12 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/websocket"
-	"github.com/sirupsen/logrus"
 
 	"github.com/attestantio/go-builder-client/api/capella"
 
-	"github.com/lthibault/log"
 	"github.com/primev/builder-boost/pkg/rollup"
 	"github.com/primev/builder-boost/pkg/utils"
+	"github.com/rs/zerolog/log"
 )
 
 // Context Keys
@@ -49,7 +48,6 @@ type API struct {
 	Service      BoostService
 	Worker       *Worker
 	Rollup       rollup.Rollup
-	Log          log.Logger
 	once         sync.Once
 	mux          http.Handler
 	BuilderToken string
@@ -57,10 +55,6 @@ type API struct {
 
 func (a *API) init() {
 	a.once.Do(func() {
-		if a.Log == nil {
-			a.Log = log.New()
-		}
-
 		// router := chi.NewRouter()
 		// router.Use(middleware.Logger)
 		// TODO(@floodcode): Add CORS middleware
@@ -90,7 +84,7 @@ func (a *API) authenticateBuilder(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		authToken := r.Header.Get("X-Builder-Token")
 		if authToken != a.BuilderToken {
-			a.Log.Error("failed to authenticate builder request")
+			log.Error().Msg("failed to authenticate builder request")
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
@@ -105,7 +99,7 @@ func (a *API) authSearcher(next http.Handler) http.Handler {
 		builderAddress := a.Rollup.GetBuilderAddress()
 		searcherAddress, ok := utils.VerifyAuthenticationToken(authToken, builderAddress.Hex())
 		if !ok {
-			a.Log.WithField("token", authToken).Error("token is not valid")
+			log.Error().Str("token", authToken).Msg("token is not valid")
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte("token is not valid"))
 			return
@@ -166,7 +160,7 @@ func (a *API) handleSearcherCommitment(w http.ResponseWriter, r *http.Request) {
 // 2. The searcher behind the token has active subscription
 // 3. The searcher behind the token is not already connected
 func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
-	a.Log.Info("searcher called")
+	log.Info().Msg("searcher called")
 	ws := websocket.Upgrader{
 		ReadBufferSize:  1028,
 		WriteBufferSize: 1028,
@@ -176,7 +170,7 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 	// Use verification scheme on token
 	token := r.URL.Query().Get("token")
 	if token == "" {
-		a.Log.WithField("token", token).Error("token is not valid")
+		log.Error().Str("token", token).Msg("token is not valid")
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("token is not valid"))
 		return
@@ -185,7 +179,7 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 
 	searcherAddress, ok := utils.VerifyAuthenticationToken(token, builderAddress.Hex())
 	if !ok {
-		a.Log.WithField("token", token).Error("token is not valid")
+		log.Error().Str("token", token).Msg("token is not valid")
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("token is not valid"))
 		return
@@ -194,11 +188,11 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 	_, err := a.Rollup.GetMinimalStake(builderAddress)
 	if err != nil {
 		if errors.Is(rollup.ErrNoMinimalStakeSet, err) {
-			a.Log.WithError(err).WithField("builder_address", builderAddress).Error("no minimal stake is set, in order to allow searchers to connect, set minimal stake in the rollup contract")
+			log.Error().Err(err).Str("builder_address", builderAddress.String()).Msg("no minimal stake is set, in order to allow searchers to connect, set minimal stake in the rollup contract")
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		a.Log.WithError(err).Error("failed to get minimal stake")
+		log.Error().Err(err).Msg("failed to get minimal stake")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -206,24 +200,27 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 	commitment := a.Rollup.GetCommitment(searcherAddress)
 	blockNumber, err := a.Rollup.GetBlockNumber()
 	if err != nil {
-		a.Log.WithError(err).Error("failed to get block number")
+		log.Error().Err(err).Msg("failed to get block number")
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 
 	subscriptionEnd, err := a.Rollup.GetSubscriptionEnd(commitment)
 	if err != nil {
-		a.Log.WithError(err).Error("failed to get subscription end")
+		log.Error().Err(err).Msg("failed to get subscription end")
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 
 	searcherAddressParam := searcherAddress.Hex()
-	a.Log.WithFields(logrus.Fields{"searcher": searcherAddressParam, "block_number": blockNumber, "subscription_end": subscriptionEnd}).
-		Info("searcher attempting connection")
+	//(logrus.Fields{"searcher": searcherAddressParam, "block_number": blockNumber, "subscription_end": subscriptionEnd}
+	log.Info().
+		Str("searcher", searcherAddressParam).
+		Uint64("block_number", blockNumber.Uint64()).
+		Uint64("subscription_end", subscriptionEnd.Uint64()).
+		Msg("searcher attempting connection")
 
 	// Check is subscription is expired
 	if subscriptionEnd.Cmp(blockNumber) < 0 {
-		a.Log.WithField("searcher", searcherAddressParam).
-			Warn("subscription is expired")
+		log.Warn().Str("searcher", searcherAddressParam).Msg("subscription is expired")
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}
@@ -234,7 +231,7 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 	_, ok = a.Worker.connectedSearchers[searcherAddressParam]
 	a.Worker.lock.RUnlock()
 	if ok {
-		a.Log.WithFields(logrus.Fields{"searcher": searcherAddressParam}).Error("searcher is already connected")
+		log.Warn().Str("searcher", searcherAddressParam).Msg("searcher is already connected")
 		w.WriteHeader(http.StatusForbidden)
 		w.Write([]byte("searcher is already connected"))
 		return
@@ -242,9 +239,9 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 
 	// Upgrade the HTTP request to a WebSocket connection
 	conn, err := ws.Upgrade(w, r, nil)
-	a.Log.Info("searcher upgraded connection")
+	log.Info().Msg("searcher upgraded connection")
 	if err != nil {
-		a.Log.Error(err)
+		log.Error().Err(err).Msg("")
 		return
 	}
 
@@ -253,20 +250,20 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 	a.Worker.connectedSearchers[searcherAddressParam] = searcherConsumeChannel
 	a.Worker.lock.Unlock()
 
-	a.Log.Info("searcher connected and ready to consume data")
+	log.Info().Msg("searcher connected and ready to consume data")
 
 	closeSignalChannel := make(chan struct{})
 	go func(closeChannel chan struct{}, conn *websocket.Conn) {
 		for {
-			a.Log.WithFields(logrus.Fields{"searcher": searcherAddressParam}).Info("starting to read from searcher")
+			log.Info().Str("searcher", searcherAddressParam).Msg("starting to read from searcher")
 
 			_, _, err := conn.NextReader()
 			if err != nil {
-				a.Log.WithFields(logrus.Fields{"searcher": searcherAddressParam, "err": err}).Error("error reading from searcher")
+				log.Error().Err(err).Str("searcher", searcherAddressParam).Msg("error reading from searcher")
 				break
 			}
 		}
-		a.Log.WithFields(logrus.Fields{"searcher": searcherAddressParam}).Info("searcher disconnected")
+		log.Info().Str("searcher", searcherAddressParam).Msg("searcher disconnected")
 		closeChannel <- struct{}{}
 	}(closeSignalChannel, conn)
 
@@ -274,7 +271,7 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 	go func(searcherID string) {
 		defer func() {
 			if r := recover(); r != nil {
-				a.Log.Error("recovered in searcher communication goroutine: closing connection", r)
+				log.Error().Interface("recovery", r).Stack().Msg("recovered in searcher communication goroutine: closing connection")
 				a.Worker.lock.Lock()
 				defer a.Worker.lock.Unlock()
 				delete(a.Worker.connectedSearchers, searcherAddressParam)
@@ -295,7 +292,7 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 				metadata.ClientTransactions = data.SearcherTxns[searcherID]
 				json, err := json.Marshal(metadata)
 				if err != nil {
-					a.Log.Error(err)
+					log.Error().Err(err).Msg("")
 					panic(err)
 				}
 				conn.WriteMessage(websocket.TextMessage, json)
@@ -303,10 +300,9 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 		}
 	}(searcherAddressParam)
 
-	a.Log.
-		WithField("searcher_count", len(a.Worker.connectedSearchers)).
-		WithField("searcher_address", searcherAddressParam).
-		Info("new searcher connected")
+	log.Info().Int("searcher_count", len(a.Worker.connectedSearchers)).
+		Str("searcher_address", searcherAddressParam).
+		Msg("new searcher connected")
 }
 
 // builder related handlers
@@ -315,7 +311,7 @@ func (a *API) submitBlock(w http.ResponseWriter, r *http.Request) (int, error) {
 	if err := json.NewDecoder(r.Body).Decode(&br); err != nil {
 		return http.StatusBadRequest, err
 	}
-
+	log.Info().Timestamp().Str("block_hash", br.ExecutionPayload.BlockHash.String()).Msg("received block")
 	if err := a.Service.SubmitBlock(r.Context(), &br); err != nil {
 		return http.StatusBadRequest, err
 	}
