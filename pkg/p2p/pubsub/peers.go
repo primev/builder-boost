@@ -69,8 +69,8 @@ func (i *info) getAddrs() []multiaddr.Multiaddr {
 
 // setScore returns the score of the peer.
 func (i *info) getScore(score int) int {
-	i.Lock()
-	defer i.Unlock()
+	i.RLock()
+	defer i.RUnlock()
 
 	return i.score
 }
