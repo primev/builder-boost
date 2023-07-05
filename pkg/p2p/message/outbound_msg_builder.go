@@ -11,8 +11,8 @@ var _ OutboundMsgBuilder = (*outMsgBuilder)(nil)
 
 type OutboundMsgBuilder interface {
 	Authentication([]byte) (OutboundMessage, error)
-	Ping() (OutboundMessage, error)
-	Pong() (OutboundMessage, error)
+	Ping([]byte) (OutboundMessage, error)
+	Pong([]byte) (OutboundMessage, error)
 	GetVersion() (OutboundMessage, error)
 	Version(string) (OutboundMessage, error)
 	GetPeerList() (OutboundMessage, error)
@@ -43,19 +43,19 @@ func (b *outMsgBuilder) Authentication(data []byte) (OutboundMessage, error) {
 	)
 }
 
-func (b *outMsgBuilder) Ping() (OutboundMessage, error) {
+func (b *outMsgBuilder) Ping(uuid []byte) (OutboundMessage, error) {
 	return b.builder.createOutbound(
 		Ping,
 		time.Now().UnixNano(),
-		[]byte(""),
+		uuid,
 	)
 }
 
-func (b *outMsgBuilder) Pong() (OutboundMessage, error) {
+func (b *outMsgBuilder) Pong(uuid []byte) (OutboundMessage, error) {
 	return b.builder.createOutbound(
 		Pong,
 		time.Now().UnixNano(),
-		[]byte(""),
+		uuid,
 	)
 }
 

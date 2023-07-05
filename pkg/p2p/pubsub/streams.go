@@ -69,7 +69,7 @@ func (pss *PubSubServer) peerStreamHandler(stream network.Stream) {
 	case message.Authentication:
 	// create pong message and publish to show you're alive
 	case message.Ping:
-		pss.optPing(inMsg.Peer())
+		pss.optPing(inMsg.Peer(), inMsg.Bytes())
 	// it can be use validate peer is alive
 	case message.Pong:
 		pss.optPong()

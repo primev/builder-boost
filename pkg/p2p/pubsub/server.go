@@ -187,7 +187,7 @@ func (pss *PubSubServer) baseProtocol(once sync.Once) {
 			case message.Authentication:
 			// create pong message and publish to show you're alive
 			case message.Ping:
-				pss.optPing(inMsg.Peer())
+				pss.optPing(inMsg.Peer(), inMsg.Bytes())
 			// it can be use validate peer is alive
 			case message.Pong:
 				pss.optPong()
@@ -357,8 +357,8 @@ func (pss *PubSubServer) optAuthentication(cpeer peer.ID, bytes []byte, sendauth
 }
 
 // Create a 'pong' message and stream it to the peer that received the 'ping' message.
-func (pss *PubSubServer) optPing(cpeer peer.ID) {
-	msg, err := pss.omb.Pong()
+func (pss *PubSubServer) optPing(cpeer peer.ID, uuid []byte) {
+	msg, err := pss.omb.Pong(uuid)
 	if err != nil {
 		return
 	}
