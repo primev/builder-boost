@@ -21,6 +21,8 @@ type info struct {
 	stake *big.Int
 	// addrs list
 	hostAddrs []multiaddr.Multiaddr
+	// peer score
+	score int
 	// protect info
 	sync.RWMutex
 }
@@ -65,6 +67,14 @@ func (i *info) getAddrs() []multiaddr.Multiaddr {
 	return i.hostAddrs
 }
 
+// setScore returns the score of the peer.
+func (i *info) getScore(score int) int {
+	i.Lock()
+	defer i.Unlock()
+
+	return i.score
+}
+
 // setStart sets the start time of the peer.
 func (i *info) setStart(start time.Time) {
 	i.Lock()
@@ -97,12 +107,20 @@ func (i *info) setStake(stake *big.Int) {
 	i.stake = stake
 }
 
-// setAddrs returns the host addrs of the peer.
+// setAddrs sets the host addrs of the peer.
 func (i *info) setAddrs(addrs []multiaddr.Multiaddr) {
 	i.Lock()
 	defer i.Unlock()
 
 	i.hostAddrs = addrs
+}
+
+// setScore sets the host addrs of the peer.
+func (i *info) setScore(score int) {
+	i.Lock()
+	defer i.Unlock()
+
+	i.score = score
 }
 
 type approvedPeersMap struct {
@@ -235,5 +253,14 @@ func (a *approvedPeersMap) SetPeerInfoAddrs(peer peer.ID, addrs []multiaddr.Mult
 	defer a.Unlock()
 	if val, ok := a.peers[peer]; ok {
 		val.setAddrs(addrs)
+	}
+}
+
+// SetPeerInfoScore sets the score of a peer.
+func (a *approvedPeersMap) SetPeerInfoScore(peer peer.ID, score int) {
+	a.Lock()
+	defer a.Unlock()
+	if val, ok := a.peers[peer]; ok {
+		val.setScore(score)
 	}
 }

@@ -456,7 +456,7 @@ func (pss *PubSubServer) events(trackCh <-chan commons.ConnectionEvent) {
 					<-checker.C
 
 					if pss.apm.InPeers(eventCopy.PeerID) {
-						// Once the peer is connected,
+						// once the peer is connected,
 						// send a message to get the version information
 						msg, err = pss.omb.GetVersion()
 						if err != nil {
@@ -470,6 +470,7 @@ func (pss *PubSubServer) events(trackCh <-chan commons.ConnectionEvent) {
 
 				checker.Stop()
 
+				// retrieve the peer list from the new node and expand the network connections
 				msg, err = pss.omb.GetPeerList()
 				if err != nil {
 					return
