@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/google/uuid"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/multiformats/go-multiaddr"
 )
@@ -21,6 +22,8 @@ type info struct {
 	stake *big.Int
 	// addrs list
 	hostAddrs []multiaddr.Multiaddr
+	// peer uniq uuid
+	uuid uuid.UUID
 	// peer score
 	score int
 	// protect info
@@ -67,8 +70,16 @@ func (i *info) getAddrs() []multiaddr.Multiaddr {
 	return i.hostAddrs
 }
 
-// setScore returns the score of the peer.
-func (i *info) getScore(score int) int {
+// getUUID returns the uuid of the peer.
+func (i *info) getUUID() uuid.UUID {
+	i.RLock()
+	defer i.RUnlock()
+
+	return i.uuid
+}
+
+// getScore returns the score of the peer.
+func (i *info) getScore() int {
 	i.RLock()
 	defer i.RUnlock()
 
@@ -113,6 +124,14 @@ func (i *info) setAddrs(addrs []multiaddr.Multiaddr) {
 	defer i.Unlock()
 
 	i.hostAddrs = addrs
+}
+
+// setUUID sets the uuid of the peer.
+func (i *info) setUUID(uuid uuid.UUID) {
+	i.Lock()
+	defer i.Unlock()
+
+	i.uuid = uuid
 }
 
 // setScore sets the host addrs of the peer.
@@ -171,6 +190,8 @@ func (a *approvedPeersMap) GetPeers() map[peer.ID]*info {
 			address:   v.getAddress(),
 			stake:     v.getStake(),
 			hostAddrs: v.getAddrs(),
+			uuid:      v.getUUID(),
+			score:     v.getScore(),
 		}
 
 		peers[k] = infoCopy
@@ -253,6 +274,15 @@ func (a *approvedPeersMap) SetPeerInfoAddrs(peer peer.ID, addrs []multiaddr.Mult
 	defer a.Unlock()
 	if val, ok := a.peers[peer]; ok {
 		val.setAddrs(addrs)
+	}
+}
+
+// SetPeerInfoScore sets the score of a peer.
+func (a *approvedPeersMap) SetPeerInfoUUID(peer peer.ID, uuid uuid.UUID) {
+	a.Lock()
+	defer a.Unlock()
+	if val, ok := a.peers[peer]; ok {
+		val.setUUID(uuid)
 	}
 }
 

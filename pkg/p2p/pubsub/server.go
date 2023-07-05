@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/google/uuid"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
@@ -332,6 +333,7 @@ func (pss *PubSubServer) optAuthentication(cpeer peer.ID, bytes []byte, sendauth
 		pss.apm.SetPeerInfoAddress(cpeer, address)
 		pss.apm.SetPeerInfoStake(cpeer, stake)
 		pss.apm.SetPeerInfoAddrs(cpeer, addrInfo.Addrs)
+		pss.apm.SetPeerInfoUUID(cpeer, uuid.New())
 
 		if sendauth {
 			// create authentication message and stream this message for new peer
