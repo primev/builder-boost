@@ -14,7 +14,9 @@ import (
 	"time"
 
 	"github.com/attestantio/go-builder-client/api/capella"
+	"github.com/attestantio/go-eth2-client/spec/bellatrix"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/gorilla/websocket"
 	"github.com/lthibault/log"
@@ -131,8 +133,14 @@ func TestConnectSearcher(t *testing.T) {
 		searcherKey, searcherAddress := generatePrivateKey()
 		token, err := utils.GenerateAuthenticationToken(builderAddress.Hex(), searcherKey)
 		if err != nil {
-			panic(err)
+			t.Fatal(err)
 		}
+		tx := types.NewTransaction(uint64(0), builderAddress, big.NewInt(1000000000000000000), uint64(21000), big.NewInt(1), []byte{})
+		searcherTxn, _ := types.SignTx(tx, types.NewEIP155Signer(big.NewInt(1)), searcherKey)
+		builderTxn, _ := types.SignTx(tx, types.NewEIP155Signer(big.NewInt(1)), builderKey)
+		btxn, _ := searcherTxn.MarshalBinary()
+		btxn2, _ := builderTxn.MarshalBinary()
+
 		commitment := utils.GetCommitment(builderKey, searcherAddress)
 
 		mockRollup.On("GetBuilderAddress").Return(builderAddress)
@@ -148,6 +156,9 @@ func TestConnectSearcher(t *testing.T) {
 		assert.NotNil(t, resp)
 		var block capella.SubmitBlockRequest
 		json.Unmarshal([]byte(NoTransactionBlockRaw), &block)
+		block.ExecutionPayload.Transactions = append(block.ExecutionPayload.Transactions, bellatrix.Transaction(btxn))
+		block.ExecutionPayload.Transactions = append(block.ExecutionPayload.Transactions, bellatrix.Transaction(btxn2))
+
 		wg := sync.WaitGroup{}
 		wg.Add(1)
 		var currTime *int64
@@ -163,6 +174,7 @@ func TestConnectSearcher(t *testing.T) {
 			_ = json.NewDecoder(r).Decode(&data)
 			assert.Equal(t, data.Builder, "0xaa1488eae4b06a1fff840a2b6db167afc520758dc2c8af0dfb57037954df3431b747e2f900fe8805f05d635e9a29717b")
 			assert.GreaterOrEqual(t, data.SenderTimestamp, *currTime)
+			assert.Equal(t, data.ClientTransactions, []string{searcherTxn.Hash().Hex()})
 			wg.Done()
 		}(t)
 		tnow := time.Now().Unix()
