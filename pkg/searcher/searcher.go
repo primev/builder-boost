@@ -11,6 +11,8 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/lthibault/log"
+
+	boost "github.com/primev/builder-boost/pkg"
 	"github.com/primev/builder-boost/pkg/utils"
 )
 
@@ -128,7 +130,12 @@ func (s *searcher) processMessages(c *websocket.Conn) error {
 		if err != nil {
 			return err
 		}
-
+		var m boost.Metadata
+		err = json.Unmarshal(message, &m)
+		if err != nil {
+			s.log.WithField("message", string(message)).Error("failed to unmarshal message")
+			continue
+		}
 		s.log.WithField("message", string(message)).Info("received message from builder")
 	}
 }
