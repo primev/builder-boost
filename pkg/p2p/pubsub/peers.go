@@ -24,6 +24,12 @@ type info struct {
 	hostAddrs []multiaddr.Multiaddr
 	// peer uniq uuid
 	uuid uuid.UUID
+	// last ping time (out)
+	pingTime time.Time
+	// last pong time (in)
+	pongTime time.Time
+	// diff between ping and pong
+	latency time.Duration
 	// peer score
 	score int
 	// protect info
@@ -76,6 +82,30 @@ func (i *info) getUUID() uuid.UUID {
 	defer i.RUnlock()
 
 	return i.uuid
+}
+
+// getPingTime returns the ping time of the peer.
+func (i *info) getPingTime() time.Time {
+	i.RLock()
+	defer i.RUnlock()
+
+	return i.pingTime
+}
+
+// getPongTime returns the pong time of the peer.
+func (i *info) getPongTime() time.Time {
+	i.RLock()
+	defer i.RUnlock()
+
+	return i.pongTime
+}
+
+// getLatency returns the latency of the peer.
+func (i *info) getLatency() time.Duration {
+	i.RLock()
+	defer i.RUnlock()
+
+	return i.latency
 }
 
 // getScore returns the score of the peer.
@@ -132,6 +162,30 @@ func (i *info) setUUID(uuid uuid.UUID) {
 	defer i.Unlock()
 
 	i.uuid = uuid
+}
+
+// setPingTime sets the pingTime of the peer.
+func (i *info) setPingTime(pingTime time.Time) {
+	i.Lock()
+	defer i.Unlock()
+
+	i.pingTime = pingTime
+}
+
+// setPongTime sets the pongTime of the peer.
+func (i *info) setPongTime(pongTime time.Time) {
+	i.Lock()
+	defer i.Unlock()
+
+	i.pongTime = pongTime
+}
+
+// setLatency sets the latency of the peer.
+func (i *info) setLatency(latency time.Duration) {
+	i.Lock()
+	defer i.Unlock()
+
+	i.latency = latency
 }
 
 // setScore sets the host addrs of the peer.
@@ -191,6 +245,9 @@ func (a *approvedPeersMap) GetPeers() map[peer.ID]*info {
 			stake:     v.getStake(),
 			hostAddrs: v.getAddrs(),
 			uuid:      v.getUUID(),
+			pingTime:  v.getPingTime(),
+			pongTime:  v.getPongTime(),
+			latency:   v.getLatency(),
 			score:     v.getScore(),
 		}
 
@@ -277,12 +334,39 @@ func (a *approvedPeersMap) SetPeerInfoAddrs(peer peer.ID, addrs []multiaddr.Mult
 	}
 }
 
-// SetPeerInfoScore sets the score of a peer.
+// SetPeerInfoUUID sets the uuid of a peer.
 func (a *approvedPeersMap) SetPeerInfoUUID(peer peer.ID, uuid uuid.UUID) {
 	a.Lock()
 	defer a.Unlock()
 	if val, ok := a.peers[peer]; ok {
 		val.setUUID(uuid)
+	}
+}
+
+// SetPeerInfoPingTime sets the ping time of a peer.
+func (a *approvedPeersMap) SetPeerInfoPingTime(peer peer.ID, pingTime time.Time) {
+	a.Lock()
+	defer a.Unlock()
+	if val, ok := a.peers[peer]; ok {
+		val.setPingTime(pingTime)
+	}
+}
+
+// SetPeerInfoPongTime sets the pong time of a peer.
+func (a *approvedPeersMap) SetPeerInfoPongTime(peer peer.ID, pongTime time.Time) {
+	a.Lock()
+	defer a.Unlock()
+	if val, ok := a.peers[peer]; ok {
+		val.setPongTime(pongTime)
+	}
+}
+
+// SetPeerInfoLatency sets the latency of a peer.
+func (a *approvedPeersMap) SetPeerInfoLatency(peer peer.ID, latency time.Duration) {
+	a.Lock()
+	defer a.Unlock()
+	if val, ok := a.peers[peer]; ok {
+		val.setLatency(latency)
 	}
 }
 
