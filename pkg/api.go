@@ -10,6 +10,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/websocket"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
 
 	"github.com/attestantio/go-builder-client/api/capella"
@@ -46,13 +48,46 @@ type jsonError struct {
 }
 
 type API struct {
-	Service      BoostService
-	Worker       *Worker
-	Rollup       rollup.Rollup
-	Log          log.Logger
-	once         sync.Once
-	mux          http.Handler
-	BuilderToken string
+	Service        BoostService
+	Worker         *Worker
+	Rollup         rollup.Rollup
+	Log            log.Logger
+	once           sync.Once
+	mux            http.Handler
+	BuilderToken   string
+	MetricsEnabled bool
+	metrics        *metrics
+}
+
+type metrics struct {
+	Searchers        prometheus.Gauge
+	PayloadsRecieved prometheus.Counter
+	Duration         prometheus.HistogramVec
+}
+
+func NewMetrics(reg prometheus.Registerer) *metrics {
+	m := &metrics{
+		Searchers: prometheus.NewGauge(prometheus.GaugeOpts{
+			Namespace: "primev",
+			Name:      "number_of_searchers_connected",
+			Help:      "Number of connected searchers",
+		}),
+		PayloadsRecieved: prometheus.NewCounter(prometheus.CounterOpts{
+			Namespace: "primev",
+			Name:      "payloads_recieved",
+			Help:      "Number of payloads recieved",
+		}),
+		Duration: *prometheus.NewHistogramVec(prometheus.HistogramOpts{
+			Namespace: "primev",
+			Name:      "duration",
+			Help:      "Duration of the request",
+			Buckets:   []float64{0.0001, 0.0002, 0.0005, 0.001, 0.002, 0.005, 0.01, 0.02, 0.03, 0.05, 0.1, 0.15, 0.2, 0.5},
+		}, []string{"processing_type", "searcher_address"}),
+	}
+
+	reg.MustRegister(m.Searchers, m.PayloadsRecieved, m.Duration)
+
+	return m
 }
 
 func (a *API) init() {
@@ -77,6 +112,14 @@ func (a *API) init() {
 
 		router.HandleFunc(PathSearcherConnect, a.ConnectedSearcher)
 
+		if a.MetricsEnabled {
+			reg := prometheus.NewRegistry()
+			a.metrics = NewMetrics(reg)
+			a.metrics.Searchers.Set(0)
+			promHandler := promhttp.HandlerFor(reg, promhttp.HandlerOpts{})
+
+			router.Handle("/metrics", promHandler)
+		}
 		a.mux = router
 	})
 }
@@ -291,7 +334,7 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 				return
 			case data := <-searcherConsumeChannel:
 				metadata := data.InternalMetadata
-				metadata.SenderTimestamp = time.Now().Unix()
+				metadata.SentTimestamp = time.Now()
 				if _, ok := data.SearcherTxns[searcherID]; !ok {
 					data.SearcherTxns[searcherID] = []string{}
 				}
@@ -302,27 +345,41 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 					panic(err)
 				}
 				conn.WriteMessage(websocket.TextMessage, json)
+				if a.MetricsEnabled {
+					a.metrics.Duration.WithLabelValues("e2e", searcherAddressParam).Observe(time.Since(metadata.RecTimestamp).Seconds())
+				}
 			}
 		}
 	}(searcherAddressParam)
 
+	a.Worker.lock.RLock()
+	numSearchers := len(a.Worker.connectedSearchers)
+	a.Worker.lock.RUnlock()
+	if a.MetricsEnabled {
+		a.metrics.Searchers.Set(float64(numSearchers))
+	}
 	a.Log.
-		WithField("searcher_count", len(a.Worker.connectedSearchers)).
+		WithField("searcher_count", numSearchers).
 		WithField("searcher_address", searcherAddressParam).
 		Info("new searcher connected")
 }
 
 // builder related handlers
 func (a *API) submitBlock(w http.ResponseWriter, r *http.Request) (int, error) {
+	now := time.Now()
 	var br capella.SubmitBlockRequest
 	if err := json.NewDecoder(r.Body).Decode(&br); err != nil {
 		return http.StatusBadRequest, err
 	}
 
-	if err := a.Service.SubmitBlock(r.Context(), &br); err != nil {
+	if err := a.Service.SubmitBlock(r.Context(), &br, now); err != nil {
 		return http.StatusBadRequest, err
 	}
 
+	if a.MetricsEnabled {
+		a.metrics.Duration.WithLabelValues("algo_processing", "N/A").Observe(time.Since(now).Seconds())
+		a.metrics.PayloadsRecieved.Inc()
+	}
 	return http.StatusOK, nil
 }
 

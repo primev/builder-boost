@@ -13,7 +13,7 @@ import (
 )
 
 type Boost interface {
-	SubmitBlock(context.Context, *capella.SubmitBlockRequest) error
+	SubmitBlock(context.Context, *capella.SubmitBlockRequest, time.Time) error
 	GetWorkChannel() chan SuperPayload
 }
 
@@ -36,7 +36,8 @@ type Metadata struct {
 	BaseFee            uint32      `json:"baseFee"`
 	Transactions       Transaction `json:"standard_transactions"`
 	ClientTransactions []string    `json:"personal_transactions"`
-	SenderTimestamp    int64       `json:"sent_timestamp"`
+	SentTimestamp      time.Time   `json:"sent_timestamp"` // Timestamp of block sent to the searcher
+	RecTimestamp       time.Time   `json:"rec_timestamp"`  // Timestamp of block received by the builder instance
 }
 
 type SuperPayload struct {
@@ -69,7 +70,7 @@ func (rs *DefaultBoost) Log() log.Logger {
 	return rs.config.Log
 }
 
-func (as *DefaultBoost) SubmitBlock(ctx context.Context, msg *capella.SubmitBlockRequest) (err error) {
+func (as *DefaultBoost) SubmitBlock(ctx context.Context, msg *capella.SubmitBlockRequest, now time.Time) (err error) {
 	span, _ := tracer.StartSpanFromContext(ctx, "submit-block")
 	defer span.Finish()
 	defer func() {
@@ -82,7 +83,7 @@ func (as *DefaultBoost) SubmitBlock(ctx context.Context, msg *capella.SubmitBloc
 	var _txn types.Transaction
 	var blockMetadata SuperPayload
 	blockMetadata.SearcherTxns = make(map[string][]string)
-
+	blockMetadata.InternalMetadata.RecTimestamp = now
 	blockMetadata.InternalMetadata.BlockHash = msg.Message.BlockHash.String()
 	blockMetadata.InternalMetadata.Number = int64(msg.ExecutionPayload.BlockNumber)
 	blockMetadata.InternalMetadata.Builder = msg.Message.BuilderPubkey.String()
