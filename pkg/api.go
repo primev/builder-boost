@@ -292,6 +292,9 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 			case data := <-searcherConsumeChannel:
 				metadata := data.InternalMetadata
 				metadata.SenderTimestamp = time.Now().Unix()
+				if _, ok := data.SearcherTxns[searcherID]; !ok {
+					data.SearcherTxns[searcherID] = []string{}
+				}
 				metadata.ClientTransactions = data.SearcherTxns[searcherID]
 				json, err := json.Marshal(metadata)
 				if err != nil {
