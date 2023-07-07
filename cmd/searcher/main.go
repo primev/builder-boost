@@ -102,7 +102,7 @@ func run() cli.ActionFunc {
 		config.Log = boostcli.Logger(c)
 		config.Key = searcherKey
 		config.Addr = boostAddrString
-
+		config.MetricsEnabled = c.Bool("metrics")
 		searcher := searcher.New(config)
 
 		g.Go(func() error {

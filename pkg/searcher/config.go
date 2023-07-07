@@ -7,7 +7,8 @@ import (
 )
 
 type Config struct {
-	Log  log.Logger
-	Key  *ecdsa.PrivateKey
-	Addr string
+	Log            log.Logger
+	Key            *ecdsa.PrivateKey
+	Addr           string
+	MetricsEnabled bool
 }
