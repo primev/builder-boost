@@ -81,6 +81,12 @@ var flags = []cli.Flag{
 		Value:   "",
 		EnvVars: []string{"BUILDER_AUTH_TOKEN"},
 	},
+	&cli.BoolFlag{
+		Name:    "metrics",
+		Usage:   "enables metrics tracking for boost",
+		Value:   false,
+		EnvVars: []string{"METRICS"},
+	},
 }
 
 var (
@@ -208,11 +214,12 @@ func run() cli.ActionFunc {
 			}
 
 			svr.Handler = &boost.API{
-				Service:      service,
-				Log:          config.Log,
-				Worker:       masterWorker,
-				Rollup:       ru,
-				BuilderToken: c.String("buildertoken"),
+				Service:        service,
+				Log:            config.Log,
+				Worker:         masterWorker,
+				Rollup:         ru,
+				BuilderToken:   c.String("buildertoken"),
+				MetricsEnabled: c.Bool("metrics"),
 			}
 
 			config.Log.Info("http server listening")
