@@ -57,6 +57,12 @@ var flags = []cli.Flag{
 		Value:   "",
 		EnvVars: []string{"SEARCHER_KEY"},
 	},
+	&cli.BoolFlag{
+		Name:    "metrics",
+		Usage:   "enable metrics",
+		Value:   false,
+		EnvVars: []string{"METRICS"},
+	},
 }
 var (
 	config = searcher.Config{Log: log.New()}
