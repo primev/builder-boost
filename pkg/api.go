@@ -334,7 +334,7 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 				return
 			case data := <-searcherConsumeChannel:
 				metadata := data.InternalMetadata
-				metadata.SenderTimestamp = time.Now().Unix()
+				metadata.SentTimestamp = time.Now()
 				if _, ok := data.SearcherTxns[searcherID]; !ok {
 					data.SearcherTxns[searcherID] = []string{}
 				}
@@ -345,27 +345,41 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 					panic(err)
 				}
 				conn.WriteMessage(websocket.TextMessage, json)
+				if a.MetricsEnabled {
+					a.metrics.Duration.WithLabelValues("e2e", searcherAddressParam).Observe(time.Since(metadata.RecTimestamp).Seconds())
+				}
 			}
 		}
 	}(searcherAddressParam)
 
+	a.Worker.lock.RLock()
+	numSearchers := len(a.Worker.connectedSearchers)
+	a.Worker.lock.RUnlock()
+	if a.MetricsEnabled {
+		a.metrics.Searchers.Set(float64(numSearchers))
+	}
 	a.Log.
-		WithField("searcher_count", len(a.Worker.connectedSearchers)).
+		WithField("searcher_count", numSearchers).
 		WithField("searcher_address", searcherAddressParam).
 		Info("new searcher connected")
 }
 
 // builder related handlers
 func (a *API) submitBlock(w http.ResponseWriter, r *http.Request) (int, error) {
+	now := time.Now()
 	var br capella.SubmitBlockRequest
 	if err := json.NewDecoder(r.Body).Decode(&br); err != nil {
 		return http.StatusBadRequest, err
 	}
 
-	if err := a.Service.SubmitBlock(r.Context(), &br); err != nil {
+	if err := a.Service.SubmitBlock(r.Context(), &br, now); err != nil {
 		return http.StatusBadRequest, err
 	}
 
+	if a.MetricsEnabled {
+		a.metrics.Duration.WithLabelValues("algo_processing", "N/A").Observe(time.Since(now).Seconds())
+		a.metrics.PayloadsRecieved.Inc()
+	}
 	return http.StatusOK, nil
 }
 

@@ -161,7 +161,7 @@ func TestConnectSearcher(t *testing.T) {
 
 		wg := sync.WaitGroup{}
 		wg.Add(1)
-		var currTime *int64
+		var currTime *time.Time
 		go func(t *testing.T) {
 			// Read from connection
 			mtype, r, err := conn.NextReader()
@@ -173,13 +173,13 @@ func TestConnectSearcher(t *testing.T) {
 			// Decode r into data
 			_ = json.NewDecoder(r).Decode(&data)
 			assert.Equal(t, data.Builder, "0xaa1488eae4b06a1fff840a2b6db167afc520758dc2c8af0dfb57037954df3431b747e2f900fe8805f05d635e9a29717b")
-			assert.GreaterOrEqual(t, data.SenderTimestamp, *currTime)
+			assert.GreaterOrEqual(t, data.SentTimestamp, *currTime)
 			assert.Equal(t, data.ClientTransactions, []string{searcherTxn.Hash().Hex()})
 			wg.Done()
 		}(t)
-		tnow := time.Now().Unix()
+		tnow := time.Now()
 		currTime = &tnow
-		service.SubmitBlock(context.TODO(), &block)
+		service.SubmitBlock(context.TODO(), &block, tnow)
 		wg.Wait()
 	})
 
