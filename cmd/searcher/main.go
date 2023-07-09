@@ -57,6 +57,12 @@ var flags = []cli.Flag{
 		Value:   "",
 		EnvVars: []string{"SEARCHER_KEY"},
 	},
+	&cli.BoolFlag{
+		Name:    "metrics",
+		Usage:   "enable metrics",
+		Value:   false,
+		EnvVars: []string{"METRICS"},
+	},
 }
 var (
 	config = searcher.Config{Log: log.New()}
@@ -96,7 +102,7 @@ func run() cli.ActionFunc {
 		config.Log = boostcli.Logger(c)
 		config.Key = searcherKey
 		config.Addr = boostAddrString
-
+		config.MetricsEnabled = c.Bool("metrics")
 		searcher := searcher.New(config)
 
 		g.Go(func() error {
