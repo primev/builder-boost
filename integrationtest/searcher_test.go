@@ -206,7 +206,7 @@ func TestConnectSearcher(t *testing.T) {
 	})
 
 	// Test with a searcher that is already connected
-	t.Run("Already connected searcher is forbidden", func(t *testing.T) {
+	t.Run("Already connected searcher is disconncted and new seracher is connected", func(t *testing.T) {
 		mockRollup := rollup.MockRollup{}
 		searcherKey, searcherAddress := generatePrivateKey()
 		builderKey, builderAddress := generatePrivateKey()
@@ -228,10 +228,11 @@ func TestConnectSearcher(t *testing.T) {
 		assert.Nil(t, err)
 
 		conn2, resp2, err2 := dialer.Dial(getWebSocketURL(token), nil)
-		assert.Equal(t, http.StatusForbidden, resp2.StatusCode)
-		assert.Nil(t, conn2)
+		assert.NotNil(t, conn2)
 		assert.NotNil(t, resp2)
-		assert.NotNil(t, err2)
+		assert.Nil(t, err2)
+		_, _, err = conn.ReadMessage()
+		assert.NotNil(t, err)
 	})
 
 	// Test with a searcher that is already connected

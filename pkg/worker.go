@@ -6,12 +6,18 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/gorilla/websocket"
 	"github.com/lthibault/log"
 )
 
+type SearcherConnection struct {
+	Conn        *websocket.Conn
+	WorkChannel chan SuperPayload
+}
+
 type Worker struct {
 	lock               sync.RWMutex
-	connectedSearchers map[string]chan SuperPayload
+	connectedSearchers map[string]SearcherConnection
 
 	// Note: Heartbeat is meant to be accessed via atomic operations .Store and .Load to ensure non-blocking performance
 	heartbeat *atomic.Int64
@@ -29,7 +35,7 @@ func (w *Worker) GetHeartbeat() int64 {
 
 func NewWorker(workQueue chan SuperPayload, logger log.Logger) *Worker {
 	return &Worker{
-		connectedSearchers: make(map[string]chan SuperPayload),
+		connectedSearchers: make(map[string]SearcherConnection),
 		workQueue:          workQueue,
 		log:                logger,
 		heartbeat:          &atomic.Int64{},
@@ -68,7 +74,7 @@ func (w *Worker) Run(ctx context.Context) (err error) {
 				w.lock.RLock()
 				for _, searcher := range w.connectedSearchers {
 					// NOTE: Risk of Worker Blocking here, if searcher is not reading from channel
-					searcher <- blockMetadata
+					searcher.WorkChannel <- blockMetadata
 				}
 				w.lock.RUnlock()
 			}

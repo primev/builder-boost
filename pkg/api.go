@@ -274,13 +274,13 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 	// Check if searcher is already connected
 	// TODO(@ckartik): Ensure we delete the searcher from the connectedSearchers map when the connection is closed
 	a.Worker.lock.RLock()
-	_, ok = a.Worker.connectedSearchers[searcherAddressParam]
+	s, ok := a.Worker.connectedSearchers[searcherAddressParam]
 	a.Worker.lock.RUnlock()
+
+	// If searcher is already connected, close the old connection
 	if ok {
-		a.Log.WithFields(logrus.Fields{"searcher": searcherAddressParam}).Error("searcher is already connected")
-		w.WriteHeader(http.StatusForbidden)
-		w.Write([]byte("searcher is already connected"))
-		return
+		a.Log.WithFields(logrus.Fields{"searcher": searcherAddressParam}).Error("searcher is already connected, closing old connection")
+		s.Conn.Close()
 	}
 
 	// Upgrade the HTTP request to a WebSocket connection
@@ -291,9 +291,12 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	searcherConsumeChannel := make(chan SuperPayload, 100)
+	searcherWorkChannel := make(chan SuperPayload, 100)
 	a.Worker.lock.Lock()
-	a.Worker.connectedSearchers[searcherAddressParam] = searcherConsumeChannel
+	a.Worker.connectedSearchers[searcherAddressParam] = SearcherConnection{
+		Conn:        conn,
+		WorkChannel: searcherWorkChannel,
+	}
 	a.Worker.lock.Unlock()
 
 	a.Log.Info("searcher connected and ready to consume data")
@@ -314,7 +317,7 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 	}(closeSignalChannel, conn)
 
 	// Start of searcher websocket goroutine
-	go func(searcherID string) {
+	go func(searcherID string, work chan SuperPayload) {
 		defer func() {
 			if r := recover(); r != nil {
 				a.Log.Error("recovered in searcher communication goroutine: closing connection", r)
@@ -332,7 +335,7 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 				defer a.Worker.lock.Unlock()
 				delete(a.Worker.connectedSearchers, searcherAddressParam)
 				return
-			case data := <-searcherConsumeChannel:
+			case data := <-work:
 				metadata := data.InternalMetadata
 				metadata.SentTimestamp = time.Now()
 				if _, ok := data.SearcherTxns[searcherID]; !ok {
@@ -350,7 +353,7 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 		}
-	}(searcherAddressParam)
+	}(searcherAddressParam, searcherWorkChannel)
 
 	a.Worker.lock.RLock()
 	numSearchers := len(a.Worker.connectedSearchers)
