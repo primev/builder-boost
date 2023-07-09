@@ -70,7 +70,7 @@ func (w *Worker) Run(ctx context.Context) (err error) {
 			case <-ctx.Done():
 				return
 			case blockMetadata := <-w.workQueue:
-				w.log.Info("received block metadata", "block", blockMetadata)
+				w.log.Info("received block metadata", "block", blockMetadata.InternalMetadata.BlockHash)
 				w.lock.RLock()
 				for _, searcher := range w.connectedSearchers {
 					// NOTE: Risk of Worker Blocking here, if searcher is not reading from channel
