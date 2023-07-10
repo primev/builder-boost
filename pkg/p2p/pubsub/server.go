@@ -379,9 +379,15 @@ func (pss *PubSubServer) optPong(cpeer peer.ID, uuidBytes []byte) {
 	if info.uuid == newUUID.UUID {
 		pss.apm.SetPeerInfoPongTime(cpeer, time.Now().UnixNano())
 		info := pss.apm.GetPeerInfo(cpeer)
+
+		// set latency  value
 		pss.apm.SetPeerInfoLatency(cpeer, time.Duration(info.pongTime-info.pingTime))
+
+		// change uuid for next ping-pong
+		pss.apm.SetPeerInfoUUID(cpeer, uuid.New())
 	} else {
-		//TODO red flag
+		// terminate the peer that engages in unexpected data exchange
+		pss.host.Network().ClosePeer(cpeer)
 	}
 }
 
