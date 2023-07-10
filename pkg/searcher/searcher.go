@@ -44,6 +44,9 @@ func (s *searcher) Run(ctx context.Context) error {
 	token := s.GenerateAuthenticationTokenForBuilder(parsedURL)
 	s.log.WithField("token", token).WithField("builder", s.addr).Info("generated token for builder boost")
 
+	commitment := s.GetCommitmentHash(parsedURL, token)
+	s.log.WithField("commitment", commitment).WithField("builder", s.addr).Info("generated commitment for builder")
+
 	wsScheme := "ws"
 	if parsedURL.Scheme == "https" {
 		wsScheme = "wss"
@@ -66,8 +69,44 @@ func (s *searcher) Run(ctx context.Context) error {
 	}
 }
 
-type BuilderInfoResponse struct {
-	BuilderID string `json:"id"`
+func (s *searcher) GetCommitmentHash(u *url.URL, signature string) (commitment string) {
+	getBuilderURL := url.URL{Scheme: u.Scheme, Host: u.Host, Path: "/commitment"}
+
+	// Make a get request to the url
+	req, err := http.NewRequest("GET", getBuilderURL.String(), nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Set the request header
+	req.Header.Set("Content-Type", "application/json")
+
+	// Set signature field
+	req.Header.Set("X-Primev-Signature", signature)
+
+	// Make the request
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Fatal(err)
+	}
+	// Close the response body
+	defer resp.Body.Close()
+
+	// Read the response body
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var commitmentInfo struct {
+		Commitment string `json:"commitment"`
+	}
+	err = json.Unmarshal(body, &commitmentInfo)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return commitmentInfo.Commitment
 }
 
 // GenerateAuthenticationTokenForBuilder generates a token for the builder boost service represented by the url
@@ -97,7 +136,9 @@ func (s *searcher) GenerateAuthenticationTokenForBuilder(u *url.URL) (token stri
 		log.Fatal(err)
 	}
 
-	var builderInfo BuilderInfoResponse
+	var builderInfo struct {
+		BuilderID string `json:"id"`
+	}
 	err = json.Unmarshal(body, &builderInfo)
 	if err != nil {
 		log.Fatal(err)
