@@ -190,7 +190,7 @@ func (pss *PubSubServer) baseProtocol(once sync.Once) {
 				pss.optPing(inMsg.Peer(), inMsg.Bytes())
 			// it can be use validate peer is alive
 			case message.Pong:
-				pss.optPong()
+				pss.optPong(inMsg.Peer(), inMsg.Bytes())
 			// publish version
 			case message.GetVersion:
 				pss.optGetVersion(inMsg.Peer())
@@ -357,8 +357,8 @@ func (pss *PubSubServer) optAuthentication(cpeer peer.ID, bytes []byte, sendauth
 }
 
 // Create a 'pong' message and stream it to the peer that received the 'ping' message.
-func (pss *PubSubServer) optPing(cpeer peer.ID, uuid []byte) {
-	msg, err := pss.omb.Pong(uuid)
+func (pss *PubSubServer) optPing(cpeer peer.ID, uuidBytes []byte) {
+	msg, err := pss.omb.Pong(uuidBytes)
 	if err != nil {
 		return
 	}
@@ -366,8 +366,23 @@ func (pss *PubSubServer) optPing(cpeer peer.ID, uuid []byte) {
 	pss.stream(cpeer, msg)
 }
 
-// pass
-func (pss *PubSubServer) optPong() {
+// Set the latency value by checking the UUID and peer match in the received 'pong' message.
+func (pss *PubSubServer) optPong(cpeer peer.ID, uuidBytes []byte) {
+	var newUUID uuid.NullUUID
+	err := newUUID.UnmarshalBinary(uuidBytes)
+	if err != nil {
+		return
+	}
+
+	info := pss.apm.GetPeerInfo(cpeer)
+
+	if info.uuid == newUUID.UUID {
+		pss.apm.SetPeerInfoPongTime(cpeer, time.Now().UnixNano())
+		info := pss.apm.GetPeerInfo(cpeer)
+		pss.apm.SetPeerInfoLatency(cpeer, time.Duration(info.pongTime-info.pingTime))
+	} else {
+		//TODO red flag
+	}
 }
 
 // Create a 'version' message and stream it to the peer that received the 'getversion' message.
@@ -471,6 +486,21 @@ func (pss *PubSubServer) events(trackCh <-chan commons.ConnectionEvent) {
 				}
 
 				checker.Stop()
+
+				// generate a ping message with a unique UUID for each peer and append timestamps
+				peerInfo := pss.apm.GetPeerInfo(eventCopy.PeerID)
+				uuidBytes, err := peerInfo.uuid.MarshalBinary()
+				if err != nil {
+					return
+				}
+
+				msg, err = pss.omb.Ping(uuidBytes)
+				if err != nil {
+					return
+				}
+
+				pss.apm.SetPeerInfoPingTime(eventCopy.PeerID, time.Now().UnixNano())
+				pss.stream(eventCopy.PeerID, msg)
 
 				// retrieve the peer list from the new node and expand the network connections
 				msg, err = pss.omb.GetPeerList()
