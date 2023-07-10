@@ -338,10 +338,10 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 			case data := <-work:
 				metadata := data.InternalMetadata
 				metadata.SentTimestamp = time.Now()
-				if _, ok := data.SearcherTxns[searcherID]; !ok {
-					data.SearcherTxns[searcherID] = []string{}
-				}
 				metadata.ClientTransactions = data.SearcherTxns[searcherID]
+				if metadata.ClientTransactions == nil {
+					metadata.ClientTransactions = []string{}
+				}
 				json, err := json.Marshal(metadata)
 				if err != nil {
 					a.Log.Error(err)
