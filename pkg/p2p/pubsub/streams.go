@@ -72,7 +72,7 @@ func (pss *PubSubServer) peerStreamHandler(stream network.Stream) {
 		pss.optPing(inMsg.Peer(), inMsg.Bytes())
 	// it can be use validate peer is alive
 	case message.Pong:
-		pss.optPong()
+		pss.optPong(inMsg.Peer(), inMsg.Bytes())
 	// publish version
 	case message.GetVersion:
 		pss.optGetVersion(inMsg.Peer())
