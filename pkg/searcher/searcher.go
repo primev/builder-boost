@@ -175,11 +175,15 @@ func (s *searcher) processMessages(c *websocket.Conn) error {
 			s.log.WithField("message", string(message)).Error("failed to unmarshal message")
 			continue
 		}
-		wireTime := now.Sub(m.SentTimestamp)
-		e2eTime := now.Sub(m.RecTimestamp)
+		if s.metricsEnabled {
 
-		s.m.Duration.WithLabelValues("wire", s.addr).Observe(wireTime.Seconds())
-		s.m.Duration.WithLabelValues("e2e", s.addr).Observe(e2eTime.Seconds())
+			wireTime := now.Sub(m.SentTimestamp)
+			e2eTime := now.Sub(m.RecTimestamp)
+
+			s.m.Duration.WithLabelValues("wire", s.addr).Observe(wireTime.Seconds())
+			s.m.Duration.WithLabelValues("e2e", s.addr).Observe(e2eTime.Seconds())
+
+		}
 		s.log.WithField("message", string(message)).Info("received message from builder")
 	}
 }
