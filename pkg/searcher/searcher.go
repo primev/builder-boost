@@ -166,7 +166,9 @@ func (s *searcher) processMessages(c *websocket.Conn) error {
 	for {
 		_, message, err := c.ReadMessage()
 		now = time.Now()
-		if err != nil {
+		if err != nil && err.(*websocket.CloseError).Code == websocket.CloseAbnormalClosure {
+			s.log.Error(err.Error())
+		} else if err != nil {
 			return err
 		}
 		var m boost.Metadata
