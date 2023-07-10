@@ -280,7 +280,7 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 	// If searcher is already connected, close the old connection
 	if ok {
 		a.Log.WithFields(logrus.Fields{"searcher": searcherAddressParam}).Error("searcher is already connected, closing old connection")
-		s.Conn.Close()
+		s.Conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 	}
 
 	// Upgrade the HTTP request to a WebSocket connection

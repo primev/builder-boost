@@ -164,7 +164,11 @@ func (s *searcher) run(url string) error {
 func (s *searcher) processMessages(c *websocket.Conn) error {
 	var now time.Time
 	for {
-		_, message, err := c.ReadMessage()
+		mtype, message, err := c.ReadMessage()
+		if mtype == websocket.CloseMessage {
+			s.log.Info("received close message from builder")
+			return nil
+		}
 		now = time.Now()
 		if err != nil {
 			return err
