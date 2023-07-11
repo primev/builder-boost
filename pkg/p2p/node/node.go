@@ -42,7 +42,7 @@ type closeSignal struct {
 // TODO All exported items that have been exported will be made unexported and inaccessible from outside
 // and the control of the entire system will be transferred to the interface
 
-// spesific node fields
+// specific node fields
 type Node struct {
 	log      log.Logger
 	host     host.Host
