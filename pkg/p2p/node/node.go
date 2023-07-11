@@ -82,15 +82,6 @@ func CreateNode(logger log.Logger, peerKey *ecdsa.PrivateKey, rollup rollup.Roll
 	)
 
 	// Set your own keypair
-	//priv, _, err := crypto.GenerateKeyPair(
-	//	crypto.Ed25519, // Select your key type. Ed25519 are nice short
-	//	-1,             // Select key length when possible (i.e. RSA).
-	//)
-	//if err != nil {
-	//	panic(err)
-	//}
-
-	// Set your own keypair
 	privKey, err := crypto.UnmarshalSecp256k1PrivateKey(peerKey.D.Bytes())
 	if err != nil {
 		panic(err)

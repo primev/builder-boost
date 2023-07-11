@@ -4,9 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"math/big"
-	"os"
 	"strings"
 	"sync"
 	"time"
@@ -131,7 +129,10 @@ func (pss *PubSubServer) baseProtocol(once sync.Once) {
 
 		msg, err := sub.Next(pss.ctx)
 		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
+			pss.log.With(log.F{
+				"service":  "p2p pubsub protocol reader",
+				"err time": commons.GetNow(),
+			}).Error(err)
 			continue
 		}
 
@@ -225,7 +226,7 @@ func (pss *PubSubServer) publish(msg message.OutboundMessage) error {
 	return pss.topic.Publish(pss.ctx, msgBytes)
 }
 
-// stream message
+// stream message for specific peer
 func (pss *PubSubServer) stream(peerID peer.ID, msg message.OutboundMessage) error {
 	msgBytes, err := msg.MarshalJSON()
 	if err != nil {
