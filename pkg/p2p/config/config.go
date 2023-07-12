@@ -22,7 +22,7 @@ type Config struct {
 	peerStreamProto string
 	// bootstrap peers
 	bootstrapPeers []multiaddr.Multiaddr
-	// latenct test interval
+	// latency test interval
 	latencyInterval time.Duration
 }
 
