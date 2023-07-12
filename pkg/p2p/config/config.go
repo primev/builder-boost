@@ -22,6 +22,8 @@ type Config struct {
 	peerStreamProto string
 	// bootstrap peers
 	bootstrapPeers []multiaddr.Multiaddr
+	// latenct test interval
+	latencyInterval time.Duration
 }
 
 type ConfigOption func(*Config)
@@ -93,6 +95,13 @@ func WithBootstrapPeers(peers []multiaddr.Multiaddr) ConfigOption {
 	}
 }
 
+// WithLatencyInterval sets the latency interval option for Config
+func WithLatencyInterval(interval time.Duration) ConfigOption {
+	return func(cfg *Config) {
+		cfg.latencyInterval = interval
+	}
+}
+
 // Version returns the version from Config
 func (cfg *Config) Version() string {
 	return cfg.version
@@ -126,4 +135,9 @@ func (cfg *Config) PeerStreamProto() string {
 // BootstrapPeers returns the bootstrap peers from Config
 func (cfg *Config) BootstrapPeers() []multiaddr.Multiaddr {
 	return cfg.bootstrapPeers
+}
+
+// LatencyInterval returns the latency interval from Config
+func (cfg *Config) LatencyInterval() time.Duration {
+	return cfg.latencyInterval
 }
