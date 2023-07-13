@@ -44,15 +44,15 @@ func (pss *PubSubServer) peerStreamHandler(stream network.Stream) {
 		}).Info("unverified peer message")
 
 		switch inMsg.Op() {
-		case message.Authentication:
-			pss.optAuthentication(inMsg.Peer(), inMsg.Bytes(), false)
+		case message.Approve:
+			pss.optApprove(inMsg.Peer(), inMsg.Bytes(), false)
 		default:
 			pss.log.With(log.F{
 				"service":  "p2p stream",
 				"op":       inMsg.Op(),
 				"peer":     inMsg.Peer(),
 				"msg time": commons.GetNow(),
-			}).Info("unknown authentication option!")
+			}).Info("unknown approve option!")
 		}
 		return
 	}
@@ -66,7 +66,7 @@ func (pss *PubSubServer) peerStreamHandler(stream network.Stream) {
 
 	switch inMsg.Op() {
 	// pass auth option in this side for now
-	case message.Authentication:
+	case message.Approve:
 	// create pong message and publish to show you're alive
 	case message.Ping:
 		pss.optPing(inMsg.Peer(), inMsg.Bytes())

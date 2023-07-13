@@ -161,15 +161,15 @@ func (pss *PubSubServer) baseProtocol(once sync.Once) {
 				}).Info("unverified peer message")
 
 				switch inMsg.Op() {
-				case message.Authentication:
-					pss.optAuthentication(inMsg.Peer(), inMsg.Bytes(), true)
+				case message.Approve:
+					pss.optApprove(inMsg.Peer(), inMsg.Bytes(), true)
 				default:
 					pss.log.With(log.F{
 						"service":  "p2p pubsub",
 						"op":       inMsg.Op(),
 						"peer":     inMsg.Peer(),
 						"msg time": commons.GetNow(),
-					}).Info("unknown authentication option!")
+					}).Info("unknown approve option!")
 				}
 			}()
 			continue
@@ -185,7 +185,7 @@ func (pss *PubSubServer) baseProtocol(once sync.Once) {
 
 			switch inMsg.Op() {
 			// pass auth option in this side for now
-			case message.Authentication:
+			case message.Approve:
 			// create pong message and publish to show you're alive
 			case message.Ping:
 				pss.optPing(inMsg.Peer(), inMsg.Bytes())
@@ -236,15 +236,15 @@ func (pss *PubSubServer) stream(peerID peer.ID, msg message.OutboundMessage) err
 	return pss.psp.Send(peerID, msgBytes)
 }
 
-func (pss *PubSubServer) optAuthentication(cpeer peer.ID, bytes []byte, sendauth bool) {
-	var am = new(messages.AuthMsg)
+func (pss *PubSubServer) optApprove(cpeer peer.ID, bytes []byte, sendauth bool) {
+	var am = new(messages.ApproveMsg)
 	err := json.Unmarshal(bytes, &am)
 
 	newSigner := signer.New()
 	valid, address, err := newSigner.Verify(am.Sig, am.GetUnsignedMessage())
 	if err != nil {
 		pss.log.With(log.F{
-			"service":    "p2p pubsub authentication",
+			"service":    "p2p pubsub approve",
 			"close time": commons.GetNow(),
 		}).Error(err)
 
@@ -256,7 +256,7 @@ func (pss *PubSubServer) optAuthentication(cpeer peer.ID, bytes []byte, sendauth
 	// verify signature
 	if !valid {
 		pss.log.With(log.F{
-			"service":    "p2p pubsub authentication",
+			"service":    "p2p pubsub approve",
 			"close time": commons.GetNow(),
 		}).Error(errors.New("not valid signature"))
 
@@ -269,7 +269,7 @@ func (pss *PubSubServer) optAuthentication(cpeer peer.ID, bytes []byte, sendauth
 	// verify the correct builder eth address packaging
 	if !commons.BytesCompare(address.Bytes(), am.Address.Bytes()) {
 		pss.log.With(log.F{
-			"service":    "p2p pubsub authentication",
+			"service":    "p2p pubsub approve",
 			"close time": commons.GetNow(),
 		}).Error(errors.New("wrong adress packaging"))
 
@@ -281,7 +281,7 @@ func (pss *PubSubServer) optAuthentication(cpeer peer.ID, bytes []byte, sendauth
 	// terminate clone builder connections
 	if commons.BytesCompare(pss.address.Bytes(), am.Address.Bytes()) {
 		pss.log.With(log.F{
-			"service":    "p2p pubsub authentication",
+			"service":    "p2p pubsub approve",
 			"close time": commons.GetNow(),
 		}).Error(errors.New("clone builder detected"))
 
@@ -293,7 +293,7 @@ func (pss *PubSubServer) optAuthentication(cpeer peer.ID, bytes []byte, sendauth
 	// verify the correct builder peer address packaging
 	if strings.Compare(cpeer.String(), am.Peer.String()) != 0 {
 		pss.log.With(log.F{
-			"service":    "p2p pubsub authentication",
+			"service":    "p2p pubsub approve",
 			"close time": commons.GetNow(),
 		}).Error(errors.New("wrong peer packaging"))
 
@@ -337,8 +337,8 @@ func (pss *PubSubServer) optAuthentication(cpeer peer.ID, bytes []byte, sendauth
 		pss.apm.SetPeerInfoUUID(cpeer, uuid.New())
 
 		if sendauth {
-			// create authentication message and stream this message for new peer
-			msg, err := pss.omb.Authentication(pss.token)
+			// create approve message and stream this message for new peer
+			msg, err := pss.omb.Approve(pss.token)
 			if err != nil {
 				return
 			}
@@ -350,7 +350,7 @@ func (pss *PubSubServer) optAuthentication(cpeer peer.ID, bytes []byte, sendauth
 		pss.host.Network().ClosePeer(cpeer)
 
 		pss.log.With(log.F{
-			"service":    "p2p pubsub authentication",
+			"service":    "p2p pubsub approve",
 			"peer":       cpeer,
 			"close time": commons.GetNow(),
 		}).Info("not enough stake")
@@ -459,8 +459,8 @@ func (pss *PubSubServer) events(trackCh <-chan commons.ConnectionEvent) {
 		switch eventCopy.Event {
 		case commons.Connected:
 			var retry = 5
-			// create authentication message and stream this message for new peer
-			msg, err := pss.omb.Authentication(pss.token)
+			// create approve message and stream this message for new peer
+			msg, err := pss.omb.Approve(pss.token)
 			if err != nil {
 				return
 			}

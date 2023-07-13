@@ -173,7 +173,7 @@ func CreateNode(logger log.Logger, peerKey *ecdsa.PrivateKey, rollup rollup.Roll
 	// generate token
 	newSigner := signer.New()
 
-	am := messages.AuthMsg{
+	am := messages.ApproveMsg{
 		Peer:    host.ID(),
 		Address: commons.GetAddressFromPrivateKey(peerKey),
 	}
@@ -317,9 +317,9 @@ func (n *Node) Publish(msg []byte, err error) error {
 	return n.topic.Publish(n.ctx, msg)
 }
 
-// authentication over node
-func (n *Node) Authentication() {
-	msg, err := n.msgBuild.Authentication(n.GetToken())
+// approve over node
+func (n *Node) Approve() {
+	msg, err := n.msgBuild.Approve(n.GetToken())
 	if err != nil {
 		panic(err)
 	}

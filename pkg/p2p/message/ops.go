@@ -4,7 +4,7 @@ type Op byte
 
 const (
 	UNDEFINED Op = iota
-	Authentication
+	Approve
 	Ping
 	Pong
 	GetVersion
@@ -16,8 +16,8 @@ const (
 
 func (op Op) String() string {
 	switch op {
-	case Authentication:
-		return "authentication"
+	case Approve:
+		return "approve"
 	case Ping:
 		return "ping"
 	case Pong:

@@ -10,7 +10,7 @@ import (
 var _ OutboundMsgBuilder = (*outMsgBuilder)(nil)
 
 type OutboundMsgBuilder interface {
-	Authentication([]byte) (OutboundMessage, error)
+	Approve([]byte) (OutboundMessage, error)
 	Ping([]byte) (OutboundMessage, error)
 	Pong([]byte) (OutboundMessage, error)
 	GetVersion() (OutboundMessage, error)
@@ -35,9 +35,9 @@ func NewOutboundBuilder() OutboundMsgBuilder {
 	}
 }
 
-func (b *outMsgBuilder) Authentication(data []byte) (OutboundMessage, error) {
+func (b *outMsgBuilder) Approve(data []byte) (OutboundMessage, error) {
 	return b.builder.createOutbound(
-		Authentication,
+		Approve,
 		time.Now().UnixNano(),
 		data,
 	)
