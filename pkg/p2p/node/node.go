@@ -39,9 +39,6 @@ type closeSignal struct {
 	Code   int
 }
 
-// TODO All exported items that have been exported will be made unexported and inaccessible from outside
-// and the control of the entire system will be transferred to the interface
-
 // specific node fields
 type Node struct {
 	log      log.Logger
@@ -358,18 +355,12 @@ func (n *Node) initDiscovery() {
 	discovery.ConnectBootstrap()
 
 	// It has a weak infrastructure in libp2p
-	// TODO use own techniques
 	discovery.StartDhtRouting()
 }
 
 // trigger with signal and do tasks safely
 func (n *Node) waitSignal(cancel context.CancelFunc) {
 	signal := <-n.closeChan
-
-	//// close b2b topic
-	//if n.mode == commons.BUILDER {
-	//	n.B2bTopic.Close()
-	//}
 
 	// ps.Leave(config.Topic)
 
