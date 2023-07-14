@@ -55,6 +55,8 @@ type Node struct {
 	stake     *big.Int
 	closeChan chan closeSignal
 
+	preconfCh chan []byte
+
 	once  sync.Once
 	ready chan struct{}
 }
@@ -200,6 +202,10 @@ func CreateNode(logger log.Logger, peerKey *ecdsa.PrivateKey, rollup rollup.Roll
 		panic(err)
 	}
 
+	var (
+		preconfCh = make(chan []byte)
+	)
+
 	// create pubsub server
 	psio := pubsubio.NewPubsubServer(
 		ctx,
@@ -213,6 +219,7 @@ func CreateNode(logger log.Logger, peerKey *ecdsa.PrivateKey, rollup rollup.Roll
 		topic,
 		imb,
 		omb,
+		preconfCh,
 	)
 
 	// fill node fields
@@ -229,6 +236,7 @@ func CreateNode(logger log.Logger, peerKey *ecdsa.PrivateKey, rollup rollup.Roll
 		address:   am.Address,
 		stake:     stake,
 		closeChan: make(chan closeSignal),
+		preconfCh: preconfCh,
 	}
 
 	// start default streams
@@ -391,5 +399,23 @@ func (n *Node) setReady() {
 	case <-n.Ready():
 	default:
 		close(n.ready)
+	}
+}
+
+// read preconfirmation bids from the node
+func (n *Node) PreconfReader() <-chan []byte {
+	return n.preconfCh
+}
+
+// publish preconfirmation bids over the node
+func (n *Node) PreconfSender(preconf []byte) {
+	msg, err := n.msgBuild.PreconfirmationBid(preconf)
+	if err != nil {
+		panic(err)
+	}
+
+	err = n.Publish(msg.MarshalJSON())
+	if err != nil {
+		panic(err)
 	}
 }

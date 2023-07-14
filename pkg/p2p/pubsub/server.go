@@ -42,6 +42,8 @@ type PubSubServer struct {
 	apm     *approvedPeersMap
 	psp     stream.Stream
 
+	preconfCh chan []byte
+
 	ready chan struct{}
 }
 
@@ -57,24 +59,26 @@ func NewPubsubServer(
 	topic *pubsub.Topic,
 	imb message.InboundMsgBuilder,
 	omb message.OutboundMsgBuilder,
+	preconfCh chan []byte,
 ) *PubSubServer {
 	pss := new(PubSubServer)
 	apm := newApprovedPeersMap()
 
 	pss = &PubSubServer{
-		ctx:     ctx,
-		cfg:     cfg,
-		log:     log,
-		self:    host.ID(),
-		host:    host,
-		trackCh: trackCh,
-		token:   token,
-		address: address,
-		rollup:  rollup,
-		topic:   topic,
-		imb:     imb,
-		omb:     omb,
-		apm:     apm,
+		ctx:       ctx,
+		cfg:       cfg,
+		log:       log,
+		self:      host.ID(),
+		host:      host,
+		trackCh:   trackCh,
+		token:     token,
+		address:   address,
+		rollup:    rollup,
+		topic:     topic,
+		imb:       imb,
+		omb:       omb,
+		apm:       apm,
+		preconfCh: preconfCh,
 	}
 
 	pss.ready = make(chan struct{})
@@ -441,8 +445,9 @@ func (pss *PubSubServer) optPeerList(cpeer peer.ID, bytes []byte) {
 	}
 }
 
+// process and transfer preconfirmation bids to the channel
 func (pss *PubSubServer) optPreconfirmationBid(cpeer peer.ID, bytes []byte) {
-
+	pss.preconfCh <- bytes
 }
 
 // get self peer.ID
