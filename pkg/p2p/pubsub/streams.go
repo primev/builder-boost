@@ -85,6 +85,9 @@ func (pss *PubSubServer) peerStreamHandler(stream network.Stream) {
 	// it can be use for connect to peers
 	case message.PeerList:
 		pss.optPeerList(inMsg.Peer(), inMsg.Bytes())
+
+	case message.PreconfirmationBid:
+		pss.optPreconfirmationBid(inMsg.Peer(), inMsg.Bytes())
 	default:
 		pss.log.With(log.F{
 			"service":  "p2p stream",

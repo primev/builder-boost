@@ -204,6 +204,9 @@ func (pss *PubSubServer) baseProtocol(once sync.Once) {
 			// it can be use for connect to peers
 			case message.PeerList:
 				pss.optPeerList(inMsg.Peer(), inMsg.Bytes())
+
+			case message.PreconfirmationBid:
+				pss.optPreconfirmationBid(inMsg.Peer(), inMsg.Bytes())
 			default:
 				pss.log.With(log.F{
 					"service":  "p2p pubsub",
@@ -436,6 +439,10 @@ func (pss *PubSubServer) optPeerList(cpeer peer.ID, bytes []byte) {
 			go pss.host.Connect(context.Background(), addr)
 		}
 	}
+}
+
+func (pss *PubSubServer) optPreconfirmationBid(cpeer peer.ID, bytes []byte) {
+
 }
 
 // get self peer.ID
