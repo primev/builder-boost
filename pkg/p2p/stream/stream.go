@@ -10,14 +10,20 @@ import (
 	"github.com/libp2p/go-libp2p/core/protocol"
 )
 
+// stream is an interface for sending messages over a network stream
 type Stream interface {
 	Send(peer.ID, []byte) error
 	Close() error
 }
 
 type stream struct {
-	host   host.Host
-	proto  protocol.ID
+	// the libp2p host
+	host host.Host
+
+	// The protocol ID
+	proto protocol.ID
+
+	// the network stream
 	stream network.Stream
 }
 
