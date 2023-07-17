@@ -33,6 +33,24 @@ import (
 	"github.com/primev/builder-boost/pkg/rollup"
 )
 
+// Node interface defines the functionality of a P2P node.
+type BoostNode interface {
+	GetToken() []byte
+	GetAddress() common.Address
+	GetStake() *big.Int
+	GetPeers() peer.IDSlice
+	GetPeersOnTopic() peer.IDSlice
+	GetApprovedPeers() []peer.ID
+	CreateStream(proto string, handler func(stream network.Stream))
+	SendMsg(proto protocol.ID, p peer.ID, msg string) error
+	Publish(msg []byte, err error) error
+	Approve()
+	Close(reason string, code int)
+	Ready() <-chan struct{}
+	PreconfReader() <-chan []byte
+	PreconfSender(preconf []byte)
+}
+
 // node shutdown signal
 type closeSignal struct {
 	Reason string
@@ -62,7 +80,7 @@ type Node struct {
 }
 
 // create p2p node
-func CreateNode(logger log.Logger, peerKey *ecdsa.PrivateKey, rollup rollup.Rollup) *Node {
+func CreateNode(logger log.Logger, peerKey *ecdsa.PrivateKey, rollup rollup.Rollup) BoostNode {
 	if logger == nil {
 		logger = log.New().WithField("service", "p2p")
 	}
