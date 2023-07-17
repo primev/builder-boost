@@ -342,6 +342,8 @@ func (pss *Server) optApprove(cpeer peer.ID, bytes []byte, sendauth bool) {
 		pss.apm.SetPeerInfoStake(cpeer, stake)
 		pss.apm.SetPeerInfoAddrs(cpeer, addrInfo.Addrs)
 		pss.apm.SetPeerInfoUUID(cpeer, uuid.New())
+		// temporary gossip
+		pss.apm.SetPeerInfoGossip(cpeer, true)
 
 		if sendauth {
 			// create approve message and stream this message for new peer
