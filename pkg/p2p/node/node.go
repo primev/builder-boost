@@ -33,8 +33,8 @@ import (
 	"github.com/primev/builder-boost/pkg/rollup"
 )
 
-// Node interface defines the functionality of a P2P node.
-type Node interface {
+// BoostNode interface defines the functionality of a P2P node.
+type BoostNode interface {
 	// GetToken returns the token of the node.
 	GetToken() []byte
 
