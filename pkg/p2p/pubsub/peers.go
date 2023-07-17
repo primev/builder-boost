@@ -32,6 +32,8 @@ type info struct {
 	latency time.Duration
 	// peer score
 	score int
+	// permission for gossip to peer
+	gossip bool
 	// protect info
 	sync.RWMutex
 }
@@ -116,6 +118,14 @@ func (i *info) getScore() int {
 	return i.score
 }
 
+// getGossip returns the gossip permisison of the peer.
+func (i *info) getGossip() bool {
+	i.RLock()
+	defer i.RUnlock()
+
+	return i.gossip
+}
+
 // setStart sets the start time of the peer.
 func (i *info) setStart(start time.Time) {
 	i.Lock()
@@ -194,6 +204,14 @@ func (i *info) setScore(score int) {
 	defer i.Unlock()
 
 	i.score = score
+}
+
+// setGossip sets the gossip permission of the peer.
+func (i *info) setGossip(gossip bool) {
+	i.Lock()
+	defer i.Unlock()
+
+	i.gossip = gossip
 }
 
 type approvedPeersMap struct {
@@ -401,5 +419,14 @@ func (a *approvedPeersMap) SetPeerInfoScore(peer peer.ID, score int) {
 	defer a.Unlock()
 	if val, ok := a.peers[peer]; ok {
 		val.setScore(score)
+	}
+}
+
+// SetPeerInfoGossip sets the gossip permission of a peer.
+func (a *approvedPeersMap) SetPeerInfoGossip(peer peer.ID, gossip bool) {
+	a.Lock()
+	defer a.Unlock()
+	if val, ok := a.peers[peer]; ok {
+		val.setGossip(gossip)
 	}
 }
