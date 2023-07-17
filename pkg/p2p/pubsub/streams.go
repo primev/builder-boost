@@ -15,7 +15,7 @@ const (
 
 // when communication needs to be between only two peers
 // this streaming protocol comes into play
-func (pss *PubSubServer) peerStreamHandler(stream network.Stream) {
+func (pss *Server) peerStreamHandler(stream network.Stream) {
 	peerID := stream.Conn().RemotePeer()
 
 	reader := bufio.NewReader(stream)

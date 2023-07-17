@@ -90,7 +90,7 @@ type Node struct {
 	host     host.Host
 	topic    *pubsub.Topic
 	msgBuild message.OutboundMsgBuilder
-	pubSub   *pubsubio.PubSubServer
+	pubSub   *pubsubio.Server
 
 	ctx       context.Context
 	cfg       *config.Config
@@ -252,7 +252,7 @@ func CreateNode(logger log.Logger, peerKey *ecdsa.PrivateKey, rollup rollup.Roll
 	)
 
 	// create pubsub server
-	psio := pubsubio.NewPubsubServer(
+	psio := pubsubio.New(
 		ctx,
 		cfg,
 		logger,

@@ -26,7 +26,7 @@ import (
 	"github.com/primev/builder-boost/pkg/rollup"
 )
 
-type PubSubServer struct {
+type Server struct {
 	ctx     context.Context
 	cfg     *config.Config
 	log     log.Logger
@@ -47,7 +47,7 @@ type PubSubServer struct {
 	ready chan struct{}
 }
 
-func NewPubsubServer(
+func New(
 	ctx context.Context,
 	cfg *config.Config,
 	log log.Logger,
@@ -60,11 +60,11 @@ func NewPubsubServer(
 	imb message.InboundMsgBuilder,
 	omb message.OutboundMsgBuilder,
 	preconfCh chan []byte,
-) *PubSubServer {
-	pss := new(PubSubServer)
+) *Server {
+	pss := new(Server)
 	apm := newApprovedPeersMap()
 
-	pss = &PubSubServer{
+	pss = &Server{
 		ctx:       ctx,
 		cfg:       cfg,
 		log:       log,
@@ -103,7 +103,7 @@ func NewPubsubServer(
 }
 
 // base pubsub procotol
-func (pss *PubSubServer) baseProtocol(once sync.Once) {
+func (pss *Server) baseProtocol(once sync.Once) {
 	pss.log.With(log.F{
 		"service":    "p2p pubsub",
 		"start time": commons.GetNow(),
@@ -224,7 +224,7 @@ func (pss *PubSubServer) baseProtocol(once sync.Once) {
 }
 
 // publish message on topic
-func (pss *PubSubServer) publish(msg message.OutboundMessage) error {
+func (pss *Server) publish(msg message.OutboundMessage) error {
 	msgBytes, err := msg.MarshalJSON()
 	if err != nil {
 		return err
@@ -234,7 +234,7 @@ func (pss *PubSubServer) publish(msg message.OutboundMessage) error {
 }
 
 // stream message for specific peer
-func (pss *PubSubServer) stream(peerID peer.ID, msg message.OutboundMessage) error {
+func (pss *Server) stream(peerID peer.ID, msg message.OutboundMessage) error {
 	msgBytes, err := msg.MarshalJSON()
 	if err != nil {
 		return err
@@ -243,7 +243,7 @@ func (pss *PubSubServer) stream(peerID peer.ID, msg message.OutboundMessage) err
 	return pss.psp.Send(peerID, msgBytes)
 }
 
-func (pss *PubSubServer) optApprove(cpeer peer.ID, bytes []byte, sendauth bool) {
+func (pss *Server) optApprove(cpeer peer.ID, bytes []byte, sendauth bool) {
 	var am = new(messages.ApproveMsg)
 	err := json.Unmarshal(bytes, &am)
 
@@ -365,7 +365,7 @@ func (pss *PubSubServer) optApprove(cpeer peer.ID, bytes []byte, sendauth bool) 
 }
 
 // Create a 'pong' message and stream it to the peer that received the 'ping' message.
-func (pss *PubSubServer) optPing(cpeer peer.ID, uuidBytes []byte) {
+func (pss *Server) optPing(cpeer peer.ID, uuidBytes []byte) {
 	msg, err := pss.omb.Pong(uuidBytes)
 	if err != nil {
 		return
@@ -375,7 +375,7 @@ func (pss *PubSubServer) optPing(cpeer peer.ID, uuidBytes []byte) {
 }
 
 // Set the latency value by checking the UUID and peer match in the received 'pong' message.
-func (pss *PubSubServer) optPong(cpeer peer.ID, uuidBytes []byte) {
+func (pss *Server) optPong(cpeer peer.ID, uuidBytes []byte) {
 	var newUUID uuid.NullUUID
 	err := newUUID.UnmarshalBinary(uuidBytes)
 	if err != nil {
@@ -400,7 +400,7 @@ func (pss *PubSubServer) optPong(cpeer peer.ID, uuidBytes []byte) {
 }
 
 // Create a 'version' message and stream it to the peer that received the 'getversion' message.
-func (pss *PubSubServer) optGetVersion(cpeer peer.ID) {
+func (pss *Server) optGetVersion(cpeer peer.ID) {
 	msg, err := pss.omb.Version(pss.cfg.Version())
 	if err != nil {
 		return
@@ -410,12 +410,12 @@ func (pss *PubSubServer) optGetVersion(cpeer peer.ID) {
 }
 
 // store peer version info in approved peers map
-func (pss *PubSubServer) optVersion(cpeer peer.ID, bytes []byte) {
+func (pss *Server) optVersion(cpeer peer.ID, bytes []byte) {
 	pss.apm.SetPeerInfoVersion(cpeer, bytes)
 }
 
 // Create a 'peerlist' message and stream it to the peer that received the 'getpeerlist' message.
-func (pss *PubSubServer) optGetPeerList(cpeer peer.ID) {
+func (pss *Server) optGetPeerList(cpeer peer.ID) {
 	msg, err := pss.omb.PeerList(pss.apm.ListApprovedPeerAddrs())
 	if err != nil {
 		return
@@ -425,7 +425,7 @@ func (pss *PubSubServer) optGetPeerList(cpeer peer.ID) {
 }
 
 // get peerlist from other peers
-func (pss *PubSubServer) optPeerList(cpeer peer.ID, bytes []byte) {
+func (pss *Server) optPeerList(cpeer peer.ID, bytes []byte) {
 	var addrs []peer.AddrInfo
 
 	err := json.Unmarshal(bytes, &addrs)
@@ -446,20 +446,20 @@ func (pss *PubSubServer) optPeerList(cpeer peer.ID, bytes []byte) {
 }
 
 // process and transfer preconfirmation bids to the channel
-func (pss *PubSubServer) optPreconfirmationBid(cpeer peer.ID, bytes []byte) {
+func (pss *Server) optPreconfirmationBid(cpeer peer.ID, bytes []byte) {
 	pss.preconfCh <- bytes
 }
 
 // get self peer.ID
-func (pss PubSubServer) ID() peer.ID { return pss.self }
+func (pss Server) ID() peer.ID { return pss.self }
 
 // get approved peers on pubsub server
-func (pss *PubSubServer) GetApprovedPeers() []peer.ID {
+func (pss *Server) GetApprovedPeers() []peer.ID {
 	return pss.apm.ListApprovedPeers()
 }
 
 // listen events
-func (pss *PubSubServer) events(trackCh <-chan commons.ConnectionEvent) {
+func (pss *Server) events(trackCh <-chan commons.ConnectionEvent) {
 	var mutex = &sync.Mutex{}
 	for event := range trackCh {
 
