@@ -34,20 +34,47 @@ import (
 )
 
 // Node interface defines the functionality of a P2P node.
-type BoostNode interface {
+type Node interface {
+	// GetToken returns the token of the node.
 	GetToken() []byte
+
+	// GetAddress returns the address of the node.
 	GetAddress() common.Address
+
+	// GetStake returns the stake amount of the node.
 	GetStake() *big.Int
+
+	// GetPeers returns the list of connected peers.
 	GetPeers() peer.IDSlice
+
+	// GetPeersOnTopic returns the list of connected peers on the topic.
 	GetPeersOnTopic() peer.IDSlice
+
+	// GetApprovedPeers returns the list of approved peers.
 	GetApprovedPeers() []peer.ID
+
+	// CreateStream creates a new stream with the given protocol and handler function.
 	CreateStream(proto string, handler func(stream network.Stream))
+
+	// SendMsg sends a message to a peer over the specified protocol.
 	SendMsg(proto protocol.ID, p peer.ID, msg string) error
+
+	// Publish publishes a message over the topic.
 	Publish(msg []byte, err error) error
+
+	// Approve approves the node and publishes the approval message.
 	Approve()
+
+	// Close closes the node with the given reason and code.
 	Close(reason string, code int)
+
+	// Ready returns a channel that signals when the node is ready.
 	Ready() <-chan struct{}
+
+	// PreconfReader returns a channel for reading pre-confirmation bids from the node.
 	PreconfReader() <-chan []byte
+
+	// PreconfSender sends a pre-confirmation bid over the node.
 	PreconfSender(preconf []byte)
 }
 
