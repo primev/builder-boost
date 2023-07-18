@@ -243,6 +243,29 @@ func (pss *Server) stream(peerID peer.ID, msg message.OutboundMessage) error {
 	return pss.psp.Send(peerID, msgBytes)
 }
 
+// stream message for gossip peers
+func (pss *Server) gossip(msg message.OutboundMessage) error {
+	msgBytes, err := msg.MarshalJSON()
+	if err != nil {
+		return err
+	}
+
+	peers := pss.apm.GetGossipPeers()
+
+	for peerID, _ := range peers {
+		err = pss.psp.Send(peerID, msgBytes)
+		if err != nil {
+			pss.log.With(log.F{
+				"service":    "p2p pubsub gossip",
+				"close time": commons.GetNow(),
+				"peer id":    peerID,
+			}).Error(err)
+		}
+	}
+
+	return nil
+}
+
 func (pss *Server) optApprove(cpeer peer.ID, bytes []byte, sendauth bool) {
 	var am = new(messages.ApproveMsg)
 	err := json.Unmarshal(bytes, &am)
