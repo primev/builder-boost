@@ -332,6 +332,34 @@ func (a *approvedPeersMap) ListApprovedPeerAddrs() []peer.AddrInfo {
 	return approvedPeerAddrs
 }
 
+// GetGossipPeers returns a map of all the approved gossip peers.
+func (a *approvedPeersMap) GetGossipPeers() map[peer.ID]*info {
+	a.RLock()
+	defer a.RUnlock()
+
+	var peers = make(map[peer.ID]*info)
+	for k, v := range a.peers {
+		if v.getGossip() {
+			infoCopy := &info{
+				start:     v.getStart(),
+				version:   v.getVersion(),
+				address:   v.getAddress(),
+				stake:     v.getStake(),
+				hostAddrs: v.getAddrs(),
+				uuid:      v.getUUID(),
+				pingTime:  v.getPingTime(),
+				pongTime:  v.getPongTime(),
+				latency:   v.getLatency(),
+				score:     v.getScore(),
+			}
+
+			peers[k] = infoCopy
+		}
+	}
+
+	return peers
+}
+
 // SetPeerInfoStart sets the start time of a peer.
 func (a *approvedPeersMap) SetPeerInfoStart(peer peer.ID, start time.Time) {
 	a.Lock()
