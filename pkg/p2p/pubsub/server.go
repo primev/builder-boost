@@ -250,6 +250,7 @@ func (pss *Server) gossip(msg message.OutboundMessage) error {
 		return err
 	}
 
+	// TODO use optimization to fast data distribution
 	peers := pss.apm.GetGossipPeers()
 
 	for peerID, _ := range peers {
