@@ -65,6 +65,9 @@ type BoostNode interface {
 	// Stream stream a message over the proto to specific peer.
 	Stream(peerID peer.ID, msg message.OutboundMessage) error
 
+	// Gossip gossip a message over the gossip proto to specific peers.
+	Gossip(msg message.OutboundMessage) error
+
 	// Approve approves the node and publishes the approval message.
 	Approve()
 
@@ -369,6 +372,12 @@ func (n *Node) Publish(msg message.OutboundMessage) error {
 func (n *Node) Stream(peerID peer.ID, msg message.OutboundMessage) error {
 	// stream message to specific peer
 	return n.pubSub.Stream(peerID, msg)
+}
+
+// gossip message over pubsub gossip proto
+func (n *Node) Gossip(msg message.OutboundMessage) error {
+	// gossip message to specific peers
+	return n.pubSub.Gossip(msg)
 }
 
 // approve over node
