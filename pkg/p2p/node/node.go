@@ -60,7 +60,6 @@ type BoostNode interface {
 	SendMsg(proto protocol.ID, p peer.ID, msg string) error
 
 	// Publish publishes a message over the topic.
-	//Publish(msg []byte, err error) error
 	Publish(msg message.OutboundMessage) error
 
 	// Approve approves the node and publishes the approval message.
@@ -357,21 +356,9 @@ func (n *Node) SendMsg(proto protocol.ID, p peer.ID, msg string) error {
 	return nil
 }
 
-// publish message over topic
-// func (n *Node) Publish(msg []byte, err error) error {
+// publish message over pubsub topic
 func (n *Node) Publish(msg message.OutboundMessage) error {
-	var err error
-
-	if err != nil {
-		n.log.With(log.F{
-			"service":  "p2p publish",
-			"err time": commons.GetNow(),
-		}).Error(err)
-		return err
-	}
-
-	// send message to peers
-	//return n.topic.Publish(n.ctx, msg)
+	// send message to all approved peers
 	return n.pubSub.Publish(msg)
 }
 
