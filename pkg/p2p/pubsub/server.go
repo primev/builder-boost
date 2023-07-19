@@ -224,7 +224,7 @@ func (pss *Server) baseProtocol(once sync.Once) {
 }
 
 // publish message on topic
-func (pss *Server) publish(msg message.OutboundMessage) error {
+func (pss *Server) Publish(msg message.OutboundMessage) error {
 	msgBytes, err := msg.MarshalJSON()
 	if err != nil {
 		return err
@@ -234,7 +234,7 @@ func (pss *Server) publish(msg message.OutboundMessage) error {
 }
 
 // stream message for specific peer
-func (pss *Server) stream(peerID peer.ID, msg message.OutboundMessage) error {
+func (pss *Server) Stream(peerID peer.ID, msg message.OutboundMessage) error {
 	msgBytes, err := msg.MarshalJSON()
 	if err != nil {
 		return err
@@ -244,7 +244,7 @@ func (pss *Server) stream(peerID peer.ID, msg message.OutboundMessage) error {
 }
 
 // stream message for gossip peers
-func (pss *Server) gossip(msg message.OutboundMessage) error {
+func (pss *Server) Gossip(msg message.OutboundMessage) error {
 	msgBytes, err := msg.MarshalJSON()
 	if err != nil {
 		return err
@@ -376,7 +376,7 @@ func (pss *Server) optApprove(cpeer peer.ID, bytes []byte, sendauth bool) {
 				return
 			}
 
-			pss.stream(cpeer, msg)
+			pss.Stream(cpeer, msg)
 		}
 	} else {
 		// terminate the unexpected connection
@@ -397,7 +397,7 @@ func (pss *Server) optPing(cpeer peer.ID, uuidBytes []byte) {
 		return
 	}
 
-	pss.stream(cpeer, msg)
+	pss.Stream(cpeer, msg)
 }
 
 // Set the latency value by checking the UUID and peer match in the received 'pong' message.
@@ -432,7 +432,7 @@ func (pss *Server) optGetVersion(cpeer peer.ID) {
 		return
 	}
 
-	pss.stream(cpeer, msg)
+	pss.Stream(cpeer, msg)
 }
 
 // store peer version info in approved peers map
@@ -447,7 +447,7 @@ func (pss *Server) optGetPeerList(cpeer peer.ID) {
 		return
 	}
 
-	pss.stream(cpeer, msg)
+	pss.Stream(cpeer, msg)
 }
 
 // get peerlist from other peers
@@ -509,7 +509,7 @@ func (pss *Server) events(trackCh <-chan commons.ConnectionEvent) {
 			}
 
 			for i := 0; i < retry; i++ {
-				err = pss.stream(eventCopy.PeerID, msg)
+				err = pss.Stream(eventCopy.PeerID, msg)
 				if err == nil {
 					break
 				}
@@ -530,7 +530,7 @@ func (pss *Server) events(trackCh <-chan commons.ConnectionEvent) {
 							return
 						}
 
-						pss.stream(eventCopy.PeerID, msg)
+						pss.Stream(eventCopy.PeerID, msg)
 						break
 					}
 				}
@@ -550,7 +550,7 @@ func (pss *Server) events(trackCh <-chan commons.ConnectionEvent) {
 				}
 
 				pss.apm.SetPeerInfoPingTime(eventCopy.PeerID, time.Now().UnixNano())
-				pss.stream(eventCopy.PeerID, msg)
+				pss.Stream(eventCopy.PeerID, msg)
 
 				// retrieve the peer list from the new node and expand the network connections
 				msg, err = pss.omb.GetPeerList()
@@ -558,7 +558,7 @@ func (pss *Server) events(trackCh <-chan commons.ConnectionEvent) {
 					return
 				}
 
-				pss.stream(eventCopy.PeerID, msg)
+				pss.Stream(eventCopy.PeerID, msg)
 			}()
 
 		case commons.Disconnected:
