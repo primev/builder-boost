@@ -56,6 +56,7 @@ type API struct {
 	mux            http.Handler
 	BuilderToken   string
 	MetricsEnabled bool
+	InclusionList  bool
 	metrics        *metrics
 }
 

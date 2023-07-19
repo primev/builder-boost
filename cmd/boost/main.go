@@ -87,6 +87,12 @@ var flags = []cli.Flag{
 		Value:   false,
 		EnvVars: []string{"METRICS"},
 	},
+	&cli.BoolFlag{
+		Name:    "inclusionlist",
+		Usage:   "enables inclusion list for boost",
+		Value:   false,
+		EnvVars: []string{"INCLUSION_LIST"},
+	},
 }
 
 var (
@@ -220,6 +226,7 @@ func run() cli.ActionFunc {
 				Rollup:         ru,
 				BuilderToken:   c.String("buildertoken"),
 				MetricsEnabled: c.Bool("metrics"),
+				InclusionList:  c.Bool("inclusionlist"),
 			}
 
 			config.Log.Info("http server listening")
