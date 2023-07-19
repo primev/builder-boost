@@ -484,6 +484,11 @@ func (pss *Server) GetApprovedPeers() []peer.ID {
 	return pss.apm.ListApprovedPeers()
 }
 
+// get approved gossip peers on pubsub server
+func (pss *Server) GetApprovedGossipPeers() []peer.ID {
+	return pss.apm.ListApprovedGossipPeers()
+}
+
 // listen events
 func (pss *Server) events(trackCh <-chan commons.ConnectionEvent) {
 	var mutex = &sync.Mutex{}

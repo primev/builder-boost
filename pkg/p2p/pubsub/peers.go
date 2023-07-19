@@ -360,6 +360,21 @@ func (a *approvedPeersMap) GetGossipPeers() map[peer.ID]*info {
 	return peers
 }
 
+// ListApprovedGossipPeers returns a list of all the approved gossip peer IDs.
+func (a *approvedPeersMap) ListApprovedGossipPeers() []peer.ID {
+	a.RLock()
+	defer a.RUnlock()
+
+	approvedGossipPeers := []peer.ID{}
+	for k, v := range a.peers {
+		if v.getGossip() {
+			approvedGossipPeers = append(approvedGossipPeers, k)
+		}
+	}
+
+	return approvedGossipPeers
+}
+
 // SetPeerInfoStart sets the start time of a peer.
 func (a *approvedPeersMap) SetPeerInfoStart(peer peer.ID, start time.Time) {
 	a.Lock()
