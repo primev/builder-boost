@@ -293,7 +293,7 @@ func (a *approvedPeersMap) GetPeers() map[peer.ID]*info {
 			pongTime:  v.getPongTime(),
 			latency:   v.getLatency(),
 			score:     v.getScore(),
-			gossip:    val.getGossip(),
+			gossip:    v.getGossip(),
 		}
 
 		peers[k] = infoCopy
@@ -353,7 +353,7 @@ func (a *approvedPeersMap) GetGossipPeers() map[peer.ID]*info {
 				pongTime:  v.getPongTime(),
 				latency:   v.getLatency(),
 				score:     v.getScore(),
-				gossip:    val.getGossip(),
+				gossip:    v.getGossip(),
 			}
 
 			peers[k] = infoCopy
