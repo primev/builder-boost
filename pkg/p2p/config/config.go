@@ -37,6 +37,7 @@ func New(options ...ConfigOption) *Config {
 		topic:               "PRIMEV-TEST-45",
 		pubSubTopic:         "PRIMEVTOPIC",
 		peerStreamProto:     "/primev/stream-0.1",
+		latencyInterval:     time.Hour * 2,
 	}
 
 	for _, option := range options {
