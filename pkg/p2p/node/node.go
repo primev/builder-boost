@@ -54,25 +54,25 @@ type BoostNode interface {
 	GetApprovedPeers() []peer.ID
 
 	// CreateStream creates a new stream with the given protocol and handler function.
-	CreateStream(proto string, handler func(stream network.Stream))
+	CreateStream(string, func(stream network.Stream))
 
 	// SendMsg sends a message to a peer over the specified protocol.
-	SendMsg(proto protocol.ID, p peer.ID, msg string) error
+	SendMsg(protocol.ID, peer.ID, string) error
 
 	// Publish publishes a message over the topic.
-	Publish(msg message.OutboundMessage) error
+	Publish(message.OutboundMessage) error
 
 	// Stream stream a message over the proto to specific peer.
-	Stream(peerID peer.ID, msg message.OutboundMessage) error
+	Stream(peer.ID, message.OutboundMessage) error
 
 	// Gossip gossip a message over the gossip proto to specific peers.
-	Gossip(msg message.OutboundMessage) error
+	Gossip(message.OutboundMessage) error
 
 	// Approve approves the node and publishes the approval message.
 	Approve()
 
 	// Close closes the node with the given reason and code.
-	Close(reason string, code int)
+	Close(string, int)
 
 	// Ready returns a channel that signals when the node is ready.
 	Ready() <-chan struct{}
@@ -81,7 +81,7 @@ type BoostNode interface {
 	PreconfReader() <-chan []byte
 
 	// PreconfSender sends a pre-confirmation bid over the node.
-	PreconfSender(preconf []byte)
+	PreconfSender([]byte)
 }
 
 // node shutdown signal
