@@ -81,7 +81,7 @@ type BoostNode interface {
 	PreconfReader() <-chan []byte
 
 	// PreconfSender sends a pre-confirmation bid over the node.
-	PreconfSender([]byte)
+	PreconfSender(commons.Broadcast, []byte)
 }
 
 // node shutdown signal
@@ -464,14 +464,23 @@ func (n *Node) PreconfReader() <-chan []byte {
 }
 
 // publish preconfirmation bids over the node
-func (n *Node) PreconfSender(preconf []byte) {
+func (n *Node) PreconfSender(broadcastType commons.Broadcast, preconf []byte) {
 	msg, err := n.msgBuild.PreconfirmationBid(preconf)
 	if err != nil {
 		panic(err)
 	}
 
-	err = n.Publish(msg)
-	if err != nil {
-		panic(err)
+	if broadcastType == commons.Publish {
+		err = n.Publish(msg)
+		if err != nil {
+			//TODO log
+			return
+		}
+	} else if broadcastType == commons.Gossip {
+		err = n.Publish(msg)
+		if err != nil {
+			//TODO log
+			return
+		}
 	}
 }
