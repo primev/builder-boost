@@ -477,7 +477,7 @@ func (n *Node) PreconfSender(broadcastType commons.Broadcast, preconf []byte) {
 			return
 		}
 	} else if broadcastType == commons.Gossip {
-		err = n.Publish(msg)
+		err = n.Gossip(msg)
 		if err != nil {
 			//TODO log
 			return
