@@ -85,6 +85,7 @@ func New(
 
 	// event tracking
 	go pss.events(trackCh)
+	go pss.latencyUpdater()
 
 	// create peer stream protocol
 	pss.psp = stream.New(
@@ -414,7 +415,7 @@ func (pss *Server) optPong(cpeer peer.ID, uuidBytes []byte) {
 		pss.apm.SetPeerInfoPongTime(cpeer, time.Now().UnixNano())
 		info := pss.apm.GetPeerInfo(cpeer)
 
-		// set latency  value
+		// set latency value
 		pss.apm.SetPeerInfoLatency(cpeer, time.Duration(info.pongTime-info.pingTime))
 
 		// change uuid for next ping-pong
@@ -489,7 +490,8 @@ func (pss *Server) GetApprovedGossipPeers() []peer.ID {
 	return pss.apm.ListApprovedGossipPeers()
 }
 
-// listen events
+// when it listens to events, it applies necessary procedures based on incoming
+// or outgoing connections
 func (pss *Server) events(trackCh <-chan commons.ConnectionEvent) {
 	var mutex = &sync.Mutex{}
 	for event := range trackCh {
@@ -563,6 +565,31 @@ func (pss *Server) events(trackCh <-chan commons.ConnectionEvent) {
 
 		case commons.Disconnected:
 			pss.apm.DelPeer(eventCopy.PeerID)
+		}
+	}
+}
+
+// periodically check the status of peers and update latency information
+func (pss *Server) latencyUpdater() {
+
+	// get latency check interval
+	interval := pss.cfg.LatencyInterval()
+
+	for {
+		time.Sleep(interval)
+		for peerID, info := range pss.apm.GetPeers() {
+			uuidBytes, err := info.uuid.MarshalBinary()
+			if err != nil {
+				continue
+			}
+
+			msg, err := pss.omb.Ping(uuidBytes)
+			if err != nil {
+				continue
+			}
+
+			pss.apm.SetPeerInfoPingTime(peerID, time.Now().UnixNano())
+			pss.Stream(peerID, msg)
 		}
 	}
 }
