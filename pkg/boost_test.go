@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/alecthomas/assert"
 	"github.com/attestantio/go-builder-client/api/capella"
@@ -147,15 +148,15 @@ func TestDefaultBoost_SubmitBlock(t *testing.T) {
 			if err != nil {
 				fmt.Println("error:", err)
 			}
-			err = service.SubmitBlock(context.TODO(), &msg)
+			err = service.SubmitBlock(context.TODO(), &msg, time.Now())
 			assert.Equal(t, err, tt.expectedErr)
 			if err != nil {
 				return
 			}
 			metadata := <-service.pushChannel
 
-			assert.Equal(t, metadata.Transactions.Count, tt.txnCountExpected)
-			assert.Equal(t, metadata.BaseFee, tt.expectedBaseFee)
+			assert.Equal(t, metadata.InternalMetadata.Transactions.Count, tt.txnCountExpected)
+			assert.Equal(t, metadata.InternalMetadata.BaseFee, tt.expectedBaseFee)
 		})
 	}
 }

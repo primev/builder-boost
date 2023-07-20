@@ -16,7 +16,7 @@ const (
 type BoostService interface {
 	// Primev APIs
 	// Example(context.Context, *types.ExRequest) error
-	SubmitBlock(context.Context, *capella.SubmitBlockRequest) error
+	SubmitBlock(context.Context, *capella.SubmitBlockRequest, time.Time) error
 }
 
 type DefaultService struct {

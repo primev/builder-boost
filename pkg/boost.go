@@ -13,13 +13,13 @@ import (
 )
 
 type Boost interface {
-	SubmitBlock(context.Context, *capella.SubmitBlockRequest) error
-	GetWorkChannel() chan Metadata
+	SubmitBlock(context.Context, *capella.SubmitBlockRequest, time.Time) error
+	GetWorkChannel() chan SuperPayload
 }
 
 type DefaultBoost struct {
 	config      Config
-	pushChannel chan Metadata
+	pushChannel chan SuperPayload
 }
 
 type Transaction struct {
@@ -29,13 +29,20 @@ type Transaction struct {
 }
 
 type Metadata struct {
-	Builder         string      `json:"builder"`
-	Number          int64       `json:"number"`
-	BlockHash       string      `json:"blockHash"`
-	Timestamp       string      `json:"timestamp"`
-	BaseFee         uint32      `json:"baseFee"`
-	Transactions    Transaction `json:"transactions"`
-	SenderTimestamp int64       `json:"sent_timestamp"`
+	Builder            string      `json:"builder"`
+	Number             int64       `json:"number"`
+	BlockHash          string      `json:"blockHash"`
+	Timestamp          string      `json:"timestamp"`
+	BaseFee            uint32      `json:"baseFee"`
+	Transactions       Transaction `json:"standard_transactions"`
+	ClientTransactions []string    `json:"personal_transactions"`
+	SentTimestamp      time.Time   `json:"sent_timestamp"` // Timestamp of block sent to the searcher
+	RecTimestamp       time.Time   `json:"rec_timestamp"`  // Timestamp of block received by the builder instance
+}
+
+type SuperPayload struct {
+	InternalMetadata Metadata
+	SearcherTxns     map[string][]string
 }
 
 var (
@@ -50,12 +57,12 @@ func NewBoost(config Config) (*DefaultBoost, error) {
 
 	as := &DefaultBoost{
 		config:      config,
-		pushChannel: make(chan Metadata, 100),
+		pushChannel: make(chan SuperPayload, 100),
 	}
 	return as, nil
 }
 
-func (rs *DefaultBoost) GetWorkChannel() chan Metadata {
+func (rs *DefaultBoost) GetWorkChannel() chan SuperPayload {
 	return rs.pushChannel
 }
 
@@ -63,7 +70,7 @@ func (rs *DefaultBoost) Log() log.Logger {
 	return rs.config.Log
 }
 
-func (as *DefaultBoost) SubmitBlock(ctx context.Context, msg *capella.SubmitBlockRequest) (err error) {
+func (as *DefaultBoost) SubmitBlock(ctx context.Context, msg *capella.SubmitBlockRequest, now time.Time) (err error) {
 	span, _ := tracer.StartSpanFromContext(ctx, "submit-block")
 	defer span.Finish()
 	defer func() {
@@ -74,14 +81,15 @@ func (as *DefaultBoost) SubmitBlock(ctx context.Context, msg *capella.SubmitBloc
 	}()
 
 	var _txn types.Transaction
-	var blockMetadata Metadata
-
-	blockMetadata.BlockHash = msg.Message.BlockHash.String()
-	blockMetadata.Number = int64(msg.ExecutionPayload.BlockNumber)
-	blockMetadata.Builder = msg.Message.BuilderPubkey.String()
-	blockMetadata.Transactions.Count = int64(len(msg.ExecutionPayload.Transactions))
-	blockMetadata.Timestamp = time.Unix(int64(msg.ExecutionPayload.Timestamp), 0).Format(time.RFC1123)
-	blockMetadata.BaseFee = binary.LittleEndian.Uint32(msg.ExecutionPayload.BaseFeePerGas[:])
+	var blockMetadata SuperPayload
+	blockMetadata.SearcherTxns = make(map[string][]string)
+	blockMetadata.InternalMetadata.RecTimestamp = now
+	blockMetadata.InternalMetadata.BlockHash = msg.Message.BlockHash.String()
+	blockMetadata.InternalMetadata.Number = int64(msg.ExecutionPayload.BlockNumber)
+	blockMetadata.InternalMetadata.Builder = msg.Message.BuilderPubkey.String()
+	blockMetadata.InternalMetadata.Transactions.Count = int64(len(msg.ExecutionPayload.Transactions))
+	blockMetadata.InternalMetadata.Timestamp = time.Unix(int64(msg.ExecutionPayload.Timestamp), 0).Format(time.RFC1123)
+	blockMetadata.InternalMetadata.BaseFee = binary.LittleEndian.Uint32(msg.ExecutionPayload.BaseFeePerGas[:])
 
 	// Conditionally set txn details based on txn count
 	if len(msg.ExecutionPayload.Transactions) > 0 {
@@ -90,7 +98,10 @@ func (as *DefaultBoost) SubmitBlock(ctx context.Context, msg *capella.SubmitBloc
 		maxTipTxn := _txn
 		for _, btxn := range msg.ExecutionPayload.Transactions {
 			var txn types.Transaction
-			txn.UnmarshalBinary(btxn)
+			err := txn.UnmarshalBinary(btxn)
+			if err != nil {
+				as.config.Log.WithError(err).Error("Failed to decode transaction")
+			}
 			// Extract Min/Max
 			if txn.GasTipCapCmp(&minTipTxn) < 0 {
 				minTipTxn = txn
@@ -98,21 +109,31 @@ func (as *DefaultBoost) SubmitBlock(ctx context.Context, msg *capella.SubmitBloc
 			if txn.GasTipCapCmp(&maxTipTxn) > 0 {
 				maxTipTxn = txn
 			}
+
+			from, err := types.Sender(types.LatestSignerForChainID(txn.ChainId()), &txn)
+			if err != nil {
+				as.config.Log.WithField("transaction", txn).WithError(err).Error("umnable to decode sender of transaction")
+			}
+			clientID := from.Hex()
+			if _, ok := blockMetadata.SearcherTxns[clientID]; !ok {
+				blockMetadata.SearcherTxns[clientID] = make([]string, 0)
+			}
+			blockMetadata.SearcherTxns[clientID] = append(blockMetadata.SearcherTxns[clientID], txn.Hash().String())
 		}
 
-		blockMetadata.Transactions.MinPriorityFee = minTipTxn.GasTipCap().Int64()
-		blockMetadata.Transactions.MaxPriorityFee = maxTipTxn.GasTipCap().Int64()
+		blockMetadata.InternalMetadata.Transactions.MinPriorityFee = minTipTxn.GasTipCap().Int64()
+		blockMetadata.InternalMetadata.Transactions.MaxPriorityFee = maxTipTxn.GasTipCap().Int64()
 	}
 
 	as.pushChannel <- blockMetadata
 
 	as.config.Log.
-		WithField("block_hash", blockMetadata.BlockHash).
-		WithField("base_fee", blockMetadata.BaseFee).
-		WithField("min_priority_fee", blockMetadata.Transactions.MinPriorityFee).
-		WithField("max_priority_fee", blockMetadata.Transactions.MaxPriorityFee).
-		WithField("txn_count", blockMetadata.Transactions.Count).
-		WithField("builder", blockMetadata.Builder).
+		WithField("block_hash", blockMetadata.InternalMetadata.BlockHash).
+		WithField("base_fee", blockMetadata.InternalMetadata.BaseFee).
+		WithField("min_priority_fee", blockMetadata.InternalMetadata.Transactions.MinPriorityFee).
+		WithField("max_priority_fee", blockMetadata.InternalMetadata.Transactions.MaxPriorityFee).
+		WithField("txn_count", blockMetadata.InternalMetadata.Transactions.Count).
+		WithField("builder", blockMetadata.InternalMetadata.Builder).
 		Info("Block metadata processed")
 
 	return nil

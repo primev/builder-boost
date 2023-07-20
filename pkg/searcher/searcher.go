@@ -11,6 +11,10 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/lthibault/log"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+
+	boost "github.com/primev/builder-boost/pkg"
 	"github.com/primev/builder-boost/pkg/utils"
 )
 
@@ -20,24 +24,69 @@ type Searcher interface {
 
 func New(config Config) Searcher {
 	return &searcher{
-		log:  config.Log,
-		key:  config.Key,
-		addr: config.Addr,
+		log:            config.Log,
+		key:            config.Key,
+		addr:           config.Addr,
+		metricsEnabled: config.MetricsEnabled,
 	}
 }
 
 type searcher struct {
-	log  log.Logger
-	key  *ecdsa.PrivateKey
-	addr string
+	log            log.Logger
+	key            *ecdsa.PrivateKey
+	addr           string
+	m              *metrics
+	metricsEnabled bool
+}
+
+type metrics struct {
+	Duration prometheus.HistogramVec
+}
+
+func NewMetrics(reg prometheus.Registerer) *metrics {
+	m := &metrics{
+		Duration: *prometheus.NewHistogramVec(prometheus.HistogramOpts{
+			Namespace: "searcher",
+			Name:      "duration",
+			Help:      "Duration of the request",
+			Buckets:   []float64{0.0001, 0.0002, 0.0005, 0.001, 0.002, 0.005, 0.01, 0.02, 0.03, 0.05, 0.1, 0.15, 0.2, 0.5},
+		}, []string{"processing_type", "searcher_address"}),
+	}
+
+	reg.MustRegister(m.Duration)
+
+	return m
 }
 
 func (s *searcher) Run(ctx context.Context) error {
+	if s.metricsEnabled {
+		reg := prometheus.NewRegistry()
+		s.m = NewMetrics(reg)
+
+		go func() {
+			// Start an http server
+			promHandler := promhttp.HandlerFor(reg, promhttp.HandlerOpts{})
+
+			http.Handle("/metrics", promHandler)
+			http.ListenAndServe(":8080", nil)
+		}()
+	}
+
+	parsedURL, err := url.Parse(s.addr)
+	if err != nil {
+		return err
+	}
+
 	// Continue attempts to connect to the builder boost service
-	token := s.GenerateAuthenticationTokenForBuilder(s.addr)
+	token := s.GenerateAuthenticationTokenForBuilder(parsedURL)
 	s.log.WithField("token", token).WithField("builder", s.addr).Info("generated token for builder boost")
 
-	u := url.URL{Scheme: "ws", Host: s.addr, Path: "/ws"}
+	wsScheme := "ws"
+	if parsedURL.Scheme == "https" {
+		wsScheme = "wss"
+	}
+
+	u := url.URL{Scheme: wsScheme, Host: parsedURL.Host, Path: "/ws"}
 	q := u.Query()
 	q.Set("token", token)
 	u.RawQuery = q.Encode()
@@ -59,13 +108,12 @@ type BuilderInfoResponse struct {
 }
 
 // GenerateAuthenticationTokenForBuilder generates a token for the builder boost service represented by the url
-func (s *searcher) GenerateAuthenticationTokenForBuilder(boostBaseURL string) (token string) {
-	var builderInfo BuilderInfoResponse
-	boostURL := url.URL{Scheme: "http", Host: boostBaseURL, Path: "/builder"}
-	s.log.WithField("url", boostURL.String()).Info("connecting to builder boost to get builder ID")
+func (s *searcher) GenerateAuthenticationTokenForBuilder(u *url.URL) (token string) {
+	getBuilderURL := url.URL{Scheme: u.Scheme, Host: u.Host, Path: "/builder"}
+	s.log.WithField("url", getBuilderURL.String()).Info("connecting to builder boost to get builder ID")
 
 	// Make a get request to the url
-	req, err := http.NewRequest("GET", boostURL.String(), nil)
+	req, err := http.NewRequest("GET", getBuilderURL.String(), nil)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -85,6 +133,8 @@ func (s *searcher) GenerateAuthenticationTokenForBuilder(boostBaseURL string) (t
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	var builderInfo BuilderInfoResponse
 	err = json.Unmarshal(body, &builderInfo)
 	if err != nil {
 		log.Fatal(err)
@@ -112,12 +162,32 @@ func (s *searcher) run(url string) error {
 }
 
 func (s *searcher) processMessages(c *websocket.Conn) error {
+	var now time.Time
 	for {
-		_, message, err := c.ReadMessage()
+		mtype, message, err := c.ReadMessage()
+		if mtype == websocket.CloseMessage {
+			s.log.Info("received close message from builder")
+			return nil
+		}
+		now = time.Now()
 		if err != nil {
 			return err
 		}
+		var m boost.Metadata
+		err = json.Unmarshal(message, &m)
+		if err != nil {
+			s.log.WithField("message", string(message)).Error("failed to unmarshal message")
+			continue
+		}
+		if s.metricsEnabled {
 
+			wireTime := now.Sub(m.SentTimestamp)
+			e2eTime := now.Sub(m.RecTimestamp)
+
+			s.m.Duration.WithLabelValues("wire", s.addr).Observe(wireTime.Seconds())
+			s.m.Duration.WithLabelValues("e2e", s.addr).Observe(e2eTime.Seconds())
+
+		}
 		s.log.WithField("message", string(message)).Info("received message from builder")
 	}
 }

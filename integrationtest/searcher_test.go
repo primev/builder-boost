@@ -14,7 +14,9 @@ import (
 	"time"
 
 	"github.com/attestantio/go-builder-client/api/capella"
+	"github.com/attestantio/go-eth2-client/spec/bellatrix"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/gorilla/websocket"
 	"github.com/lthibault/log"
@@ -131,8 +133,14 @@ func TestConnectSearcher(t *testing.T) {
 		searcherKey, searcherAddress := generatePrivateKey()
 		token, err := utils.GenerateAuthenticationToken(builderAddress.Hex(), searcherKey)
 		if err != nil {
-			panic(err)
+			t.Fatal(err)
 		}
+		tx := types.NewTransaction(uint64(0), builderAddress, big.NewInt(1000000000000000000), uint64(21000), big.NewInt(1), []byte{})
+		searcherTxn, _ := types.SignTx(tx, types.NewEIP155Signer(big.NewInt(1)), searcherKey)
+		builderTxn, _ := types.SignTx(tx, types.NewEIP155Signer(big.NewInt(1)), builderKey)
+		btxn, _ := searcherTxn.MarshalBinary()
+		btxn2, _ := builderTxn.MarshalBinary()
+
 		commitment := utils.GetCommitment(builderKey, searcherAddress)
 
 		mockRollup.On("GetBuilderAddress").Return(builderAddress)
@@ -148,9 +156,12 @@ func TestConnectSearcher(t *testing.T) {
 		assert.NotNil(t, resp)
 		var block capella.SubmitBlockRequest
 		json.Unmarshal([]byte(NoTransactionBlockRaw), &block)
+		block.ExecutionPayload.Transactions = append(block.ExecutionPayload.Transactions, bellatrix.Transaction(btxn))
+		block.ExecutionPayload.Transactions = append(block.ExecutionPayload.Transactions, bellatrix.Transaction(btxn2))
+
 		wg := sync.WaitGroup{}
 		wg.Add(1)
-		var currTime *int64
+		var currTime *time.Time
 		go func(t *testing.T) {
 			// Read from connection
 			mtype, r, err := conn.NextReader()
@@ -162,12 +173,13 @@ func TestConnectSearcher(t *testing.T) {
 			// Decode r into data
 			_ = json.NewDecoder(r).Decode(&data)
 			assert.Equal(t, data.Builder, "0xaa1488eae4b06a1fff840a2b6db167afc520758dc2c8af0dfb57037954df3431b747e2f900fe8805f05d635e9a29717b")
-			assert.GreaterOrEqual(t, data.SenderTimestamp, *currTime)
+			assert.GreaterOrEqual(t, data.SentTimestamp, *currTime)
+			assert.Equal(t, data.ClientTransactions, []string{searcherTxn.Hash().Hex()})
 			wg.Done()
 		}(t)
-		tnow := time.Now().Unix()
+		tnow := time.Now()
 		currTime = &tnow
-		service.SubmitBlock(context.TODO(), &block)
+		service.SubmitBlock(context.TODO(), &block, tnow)
 		wg.Wait()
 	})
 
@@ -194,7 +206,7 @@ func TestConnectSearcher(t *testing.T) {
 	})
 
 	// Test with a searcher that is already connected
-	t.Run("Already connected searcher is forbidden", func(t *testing.T) {
+	t.Run("Already connected searcher is disconncted and new seracher is connected", func(t *testing.T) {
 		mockRollup := rollup.MockRollup{}
 		searcherKey, searcherAddress := generatePrivateKey()
 		builderKey, builderAddress := generatePrivateKey()
@@ -216,10 +228,11 @@ func TestConnectSearcher(t *testing.T) {
 		assert.Nil(t, err)
 
 		conn2, resp2, err2 := dialer.Dial(getWebSocketURL(token), nil)
-		assert.Equal(t, http.StatusForbidden, resp2.StatusCode)
-		assert.Nil(t, conn2)
+		assert.NotNil(t, conn2)
 		assert.NotNil(t, resp2)
-		assert.NotNil(t, err2)
+		assert.Nil(t, err2)
+		_, _, err = conn.ReadMessage()
+		assert.NotNil(t, err)
 	})
 
 	// Test with a searcher that is already connected

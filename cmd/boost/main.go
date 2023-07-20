@@ -72,7 +72,7 @@ var flags = []cli.Flag{
 	&cli.StringFlag{
 		Name:    "rollupcontract",
 		Usage:   "Rollup contract address",
-		Value:   "0x6e100446995f4456773Cd3e96FA201266c44d4B8",
+		Value:   "0x6219a236EFFa91567d5ba4a0A5134297a35b0b2A",
 		EnvVars: []string{"ROLLUP_CONTRACT"},
 	},
 	&cli.StringFlag{
@@ -80,6 +80,12 @@ var flags = []cli.Flag{
 		Usage:   "Token used to authenticate request as originating from builder",
 		Value:   "",
 		EnvVars: []string{"BUILDER_AUTH_TOKEN"},
+	},
+	&cli.BoolFlag{
+		Name:    "metrics",
+		Usage:   "enables metrics tracking for boost",
+		Value:   false,
+		EnvVars: []string{"METRICS"},
 	},
 }
 
@@ -208,11 +214,12 @@ func run() cli.ActionFunc {
 			}
 
 			svr.Handler = &boost.API{
-				Service:      service,
-				Log:          config.Log,
-				Worker:       masterWorker,
-				Rollup:       ru,
-				BuilderToken: c.String("buildertoken"),
+				Service:        service,
+				Log:            config.Log,
+				Worker:         masterWorker,
+				Rollup:         ru,
+				BuilderToken:   c.String("buildertoken"),
+				MetricsEnabled: c.Bool("metrics"),
 			}
 
 			config.Log.Info("http server listening")
