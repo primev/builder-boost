@@ -4,7 +4,7 @@ type Broadcast byte
 
 const (
 	UNDEFINED Broadcast = iota
-	PUBLISH
-	STREAM
-	GOSSIP
+	Publish
+	Stream
+	Gossip
 )
