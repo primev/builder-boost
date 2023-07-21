@@ -26,13 +26,26 @@ jobs:
 
     - name: Build Boost
       run: |
-        sudo apt update && sudo apt install -y golang make
+        sudo apt update && sudo apt install -y make
+        wget -q https://go.dev/dl/go1.20.2.linux-amd64.tar.gz
+        tar -xf go1.20.2.linux-amd64.tar.gz
+        sudo mv go /usr/local
+        export GOROOT=/usr/local/go
+        export PATH=$GOROOT/bin:$PATH
         make
         CGO_ENABLED=0 make build
 
     - name: Deploy to EC2
       run: |
-        ssh -i private_key.pem $USER@$HOST "pm2 stop boost"
+        ssh -i private_key.pem $USER@$HOST "sudo systemctl stop boost"
+        ssh -i private_key.pem $USER@$HOST "sudo systemctl stop searcher-1"
+        ssh -i private_key.pem $USER@$HOST "sudo systemctl stop searcher-2"
+        ssh -i private_key.pem $USER@$HOST "sudo systemctl stop searcher-3"
+        ssh -i private_key.pem $USER@$HOST "sudo systemctl daemon-reload"
         ssh -i private_key.pem $USER@$HOST "mkdir -p ~/builder-boost"
         scp -i private_key.pem -r ./boost $USER@$HOST:~/builder-boost
-        ssh -i private_key.pem $USER@$HOST "pm2 start boost"
+        scp -i private_key.pem -r ./searcher $USER@$HOST:~/builder-boost
+        ssh -i private_key.pem $USER@$HOST "sudo systemctl start boost"
+        ssh -i private_key.pem $USER@$HOST "sudo systemctl start searcher-1"
+        ssh -i private_key.pem $USER@$HOST "sudo systemctl start searcher-2"
+        ssh -i private_key.pem $USER@$HOST "sudo systemctl start searcher-3"

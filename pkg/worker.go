@@ -6,18 +6,24 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/gorilla/websocket"
 	"github.com/lthibault/log"
 )
 
+type SearcherConnection struct {
+	Conn        *websocket.Conn
+	WorkChannel chan SuperPayload
+}
+
 type Worker struct {
 	lock               sync.RWMutex
-	connectedSearchers map[string]chan Metadata
+	connectedSearchers map[string]SearcherConnection
 
 	// Note: Heartbeat is meant to be accessed via atomic operations .Store and .Load to ensure non-blocking performance
 	heartbeat *atomic.Int64
 
 	log       log.Logger
-	workQueue chan Metadata
+	workQueue chan SuperPayload
 
 	once  sync.Once
 	ready chan struct{}
@@ -27,9 +33,9 @@ func (w *Worker) GetHeartbeat() int64 {
 	return w.heartbeat.Load()
 }
 
-func NewWorker(workQueue chan Metadata, logger log.Logger) *Worker {
+func NewWorker(workQueue chan SuperPayload, logger log.Logger) *Worker {
 	return &Worker{
-		connectedSearchers: make(map[string]chan Metadata),
+		connectedSearchers: make(map[string]SearcherConnection),
 		workQueue:          workQueue,
 		log:                logger,
 		heartbeat:          &atomic.Int64{},
@@ -64,11 +70,11 @@ func (w *Worker) Run(ctx context.Context) (err error) {
 			case <-ctx.Done():
 				return
 			case blockMetadata := <-w.workQueue:
-				w.log.Info("received block metadata", "block", blockMetadata)
+				w.log.Info("received block metadata", "block", blockMetadata.InternalMetadata.BlockHash)
 				w.lock.RLock()
 				for _, searcher := range w.connectedSearchers {
 					// NOTE: Risk of Worker Blocking here, if searcher is not reading from channel
-					searcher <- blockMetadata
+					searcher.WorkChannel <- blockMetadata
 				}
 				w.lock.RUnlock()
 			}

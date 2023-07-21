@@ -1,13 +1,17 @@
 package boost
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
 	"sync"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/websocket"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
 
 	"github.com/attestantio/go-builder-client/api/capella"
@@ -15,6 +19,13 @@ import (
 	"github.com/lthibault/log"
 	"github.com/primev/builder-boost/pkg/rollup"
 	"github.com/primev/builder-boost/pkg/utils"
+)
+
+// Context Keys
+type key int
+
+const (
+	KeySearcherAddress key = iota
 )
 
 // Router paths
@@ -37,13 +48,46 @@ type jsonError struct {
 }
 
 type API struct {
-	Service      BoostService
-	Worker       *Worker
-	Rollup       rollup.Rollup
-	Log          log.Logger
-	once         sync.Once
-	mux          http.Handler
-	BuilderToken string
+	Service        BoostService
+	Worker         *Worker
+	Rollup         rollup.Rollup
+	Log            log.Logger
+	once           sync.Once
+	mux            http.Handler
+	BuilderToken   string
+	MetricsEnabled bool
+	metrics        *metrics
+}
+
+type metrics struct {
+	Searchers        prometheus.Gauge
+	PayloadsRecieved prometheus.Counter
+	Duration         prometheus.HistogramVec
+}
+
+func NewMetrics(reg prometheus.Registerer) *metrics {
+	m := &metrics{
+		Searchers: prometheus.NewGauge(prometheus.GaugeOpts{
+			Namespace: "primev",
+			Name:      "number_of_searchers_connected",
+			Help:      "Number of connected searchers",
+		}),
+		PayloadsRecieved: prometheus.NewCounter(prometheus.CounterOpts{
+			Namespace: "primev",
+			Name:      "payloads_recieved",
+			Help:      "Number of payloads recieved",
+		}),
+		Duration: *prometheus.NewHistogramVec(prometheus.HistogramOpts{
+			Namespace: "primev",
+			Name:      "duration",
+			Help:      "Duration of the request",
+			Buckets:   []float64{0.0001, 0.0002, 0.0005, 0.001, 0.002, 0.005, 0.01, 0.02, 0.03, 0.05, 0.1, 0.15, 0.2, 0.5},
+		}, []string{"processing_type", "searcher_address"}),
+	}
+
+	reg.MustRegister(m.Searchers, m.PayloadsRecieved, m.Duration)
+
+	return m
 }
 
 func (a *API) init() {
@@ -52,22 +96,30 @@ func (a *API) init() {
 			a.Log = log.New()
 		}
 
+		// router := chi.NewRouter()
+		// router.Use(middleware.Logger)
 		// TODO(@floodcode): Add CORS middleware
 		router := http.NewServeMux()
 
-		router.HandleFunc("/health", a.handleHealthCheck)
-
+		router.Handle("/health", a.authenticateBuilder(http.HandlerFunc(a.handleHealthCheck)))
 		// Adds an endpoint to retrieve the builder ID
-		router.HandleFunc("/builder", a.handleBuilderID)
-
+		router.Handle("/builder", http.HandlerFunc(a.handleBuilderID))
 		// Adds an endpoint to get commitment to the builder by searcher address
-		router.HandleFunc("/commitment", a.handleSearcherCommitment)
+		router.Handle("/commitment", a.authSearcher(http.HandlerFunc(a.handleSearcherCommitment)))
 
 		// TODO(@ckartik): Guard this to only by a requset made form an authorized internal service
 		router.HandleFunc(PathSubmitBlock, handler(a.submitBlock))
 
 		router.HandleFunc(PathSearcherConnect, a.ConnectedSearcher)
 
+		if a.MetricsEnabled {
+			reg := prometheus.NewRegistry()
+			a.metrics = NewMetrics(reg)
+			a.metrics.Searchers.Set(0)
+			promHandler := promhttp.HandlerFor(reg, promhttp.HandlerOpts{})
+
+			router.Handle("/metrics", promHandler)
+		}
 		a.mux = router
 	})
 }
@@ -75,6 +127,35 @@ func (a *API) init() {
 func (a *API) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	a.init()
 	a.mux.ServeHTTP(w, r)
+}
+
+func (a *API) authenticateBuilder(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		authToken := r.Header.Get("X-Builder-Token")
+		if authToken != a.BuilderToken {
+			a.Log.Error("failed to authenticate builder request")
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (a *API) authSearcher(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		authToken := r.Header.Get("X-Primev-Signature")
+		builderAddress := a.Rollup.GetBuilderAddress()
+		searcherAddress, ok := utils.VerifyAuthenticationToken(authToken, builderAddress.Hex())
+		if !ok {
+			a.Log.WithField("token", authToken).Error("token is not valid")
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte("token is not valid"))
+			return
+		}
+
+		next.ServeHTTP(w, r.Clone(context.WithValue(r.Context(), KeySearcherAddress, searcherAddress)))
+	})
 }
 
 func handler(f func(http.ResponseWriter, *http.Request) (int, error)) http.HandlerFunc {
@@ -112,24 +193,7 @@ type CommitmentResponse struct {
 }
 
 func (a *API) handleSearcherCommitment(w http.ResponseWriter, r *http.Request) {
-	// TODO(@ckartik): Move to middleware
-	token := r.URL.Query().Get("token")
-	if token == "" {
-		a.Log.WithField("token", token).Error("token parameter is missing")
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("token parameter is missing"))
-		return
-	}
-	builderAddress := a.Rollup.GetBuilderAddress()
-
-	searcherAddress, ok := utils.VerifyToken(token, builderAddress.Hex())
-	if !ok {
-		a.Log.WithField("token", token).Error("token is not valid")
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("token is not valid"))
-		return
-	}
-
+	searcherAddress := r.Context().Value(KeySearcherAddress).(common.Address)
 	commitment := a.Rollup.GetCommitment(searcherAddress)
 
 	w.WriteHeader(http.StatusOK)
@@ -137,6 +201,7 @@ func (a *API) handleSearcherCommitment(w http.ResponseWriter, r *http.Request) {
 }
 
 // connectSearcher is the handler to connect a searcher to the builder for the websocket execution hints
+// TODO(@ckartik): Move the handling of searcher connection to service layer
 //
 // GET /ws?token=abcd where "abcd" is the authentication token of the searcher
 // The handler authenticates based on the following criteria:
@@ -161,7 +226,7 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 	}
 	builderAddress := a.Rollup.GetBuilderAddress()
 
-	searcherAddress, ok := utils.VerifyToken(token, builderAddress.Hex())
+	searcherAddress, ok := utils.VerifyAuthenticationToken(token, builderAddress.Hex())
 	if !ok {
 		a.Log.WithField("token", token).Error("token is not valid")
 		w.WriteHeader(http.StatusBadRequest)
@@ -209,13 +274,13 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 	// Check if searcher is already connected
 	// TODO(@ckartik): Ensure we delete the searcher from the connectedSearchers map when the connection is closed
 	a.Worker.lock.RLock()
-	_, ok = a.Worker.connectedSearchers[searcherAddressParam]
+	s, ok := a.Worker.connectedSearchers[searcherAddressParam]
 	a.Worker.lock.RUnlock()
+
+	// If searcher is already connected, close the old connection
 	if ok {
-		a.Log.WithFields(logrus.Fields{"searcher": searcherAddressParam}).Error("searcher is already connected")
-		w.WriteHeader(http.StatusForbidden)
-		w.Write([]byte("searcher is already connected"))
-		return
+		a.Log.WithFields(logrus.Fields{"searcher": searcherAddressParam}).Error("searcher is already connected, closing old connection")
+		s.Conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 	}
 
 	// Upgrade the HTTP request to a WebSocket connection
@@ -226,9 +291,12 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	searcherConsumeChannel := make(chan Metadata, 100)
+	searcherWorkChannel := make(chan SuperPayload, 100)
 	a.Worker.lock.Lock()
-	a.Worker.connectedSearchers[searcherAddressParam] = searcherConsumeChannel
+	a.Worker.connectedSearchers[searcherAddressParam] = SearcherConnection{
+		Conn:        conn,
+		WorkChannel: searcherWorkChannel,
+	}
 	a.Worker.lock.Unlock()
 
 	a.Log.Info("searcher connected and ready to consume data")
@@ -248,7 +316,8 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 		closeChannel <- struct{}{}
 	}(closeSignalChannel, conn)
 
-	go func() {
+	// Start of searcher websocket goroutine
+	go func(searcherID string, work chan SuperPayload) {
 		defer func() {
 			if r := recover(); r != nil {
 				a.Log.Error("recovered in searcher communication goroutine: closing connection", r)
@@ -266,40 +335,54 @@ func (a *API) ConnectedSearcher(w http.ResponseWriter, r *http.Request) {
 				defer a.Worker.lock.Unlock()
 				delete(a.Worker.connectedSearchers, searcherAddressParam)
 				return
-			case data := <-searcherConsumeChannel:
-				json, err := json.Marshal(data)
+			case data := <-work:
+				metadata := data.InternalMetadata
+				metadata.SentTimestamp = time.Now()
+				metadata.ClientTransactions = data.SearcherTxns[searcherID]
+				if metadata.ClientTransactions == nil {
+					metadata.ClientTransactions = []string{}
+				}
+				json, err := json.Marshal(metadata)
 				if err != nil {
 					a.Log.Error(err)
 					panic(err)
 				}
 				conn.WriteMessage(websocket.TextMessage, json)
+				if a.MetricsEnabled {
+					a.metrics.Duration.WithLabelValues("e2e", searcherAddressParam).Observe(time.Since(metadata.RecTimestamp).Seconds())
+				}
 			}
 		}
-	}()
+	}(searcherAddressParam, searcherWorkChannel)
 
+	a.Worker.lock.RLock()
+	numSearchers := len(a.Worker.connectedSearchers)
+	a.Worker.lock.RUnlock()
+	if a.MetricsEnabled {
+		a.metrics.Searchers.Set(float64(numSearchers))
+	}
 	a.Log.
-		WithField("searcher_count", len(a.Worker.connectedSearchers)).
+		WithField("searcher_count", numSearchers).
 		WithField("searcher_address", searcherAddressParam).
 		Info("new searcher connected")
 }
 
 // builder related handlers
 func (a *API) submitBlock(w http.ResponseWriter, r *http.Request) (int, error) {
-	authToken := r.Header.Get("X-BUIlDER-TOKEN")
-
-	if authToken != a.BuilderToken {
-		return http.StatusUnauthorized, errors.New("invalid auth token")
-	}
-
+	now := time.Now()
 	var br capella.SubmitBlockRequest
 	if err := json.NewDecoder(r.Body).Decode(&br); err != nil {
 		return http.StatusBadRequest, err
 	}
 
-	if err := a.Service.SubmitBlock(r.Context(), &br); err != nil {
+	if err := a.Service.SubmitBlock(r.Context(), &br, now); err != nil {
 		return http.StatusBadRequest, err
 	}
 
+	if a.MetricsEnabled {
+		a.metrics.Duration.WithLabelValues("algo_processing", "N/A").Observe(time.Since(now).Seconds())
+		a.metrics.PayloadsRecieved.Inc()
+	}
 	return http.StatusOK, nil
 }
 
