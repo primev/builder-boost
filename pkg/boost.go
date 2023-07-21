@@ -115,103 +115,10 @@ func (as *DefaultBoost) SubmitBlock(ctx context.Context, msg *capella.SubmitBloc
 				as.config.Log.WithField("transaction", txn).WithError(err).Error("umnable to decode sender of transaction")
 			}
 			clientID := from.Hex()
-			if _, ok := blockMetadata.SearcherTxns[clientID]; !ok {
-				blockMetadata.SearcherTxns[clientID] = make([]string, 0)
-			}
-			blockMetadata.SearcherTxns[clientID] = append(blockMetadata.SearcherTxns[clientID], txn.Hash().String())
-		}
-
-		blockMetadata.InternalMetadata.Transactions.MinPriorityFee = minTipTxn.GasTipCap().Int64()
-		blockMetadata.InternalMetadata.Transactions.MaxPriorityFee = maxTipTxn.GasTipCap().Int64()
-	}
-
-	as.pushChannel <- blockMetadata
-
-	as.config.Log.
-		WithField("block_hash", blockMetadata.InternalMetadata.BlockHash).
-		WithField("base_fee", blockMetadata.InternalMetadata.BaseFee).
-		WithField("min_priority_fee", blockMetadata.InternalMetadata.Transactions.MinPriorityFee).
-		WithField("max_priority_fee", blockMetadata.InternalMetadata.Transactions.MaxPriorityFee).
-		WithField("txn_count", blockMetadata.InternalMetadata.Transactions.Count).
-		WithField("builder", blockMetadata.InternalMetadata.Builder).
-		Info("Block metadata processed")
-
-	return nil
-}
-
-type InclusionProofBoost struct {
-	config      Config
-	pushChannel chan SuperPayload
-}
-
-// NewGateway new auction gateway service
-func NewBoostInclusion(config Config) (*InclusionProofBoost, error) {
-	if err := config.validate(); err != nil {
-		return nil, err
-	}
-
-	as := &InclusionProofBoost{
-		config:      config,
-		pushChannel: make(chan SuperPayload, 100),
-	}
-	return as, nil
-}
-
-func (rs *InclusionProofBoost) GetWorkChannel() chan SuperPayload {
-	return rs.pushChannel
-}
-
-func (rs *InclusionProofBoost) Log() log.Logger {
-	return rs.config.Log
-}
-
-func (as *InclusionProofBoost) SubmitBlock(ctx context.Context, msg *capella.SubmitBlockRequest, now time.Time) (err error) {
-	span, _ := tracer.StartSpanFromContext(ctx, "submit-block")
-	defer span.Finish()
-	defer func() {
-		if r := recover(); r != nil {
-			as.config.Log.Error(ErrBlockUnprocessable.Error())
-			err = ErrBlockUnprocessable
-		}
-	}()
-
-	var _txn types.Transaction
-	var blockMetadata SuperPayload
-	blockMetadata.SearcherTxns = make(map[string][]string)
-	blockMetadata.InternalMetadata.RecTimestamp = now
-	blockMetadata.InternalMetadata.BlockHash = msg.Message.BlockHash.String()
-	blockMetadata.InternalMetadata.Number = int64(msg.ExecutionPayload.BlockNumber)
-	blockMetadata.InternalMetadata.Builder = msg.Message.BuilderPubkey.String()
-	blockMetadata.InternalMetadata.Transactions.Count = int64(len(msg.ExecutionPayload.Transactions))
-	blockMetadata.InternalMetadata.Timestamp = time.Unix(int64(msg.ExecutionPayload.Timestamp), 0).Format(time.RFC1123)
-	blockMetadata.InternalMetadata.BaseFee = binary.LittleEndian.Uint32(msg.ExecutionPayload.BaseFeePerGas[:])
-
-	// Conditionally set txn details based on txn count
-	if len(msg.ExecutionPayload.Transactions) > 0 {
-		_txn.UnmarshalBinary(msg.ExecutionPayload.Transactions[0])
-		minTipTxn := _txn
-		maxTipTxn := _txn
-		for _, btxn := range msg.ExecutionPayload.Transactions {
-			var txn types.Transaction
-			err := txn.UnmarshalBinary(btxn)
-			if err != nil {
-				as.config.Log.WithError(err).Error("Failed to decode transaction")
-			}
-			// Extract Min/Max
-			if txn.GasTipCapCmp(&minTipTxn) < 0 {
-				minTipTxn = txn
-			}
-			if txn.GasTipCapCmp(&maxTipTxn) > 0 {
-				maxTipTxn = txn
-			}
-
-			from, err := types.Sender(types.LatestSignerForChainID(txn.ChainId()), &txn)
-			if err != nil {
-				as.config.Log.WithField("transaction", txn).WithError(err).Error("umnable to decode sender of transaction")
-			}
-			clientID := from.Hex()
-			if _, ok := blockMetadata.SearcherTxns[clientID]; !ok {
-				blockMetadata.SearcherTxns[clientID] = make([]string, 0)
+			if as.config.InclusionProofActive {
+				if _, ok := blockMetadata.SearcherTxns[clientID]; !ok {
+					blockMetadata.SearcherTxns[clientID] = make([]string, 0)
+				}
 			}
 			blockMetadata.SearcherTxns[clientID] = append(blockMetadata.SearcherTxns[clientID], txn.Hash().String())
 		}
