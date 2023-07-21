@@ -138,7 +138,7 @@ func TestDefaultBoost_SubmitBlock(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			service, err := NewBoost(Config{log.New()})
+			service, err := NewBoost(Config{log.New(), false})
 			if err != nil {
 				t.Fatal(err)
 			}

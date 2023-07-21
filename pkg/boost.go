@@ -35,7 +35,7 @@ type Metadata struct {
 	Timestamp          string      `json:"timestamp"`
 	BaseFee            uint32      `json:"baseFee"`
 	Transactions       Transaction `json:"standard_transactions"`
-	ClientTransactions []string    `json:"personal_transactions"`
+	ClientTransactions []string    `json:"personal_transactions,omitempty"`
 	SentTimestamp      time.Time   `json:"sent_timestamp"` // Timestamp of block sent to the searcher
 	RecTimestamp       time.Time   `json:"rec_timestamp"`  // Timestamp of block received by the builder instance
 }
@@ -115,8 +115,10 @@ func (as *DefaultBoost) SubmitBlock(ctx context.Context, msg *capella.SubmitBloc
 				as.config.Log.WithField("transaction", txn).WithError(err).Error("umnable to decode sender of transaction")
 			}
 			clientID := from.Hex()
-			if _, ok := blockMetadata.SearcherTxns[clientID]; !ok {
-				blockMetadata.SearcherTxns[clientID] = make([]string, 0)
+			if as.config.InclusionProofActive {
+				if _, ok := blockMetadata.SearcherTxns[clientID]; !ok {
+					blockMetadata.SearcherTxns[clientID] = make([]string, 0)
+				}
 			}
 			blockMetadata.SearcherTxns[clientID] = append(blockMetadata.SearcherTxns[clientID], txn.Hash().String())
 		}
