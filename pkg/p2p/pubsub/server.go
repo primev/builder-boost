@@ -539,6 +539,11 @@ func (pss *Server) events(trackCh <-chan commons.ConnectionEvent) {
 
 				checker.Stop()
 
+				if !pss.apm.InPeers(eventCopy.PeerID) {
+					pss.host.Network().ClosePeer(eventCopy.PeerID)
+					return
+				}
+
 				// generate a ping message with a unique UUID for each peer and append timestamps
 				peerInfo := pss.apm.GetPeerInfo(eventCopy.PeerID)
 				uuidBytes, err := peerInfo.uuid.MarshalBinary()
