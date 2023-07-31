@@ -129,6 +129,7 @@ func CreateNode(logger log.Logger, peerKey *ecdsa.PrivateKey, rollup rollup.Roll
 	cfg := config.New(
 		config.WithVersion("0.0.2"),
 		config.WithDiscoveryInterval(30*time.Minute),
+		config.WithMinimalStake(big.NewInt(1)),
 	)
 
 	// Set your own keypair
@@ -138,7 +139,7 @@ func CreateNode(logger log.Logger, peerKey *ecdsa.PrivateKey, rollup rollup.Roll
 	}
 
 	// gater activated intercept secured
-	conngtr := newConnectionGater(rollup)
+	conngtr := newConnectionGater(rollup, cfg.MinimalStake())
 
 	connmgr, err := connmgr.NewConnManager(
 		100, // Lowwater

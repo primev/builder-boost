@@ -26,13 +26,15 @@ type ConnectionGater interface {
 }
 
 type connectionGater struct {
-	rollup rollup.Rollup
+	rollup       rollup.Rollup
+	minimalStake *big.Int
 }
 
 // newConnectionGater creates a new instance of ConnectionGater
-func newConnectionGater(rollup rollup.Rollup) ConnectionGater {
+func newConnectionGater(rollup rollup.Rollup, minimalStake *big.Int) ConnectionGater {
 	return &connectionGater{
-		rollup: rollup,
+		rollup:       rollup,
+		minimalStake: minimalStake,
 	}
 }
 
@@ -104,8 +106,8 @@ func (cg *connectionGater) validateInboundConnection(p peer.ID, connMultiaddrs n
 		return false
 	}
 
-	// check stake
-	if stake.Cmp(big.NewInt(0)) > 0 {
+	// check minimal stake
+	if stake.Cmp(cg.minimalStake) >= 0 {
 		return true
 	}
 
@@ -136,8 +138,8 @@ func (cg *connectionGater) validateOutboundConnection(p peer.ID, connMultiaddrs 
 		return false
 	}
 
-	// check stake
-	if stake.Cmp(big.NewInt(0)) > 0 {
+	// check minimal stake
+	if stake.Cmp(cg.minimalStake) >= 0 {
 		return true
 	}
 

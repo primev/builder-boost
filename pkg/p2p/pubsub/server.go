@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"math/big"
 	"strings"
 	"sync"
 	"time"
@@ -341,7 +340,7 @@ func (pss *Server) optApprove(cpeer peer.ID, bytes []byte, sendauth bool) {
 	}
 
 	// check builder stake amount
-	if stake.Cmp(big.NewInt(0)) > 0 {
+	if stake.Cmp(pss.cfg.MinimalStake()) >= 0 {
 		pss.apm.AddPeer(cpeer)
 		for p, i := range pss.apm.GetPeers() {
 			switch pss.host.Network().Connectedness(p) {
