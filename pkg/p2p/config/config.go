@@ -23,8 +23,10 @@ type Config struct {
 	peerStreamProto string
 	// bootstrap peers
 	bootstrapPeers []multiaddr.Multiaddr
-	// latency test interval
+	// latency update interval
 	latencyInterval time.Duration
+	// score update interval
+	scoreInterval time.Duration
 	// builder minimal stake
 	minimalStake *big.Int
 }
@@ -41,6 +43,7 @@ func New(options ...ConfigOption) *Config {
 		pubSubTopic:         "PRIMEVTOPIC",
 		peerStreamProto:     "/primev/stream-0.1",
 		latencyInterval:     time.Hour * 2,
+		scoreInterval:       time.Hour * 3,
 		minimalStake:        big.NewInt(0),
 	}
 
@@ -107,6 +110,13 @@ func WithLatencyInterval(interval time.Duration) ConfigOption {
 	}
 }
 
+// WithScoreInterval sets the score interval option for Config
+func WithScoreInterval(interval time.Duration) ConfigOption {
+	return func(cfg *Config) {
+		cfg.scoreInterval = interval
+	}
+}
+
 // WithMinimalStake sets the minimal stake option for Config
 func WithMinimalStake(minimalStake *big.Int) ConfigOption {
 	return func(cfg *Config) {
@@ -152,6 +162,11 @@ func (cfg *Config) BootstrapPeers() []multiaddr.Multiaddr {
 // LatencyInterval returns the latency interval from Config
 func (cfg *Config) LatencyInterval() time.Duration {
 	return cfg.latencyInterval
+}
+
+// ScoreInterval returns the score interval from Config
+func (cfg *Config) ScoreInterval() time.Duration {
+	return cfg.scoreInterval
 }
 
 // MinimalStake returns the minimal stake from Config
