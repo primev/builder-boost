@@ -1,6 +1,7 @@
 package config
 
 import (
+	"math/big"
 	"time"
 
 	"github.com/multiformats/go-multiaddr"
@@ -24,6 +25,8 @@ type Config struct {
 	bootstrapPeers []multiaddr.Multiaddr
 	// latency test interval
 	latencyInterval time.Duration
+	// builder minimal stake
+	minimalStake *big.Int
 }
 
 type ConfigOption func(*Config)
@@ -38,6 +41,7 @@ func New(options ...ConfigOption) *Config {
 		pubSubTopic:         "PRIMEVTOPIC",
 		peerStreamProto:     "/primev/stream-0.1",
 		latencyInterval:     time.Hour * 2,
+		minimalStake:        big.NewInt(0),
 	}
 
 	for _, option := range options {
@@ -103,6 +107,13 @@ func WithLatencyInterval(interval time.Duration) ConfigOption {
 	}
 }
 
+// WithMinimalStake sets the minimal stake option for Config
+func WithMinimalStake(minimalStake *big.Int) ConfigOption {
+	return func(cfg *Config) {
+		cfg.minimalStake = minimalStake
+	}
+}
+
 // Version returns the version from Config
 func (cfg *Config) Version() string {
 	return cfg.version
@@ -141,4 +152,9 @@ func (cfg *Config) BootstrapPeers() []multiaddr.Multiaddr {
 // LatencyInterval returns the latency interval from Config
 func (cfg *Config) LatencyInterval() time.Duration {
 	return cfg.latencyInterval
+}
+
+// MinimalStake returns the minimal stake from Config
+func (cfg *Config) MinimalStake() *big.Int {
+	return cfg.minimalStake
 }
