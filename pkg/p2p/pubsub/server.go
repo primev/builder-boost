@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"math"
 	"strings"
 	"sync"
 	"time"
@@ -594,6 +595,56 @@ func (pss *Server) latencyUpdater() {
 
 			pss.apm.SetPeerInfoPingTime(peerID, time.Now().UnixNano())
 			pss.Stream(peerID, msg)
+		}
+	}
+}
+
+// periodically update score information
+func (pss *Server) scoreUpdater() {
+
+	// sigmoid activation function
+	sigmoid := func(x float64) float64 {
+		return 1.0 / (1.0 + math.Exp(-x))
+	}
+
+	// get the score update interval from configuration
+	interval := pss.cfg.ScoreInterval()
+
+	for {
+		time.Sleep(interval)
+
+		// calculate and update score for each peer
+		for peerID, info := range pss.apm.GetPeers() {
+			// weights for each feature in the scoring formula
+			w1, w2, w3 := 0.2, 0.3, 0.5
+
+			start := info.getStart()
+			stake := info.getStake()
+			latency := info.getLatency()
+
+			// normalize v1 by dividing milliseconds by the number of milliseconds in a day
+			v1 := float64(time.Now().Sub(start).Milliseconds() / 864000000.)
+			if v1 > 1 {
+				v1 = 1.
+			}
+
+			// normalize v2 by dividing stake by 10^18
+			v2 := float64(stake.Int64()) / float64(math.Pow(10, 18))
+			if v2 > 1 {
+				v2 = 1.
+			}
+
+			// normalize v3 by subtracting latency from 1000 milliseconds and taking the maximum of 0
+			v3 := float64(1000 - latency.Milliseconds())
+			if v3 < 0 {
+				v3 = 0.
+			}
+
+			// calculate the score using the sigmoid activation function with the weighted values
+			score := int(sigmoid(w1*v1+w2*v2+w3*v3) * 100.)
+
+			// update the score for the peer
+			pss.apm.SetPeerInfoScore(peerID, score)
 		}
 	}
 }
