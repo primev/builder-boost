@@ -85,9 +85,19 @@ func (pss *Server) peerStreamHandler(stream network.Stream) {
 	// it can be use for connect to peers
 	case message.PeerList:
 		pss.optPeerList(inMsg.Peer(), inMsg.Bytes())
-
+	// handle the incoming signatures
+	case message.Signature:
+		pss.optSignature(inMsg.Peer(), inMsg.Bytes())
+	// handle the incoming block keys
+	case message.BlockKey:
+		pss.optBlockKey(inMsg.Peer(), inMsg.Bytes())
+	// handle the incoming encrypted transactions
+	case message.Bundle:
+		pss.optBundle(inMsg.Peer(), inMsg.Bytes())
+	// handle the incoming preconf bids
 	case message.PreconfBid:
 		pss.optPreconfBid(inMsg.Peer(), inMsg.Bytes())
+
 	default:
 		pss.log.With(log.F{
 			"service":  "p2p stream",

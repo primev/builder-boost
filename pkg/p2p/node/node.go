@@ -77,11 +77,29 @@ type BoostNode interface {
 	// Ready returns a channel that signals when the node is ready.
 	Ready() <-chan struct{}
 
-	// PreconfReader returns a channel for reading pre-confirmation bids from the node.
-	PreconfReader() <-chan []byte
+	// SignatureReader returns a channel for reading signatures from the node.
+	SignatureReader() <-chan messages.PeerMsg
 
-	// PreconfSender sends a pre-confirmation bid over the node.
-	PreconfSender(commons.Broadcast, []byte)
+	// BlockKeyReader returns a channel for reading block keys from the node.
+	BlockKeyReader() <-chan messages.PeerMsg
+
+	// BundleReader returns a channel for reading bundels from the node.
+	BundleReader() <-chan messages.PeerMsg
+
+	// PreconfReader returns a channel for reading pre-confirmation bids from the node.
+	PreconfReader() <-chan messages.PeerMsg
+
+	// SignatureSend sends signature over the node.
+	SignatureSend(peer.ID, []byte) error
+
+	// BlockKeySend sends block key over the node.
+	BlockKeySend(peer.ID, []byte) error
+
+	// BundleSend sends bundles over the node.
+	BundleSend(commons.Broadcast, []byte) error
+
+	// PreconfSend sends a pre-confirmation bid over the node.
+	PreconfSend(commons.Broadcast, []byte) error
 }
 
 // node shutdown signal
@@ -106,7 +124,10 @@ type Node struct {
 	stake     *big.Int
 	closeChan chan closeSignal
 
-	preconfCh chan []byte
+	signatureCh chan messages.PeerMsg
+	blockKeyCh  chan messages.PeerMsg
+	bundleCh    chan messages.PeerMsg
+	preconfCh   chan messages.PeerMsg
 
 	once  sync.Once
 	ready chan struct{}
@@ -254,8 +275,12 @@ func CreateNode(logger log.Logger, peerKey *ecdsa.PrivateKey, rollup rollup.Roll
 		panic(err)
 	}
 
+	// create ofx channels
 	var (
-		preconfCh = make(chan []byte)
+		signatureCh = make(chan messages.PeerMsg)
+		blockKeyCh  = make(chan messages.PeerMsg)
+		bundleCh    = make(chan messages.PeerMsg)
+		preconfCh   = make(chan messages.PeerMsg)
 	)
 
 	// create pubsub server
@@ -271,6 +296,9 @@ func CreateNode(logger log.Logger, peerKey *ecdsa.PrivateKey, rollup rollup.Roll
 		topic,
 		imb,
 		omb,
+		signatureCh,
+		blockKeyCh,
+		bundleCh,
 		preconfCh,
 	)
 
@@ -459,29 +487,94 @@ func (n *Node) setReady() {
 	}
 }
 
+// read signatures from the node
+func (n *Node) SignatureReader() <-chan messages.PeerMsg {
+	return n.signatureCh
+}
+
+// read block keys from the node
+func (n *Node) BlockKeyReader() <-chan messages.PeerMsg {
+	return n.blockKeyCh
+}
+
+// read bundles from the node
+func (n *Node) BundleReader() <-chan messages.PeerMsg {
+	return n.bundleCh
+}
+
 // read preconfirmation bids from the node
-func (n *Node) PreconfReader() <-chan []byte {
+func (n *Node) PreconfReader() <-chan messages.PeerMsg {
 	return n.preconfCh
 }
 
-// publish preconfirmation bids over the node
-func (n *Node) PreconfSender(broadcastType commons.Broadcast, preconf []byte) {
-	msg, err := n.msgBuild.PreconfBid(preconf)
+// stream signature over the node for specific peer
+func (n *Node) SignatureSend(peer peer.ID, sig []byte) error {
+	msg, err := n.msgBuild.Signature(sig)
 	if err != nil {
-		panic(err)
+		return err
+	}
+
+	err = n.Stream(peer, msg)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// stream block key over the node for specific peer
+func (n *Node) BlockKeySend(peer peer.ID, sig []byte) error {
+	msg, err := n.msgBuild.BlockKey(sig)
+	if err != nil {
+		return err
+	}
+
+	err = n.Stream(peer, msg)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// gossip or publish bundles over the node
+func (n *Node) BundleSend(broadcastType commons.Broadcast, bundle []byte) error {
+	msg, err := n.msgBuild.Bundle(bundle)
+	if err != nil {
+		return err
 	}
 
 	if broadcastType == commons.Publish {
 		err = n.Publish(msg)
 		if err != nil {
-			//TODO log
-			return
+			return err
 		}
 	} else if broadcastType == commons.Gossip {
 		err = n.Gossip(msg)
 		if err != nil {
-			//TODO log
-			return
+			return err
 		}
 	}
+	return nil
+}
+
+// gossip or publish preconfirmation bids over the node
+func (n *Node) PreconfSend(broadcastType commons.Broadcast, preconf []byte) error {
+	msg, err := n.msgBuild.PreconfBid(preconf)
+	if err != nil {
+		return err
+	}
+
+	if broadcastType == commons.Publish {
+		err = n.Publish(msg)
+		if err != nil {
+			return err
+		}
+	} else if broadcastType == commons.Gossip {
+		err = n.Gossip(msg)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

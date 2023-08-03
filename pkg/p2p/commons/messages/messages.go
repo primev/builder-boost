@@ -22,3 +22,9 @@ func (a *ApproveMsg) GetUnsignedMessage() []byte {
 		),
 	)
 }
+
+// P2P standard message type
+type PeerMsg struct {
+	Peer  peer.ID
+	Bytes []byte
+}

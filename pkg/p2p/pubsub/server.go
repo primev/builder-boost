@@ -42,7 +42,10 @@ type Server struct {
 	apm     *approvedPeersMap
 	psp     stream.Stream
 
-	preconfCh chan []byte
+	signatureCh chan messages.PeerMsg
+	blockKeyCh  chan messages.PeerMsg
+	bundleCh    chan messages.PeerMsg
+	preconfCh   chan messages.PeerMsg
 
 	ready chan struct{}
 }
@@ -59,32 +62,39 @@ func New(
 	topic *pubsub.Topic,
 	imb message.InboundMsgBuilder,
 	omb message.OutboundMsgBuilder,
-	preconfCh chan []byte,
+	signatureCh chan messages.PeerMsg,
+	blockKeyCh chan messages.PeerMsg,
+	bundleCh chan messages.PeerMsg,
+	preconfCh chan messages.PeerMsg,
 ) *Server {
 	pss := new(Server)
 	apm := newApprovedPeersMap()
 
 	pss = &Server{
-		ctx:       ctx,
-		cfg:       cfg,
-		log:       log,
-		self:      host.ID(),
-		host:      host,
-		trackCh:   trackCh,
-		token:     token,
-		address:   address,
-		rollup:    rollup,
-		topic:     topic,
-		imb:       imb,
-		omb:       omb,
-		apm:       apm,
-		preconfCh: preconfCh,
+		ctx:         ctx,
+		cfg:         cfg,
+		log:         log,
+		self:        host.ID(),
+		host:        host,
+		trackCh:     trackCh,
+		token:       token,
+		address:     address,
+		rollup:      rollup,
+		topic:       topic,
+		imb:         imb,
+		omb:         omb,
+		apm:         apm,
+		signatureCh: signatureCh,
+		blockKeyCh:  blockKeyCh,
+		bundleCh:    bundleCh,
+		preconfCh:   preconfCh,
 	}
 
 	pss.ready = make(chan struct{})
 
 	// event tracking
 	go pss.events(trackCh)
+	// start RTT test
 	go pss.latencyUpdater()
 
 	// create peer stream protocol
@@ -197,19 +207,26 @@ func (pss *Server) baseProtocol(once sync.Once) {
 			// it can be use validate peer is alive
 			case message.Pong:
 				pss.optPong(inMsg.Peer(), inMsg.Bytes())
-			// publish version
+			// send version
 			case message.GetVersion:
 				pss.optGetVersion(inMsg.Peer())
 			// store peers version
 			case message.Version:
 				pss.optVersion(inMsg.Peer(), inMsg.Bytes())
-			// publish approved peers
+			// send approved peers
 			case message.GetPeerList:
 				pss.optGetPeerList(inMsg.Peer())
 			// it can be use for connect to peers
 			case message.PeerList:
 				pss.optPeerList(inMsg.Peer(), inMsg.Bytes())
-
+			// no permission over publish
+			case message.Signature:
+			// no permission over publish
+			case message.BlockKey:
+			// handle the incoming encrypted transactions
+			case message.Bundle:
+				pss.optBundle(inMsg.Peer(), inMsg.Bytes())
+			// handle the incoming preconf bids
 			case message.PreconfBid:
 				pss.optPreconfBid(inMsg.Peer(), inMsg.Bytes())
 			default:
@@ -472,9 +489,36 @@ func (pss *Server) optPeerList(cpeer peer.ID, bytes []byte) {
 	}
 }
 
+// process and transfer signature to the channel
+func (pss *Server) optSignature(cpeer peer.ID, bytes []byte) {
+	pss.signatureCh <- messages.PeerMsg{
+		Peer:  cpeer,
+		Bytes: bytes,
+	}
+}
+
+// process and transfer block key to the channel
+func (pss *Server) optBlockKey(cpeer peer.ID, bytes []byte) {
+	pss.blockKeyCh <- messages.PeerMsg{
+		Peer:  cpeer,
+		Bytes: bytes,
+	}
+}
+
+// process and transfer bundle to the channel
+func (pss *Server) optBundle(cpeer peer.ID, bytes []byte) {
+	pss.bundleCh <- messages.PeerMsg{
+		Peer:  cpeer,
+		Bytes: bytes,
+	}
+}
+
 // process and transfer preconfirmation bids to the channel
 func (pss *Server) optPreconfBid(cpeer peer.ID, bytes []byte) {
-	pss.preconfCh <- bytes
+	pss.preconfCh <- messages.PeerMsg{
+		Peer:  cpeer,
+		Bytes: bytes,
+	}
 }
 
 // get self peer.ID
@@ -493,13 +537,13 @@ func (pss *Server) GetApprovedGossipPeers() []peer.ID {
 // when it listens to events, it applies necessary procedures based on incoming
 // or outgoing connections
 func (pss *Server) events(trackCh <-chan commons.ConnectionEvent) {
-	var mutex = &sync.Mutex{}
+	var mu = &sync.Mutex{}
 	for event := range trackCh {
 
 		// protect events
-		mutex.Lock()
+		mu.Lock()
 		eventCopy := event
-		mutex.Unlock()
+		mu.Unlock()
 
 		switch eventCopy.Event {
 		case commons.Connected:
