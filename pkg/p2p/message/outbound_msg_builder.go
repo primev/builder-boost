@@ -17,6 +17,9 @@ type OutboundMsgBuilder interface {
 	Version(string) (OutboundMessage, error)
 	GetPeerList() (OutboundMessage, error)
 	PeerList([]peer.AddrInfo) (OutboundMessage, error)
+	Signature([]byte) (OutboundMessage, error)
+	BlockKey([]byte) (OutboundMessage, error)
+	Bundle([]byte) (OutboundMessage, error)
 	PreconfBid([]byte) (OutboundMessage, error)
 }
 
