@@ -466,7 +466,7 @@ func (n *Node) PreconfReader() <-chan []byte {
 
 // publish preconfirmation bids over the node
 func (n *Node) PreconfSender(broadcastType commons.Broadcast, preconf []byte) {
-	msg, err := n.msgBuild.PreconfirmationBid(preconf)
+	msg, err := n.msgBuild.PreconfBid(preconf)
 	if err != nil {
 		panic(err)
 	}

@@ -86,8 +86,8 @@ func (pss *Server) peerStreamHandler(stream network.Stream) {
 	case message.PeerList:
 		pss.optPeerList(inMsg.Peer(), inMsg.Bytes())
 
-	case message.PreconfirmationBid:
-		pss.optPreconfirmationBid(inMsg.Peer(), inMsg.Bytes())
+	case message.PreconfBid:
+		pss.optPreconfBid(inMsg.Peer(), inMsg.Bytes())
 	default:
 		pss.log.With(log.F{
 			"service":  "p2p stream",

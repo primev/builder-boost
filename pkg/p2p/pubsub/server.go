@@ -210,8 +210,8 @@ func (pss *Server) baseProtocol(once sync.Once) {
 			case message.PeerList:
 				pss.optPeerList(inMsg.Peer(), inMsg.Bytes())
 
-			case message.PreconfirmationBid:
-				pss.optPreconfirmationBid(inMsg.Peer(), inMsg.Bytes())
+			case message.PreconfBid:
+				pss.optPreconfBid(inMsg.Peer(), inMsg.Bytes())
 			default:
 				pss.log.With(log.F{
 					"service":  "p2p pubsub",
@@ -473,7 +473,7 @@ func (pss *Server) optPeerList(cpeer peer.ID, bytes []byte) {
 }
 
 // process and transfer preconfirmation bids to the channel
-func (pss *Server) optPreconfirmationBid(cpeer peer.ID, bytes []byte) {
+func (pss *Server) optPreconfBid(cpeer peer.ID, bytes []byte) {
 	pss.preconfCh <- bytes
 }
 

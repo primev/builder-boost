@@ -14,7 +14,7 @@ const (
 	Signature
 	BlockKey
 	Bundle
-	PreconfirmationBid
+	PreconfBid
 )
 
 func (op Op) String() string {
@@ -39,8 +39,8 @@ func (op Op) String() string {
 		return "blockkey"
 	case Bundle:
 		return "bundle"
-	case PreconfirmationBid:
-		return "preconfirmationbid"
+	case PreconfBid:
+		return "preconfbid"
 	default:
 		return "Unknown Op"
 	}
