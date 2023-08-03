@@ -9,6 +9,7 @@ import (
 
 var _ OutboundMsgBuilder = (*outMsgBuilder)(nil)
 
+// OutboundMsgBuilder defines an interface for constructing various outbound communication messages.
 type OutboundMsgBuilder interface {
 	Approve([]byte) (OutboundMessage, error)
 	Ping([]byte) (OutboundMessage, error)
@@ -23,10 +24,12 @@ type OutboundMsgBuilder interface {
 	PreconfBid([]byte) (OutboundMessage, error)
 }
 
+// outMsgBuilder defines a structure used for creating outbound communication messages.
 type outMsgBuilder struct {
 	builder *msgBuilder
 }
 
+// NewOutboundBuilder returns a new instance of OutboundMsgBuilder.
 func NewOutboundBuilder() OutboundMsgBuilder {
 	builder, err := newMsgBuilder()
 	if err != nil {
@@ -38,6 +41,7 @@ func NewOutboundBuilder() OutboundMsgBuilder {
 	}
 }
 
+// Approve creates an "Approve" message.
 func (b *outMsgBuilder) Approve(data []byte) (OutboundMessage, error) {
 	return b.builder.createOutbound(
 		Approve,
@@ -46,6 +50,7 @@ func (b *outMsgBuilder) Approve(data []byte) (OutboundMessage, error) {
 	)
 }
 
+// Ping creates a "Ping" message.
 func (b *outMsgBuilder) Ping(uuid []byte) (OutboundMessage, error) {
 	return b.builder.createOutbound(
 		Ping,
@@ -54,6 +59,7 @@ func (b *outMsgBuilder) Ping(uuid []byte) (OutboundMessage, error) {
 	)
 }
 
+// Pong creates a "Pong" message.
 func (b *outMsgBuilder) Pong(uuid []byte) (OutboundMessage, error) {
 	return b.builder.createOutbound(
 		Pong,
@@ -62,6 +68,7 @@ func (b *outMsgBuilder) Pong(uuid []byte) (OutboundMessage, error) {
 	)
 }
 
+// GetVersion creates a "GetVersion" message.
 func (b *outMsgBuilder) GetVersion() (OutboundMessage, error) {
 	return b.builder.createOutbound(
 		GetVersion,
@@ -70,6 +77,7 @@ func (b *outMsgBuilder) GetVersion() (OutboundMessage, error) {
 	)
 }
 
+// Version creates a "Version" message with the specified version information.
 func (b *outMsgBuilder) Version(version string) (OutboundMessage, error) {
 	return b.builder.createOutbound(
 		Version,
@@ -78,6 +86,7 @@ func (b *outMsgBuilder) Version(version string) (OutboundMessage, error) {
 	)
 }
 
+// GetPeerList creates a "GetPeerList" message.
 func (b *outMsgBuilder) GetPeerList() (OutboundMessage, error) {
 	return b.builder.createOutbound(
 		GetPeerList,
@@ -86,6 +95,7 @@ func (b *outMsgBuilder) GetPeerList() (OutboundMessage, error) {
 	)
 }
 
+// PeerList creates a "PeerList" message with the given address information.
 func (b *outMsgBuilder) PeerList(addrs []peer.AddrInfo) (OutboundMessage, error) {
 	data, err := json.Marshal(&addrs)
 	if err != nil {
@@ -99,6 +109,7 @@ func (b *outMsgBuilder) PeerList(addrs []peer.AddrInfo) (OutboundMessage, error)
 	)
 }
 
+// Signature creates a "Signature" message with the specified signature data.
 func (b *outMsgBuilder) Signature(signature []byte) (OutboundMessage, error) {
 	return b.builder.createOutbound(
 		Signature,
@@ -107,6 +118,7 @@ func (b *outMsgBuilder) Signature(signature []byte) (OutboundMessage, error) {
 	)
 }
 
+// BlockKey creates a "BlockKey" message with the specified key data.
 func (b *outMsgBuilder) BlockKey(key []byte) (OutboundMessage, error) {
 	return b.builder.createOutbound(
 		BlockKey,
@@ -115,6 +127,7 @@ func (b *outMsgBuilder) BlockKey(key []byte) (OutboundMessage, error) {
 	)
 }
 
+// Bundle creates a "Bundle" message with the specified bundle data.
 func (b *outMsgBuilder) Bundle(bundle []byte) (OutboundMessage, error) {
 	return b.builder.createOutbound(
 		Bundle,
@@ -123,6 +136,7 @@ func (b *outMsgBuilder) Bundle(bundle []byte) (OutboundMessage, error) {
 	)
 }
 
+// PreconfBid creates a "PreconfBid" message with the specified bid data.
 func (b *outMsgBuilder) PreconfBid(bid []byte) (OutboundMessage, error) {
 	return b.builder.createOutbound(
 		PreconfBid,
