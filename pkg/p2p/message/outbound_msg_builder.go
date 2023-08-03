@@ -96,6 +96,30 @@ func (b *outMsgBuilder) PeerList(addrs []peer.AddrInfo) (OutboundMessage, error)
 	)
 }
 
+func (b *outMsgBuilder) Signature(signature []byte) (OutboundMessage, error) {
+	return b.builder.createOutbound(
+		Signature,
+		time.Now().UnixNano(),
+		signature,
+	)
+}
+
+func (b *outMsgBuilder) BlockKey(key []byte) (OutboundMessage, error) {
+	return b.builder.createOutbound(
+		BlockKey,
+		time.Now().UnixNano(),
+		key,
+	)
+}
+
+func (b *outMsgBuilder) Bundle(bundle []byte) (OutboundMessage, error) {
+	return b.builder.createOutbound(
+		Bundle,
+		time.Now().UnixNano(),
+		bundle,
+	)
+}
+
 func (b *outMsgBuilder) PreconfirmationBid(bid []byte) (OutboundMessage, error) {
 	return b.builder.createOutbound(
 		PreconfirmationBid,

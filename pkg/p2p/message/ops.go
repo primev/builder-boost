@@ -11,6 +11,9 @@ const (
 	Version
 	GetPeerList
 	PeerList
+	Signature
+	BlockKey
+	Bundle
 	PreconfirmationBid
 )
 
@@ -30,6 +33,12 @@ func (op Op) String() string {
 		return "getpeerlist"
 	case PeerList:
 		return "peerlist"
+	case Signature:
+		return "signature"
+	case BlockKey:
+		return "blockkey"
+	case Bundle:
+		return "bundle"
 	case PreconfirmationBid:
 		return "preconfirmationbid"
 	default:
