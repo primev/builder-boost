@@ -304,19 +304,22 @@ func CreateNode(logger log.Logger, peerKey *ecdsa.PrivateKey, rollup rollup.Roll
 
 	// fill node fields
 	node := &Node{
-		log:       logger,
-		host:      host,
-		topic:     topic,
-		msgBuild:  omb,
-		pubSub:    psio,
-		ctx:       ctx,
-		cfg:       cfg,
-		token:     token,
-		rollup:    rollup,
-		address:   am.Address,
-		stake:     stake,
-		closeChan: make(chan closeSignal),
-		preconfCh: preconfCh,
+		log:         logger,
+		host:        host,
+		topic:       topic,
+		msgBuild:    omb,
+		pubSub:      psio,
+		ctx:         ctx,
+		cfg:         cfg,
+		token:       token,
+		rollup:      rollup,
+		address:     am.Address,
+		stake:       stake,
+		closeChan:   make(chan closeSignal),
+		signatureCh: signatureCh,
+		blockKeyCh:  blockKeyCh,
+		bundleCh:    bundleCh,
+		preconfCh:   preconfCh,
 	}
 
 	// start default streams
