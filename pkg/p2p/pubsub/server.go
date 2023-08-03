@@ -580,8 +580,10 @@ func (pss *Server) latencyUpdater() {
 	// get latency check interval
 	interval := pss.cfg.LatencyInterval()
 
-	for {
-		time.Sleep(interval)
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
+	for range ticker.C {
 		for peerID, info := range pss.apm.GetPeers() {
 			uuidBytes, err := info.uuid.MarshalBinary()
 			if err != nil {
@@ -610,9 +612,10 @@ func (pss *Server) scoreUpdater() {
 	// get the score update interval from configuration
 	interval := pss.cfg.ScoreInterval()
 
-	for {
-		time.Sleep(interval)
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
 
+	for range ticker.C {
 		// calculate and update score for each peer
 		for peerID, info := range pss.apm.GetPeers() {
 			// weights for each feature in the scoring formula
