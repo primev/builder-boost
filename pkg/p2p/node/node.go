@@ -298,6 +298,7 @@ func CreateNode(logger log.Logger, peerKey *ecdsa.PrivateKey, rollup rollup.Roll
 		cfg,
 		logger,
 		host,
+		registry,
 		trackCh,
 		token,
 		am.Address,

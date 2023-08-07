@@ -24,6 +24,7 @@ import (
 	"github.com/primev/builder-boost/pkg/p2p/message"
 	"github.com/primev/builder-boost/pkg/p2p/stream"
 	"github.com/primev/builder-boost/pkg/rollup"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 type Server struct {
@@ -47,6 +48,8 @@ type Server struct {
 	bundleCh    chan messages.PeerMsg
 	preconfCh   chan messages.PeerMsg
 
+	metrics *metrics
+
 	ready chan struct{}
 }
 
@@ -55,6 +58,7 @@ func New(
 	cfg *config.Config,
 	log log.Logger,
 	host host.Host,
+	registry prometheus.Registerer,
 	trackCh chan commons.ConnectionEvent,
 	token []byte,
 	address common.Address,
@@ -69,6 +73,9 @@ func New(
 ) *Server {
 	pss := new(Server)
 	apm := newApprovedPeersMap()
+
+	// register pubsub metrics
+	metrics := newMetrics(registry)
 
 	pss = &Server{
 		ctx:         ctx,
@@ -88,6 +95,7 @@ func New(
 		blockKeyCh:  blockKeyCh,
 		bundleCh:    bundleCh,
 		preconfCh:   preconfCh,
+		metrics:     metrics,
 	}
 
 	pss.ready = make(chan struct{})
@@ -248,6 +256,7 @@ func (pss *Server) Publish(msg message.OutboundMessage) error {
 		return err
 	}
 
+	pss.metrics.PublishedMsgCount.Inc()
 	return pss.topic.Publish(pss.ctx, msgBytes)
 }
 
@@ -258,6 +267,7 @@ func (pss *Server) Stream(peerID peer.ID, msg message.OutboundMessage) error {
 		return err
 	}
 
+	pss.metrics.StreamedMsgCount.Inc()
 	return pss.psp.Send(peerID, msgBytes)
 }
 
@@ -282,6 +292,7 @@ func (pss *Server) Gossip(msg message.OutboundMessage) error {
 		}
 	}
 
+	pss.metrics.GossipedMsgCount.Inc()
 	return nil
 }
 
