@@ -155,8 +155,11 @@ func CreateNode(logger log.Logger, peerKey *ecdsa.PrivateKey, rollup rollup.Roll
 	cfg := config.New(
 		config.WithVersion("0.0.2"),
 		config.WithDiscoveryInterval(30*time.Minute),
+		config.WithLatencyInterval(time.Hour*2),
+		config.WithScoreInterval(time.Hour*3),
 		config.WithMinimalStake(big.NewInt(1)),
 		config.WithMetricsNamespace("primev"),
+		config.WithMetricsPort(8081),
 	)
 
 	// Set your own keypair
@@ -347,7 +350,7 @@ func CreateNode(logger log.Logger, peerKey *ecdsa.PrivateKey, rollup rollup.Roll
 	go func() {
 		promHandler := promhttp.HandlerFor(registry, promhttp.HandlerOpts{})
 		http.Handle("/metrics_p2p", promHandler)
-		http.ListenAndServe(":8081", nil)
+		http.ListenAndServe(fmt.Sprintf(":%d", cfg.MetricsPort()), nil)
 	}()
 
 	// TODO the temporary hold will be lifted once the discovery options are provided

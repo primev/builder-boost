@@ -31,6 +31,8 @@ type Config struct {
 	minimalStake *big.Int
 	// metrics namespace
 	metricsNamespace string
+	// prometheus p2p metrics port
+	metricsPort int
 }
 
 type ConfigOption func(*Config)
@@ -48,6 +50,7 @@ func New(options ...ConfigOption) *Config {
 		scoreInterval:       time.Hour * 3,
 		minimalStake:        big.NewInt(0),
 		metricsNamespace:    "builder_boost",
+		metricsPort:         8081,
 	}
 
 	for _, option := range options {
@@ -134,6 +137,13 @@ func WithMetricsNamespace(metricsNamespace string) ConfigOption {
 	}
 }
 
+// WithMetricsPort sets the metrics port option for Config
+func WithMetricsPort(metricsPort int) ConfigOption {
+	return func(cfg *Config) {
+		cfg.metricsPort = metricsPort
+	}
+}
+
 // Version returns the version from Config
 func (cfg *Config) Version() string {
 	return cfg.version
@@ -187,4 +197,9 @@ func (cfg *Config) MinimalStake() *big.Int {
 // MetricsNamespace returns the metrics namespace from Config
 func (cfg *Config) MetricsNamespace() string {
 	return cfg.metricsNamespace
+}
+
+// MetricsPort returns the metrics port from Config
+func (cfg *Config) MetricsPort() int {
+	return cfg.metricsPort
 }
