@@ -104,6 +104,8 @@ func New(
 	go pss.events(trackCh)
 	// start RTT test
 	go pss.latencyUpdater()
+	// start score test
+	go pss.scoreUpdater()
 
 	// create peer stream protocol
 	pss.psp = stream.New(
