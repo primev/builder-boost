@@ -226,7 +226,7 @@ func CreateNode(logger log.Logger, peerKey *ecdsa.PrivateKey, rollup rollup.Roll
 	}
 
 	// create a connectionTracker for connection tracking
-	connectionTracker := newConnectionTracker(logger)
+	connectionTracker := newConnectionTracker(metrics, logger)
 
 	// listen to network events
 	host.Network().Notify(&network.NotifyBundle{

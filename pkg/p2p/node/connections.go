@@ -12,14 +12,16 @@ import (
 // the purpose of the connection tracker packet is to trigger incoming and outgoing connections
 // it was not designed for any other use case
 type connectionTracker struct {
+	metrics        *metrics
 	log            log.Logger
 	connectedPeers map[peer.ID]bool
 	trackCh        chan commons.ConnectionEvent
 	mux            sync.Mutex
 }
 
-func newConnectionTracker(log log.Logger) *connectionTracker {
+func newConnectionTracker(metrics *metrics, log log.Logger) *connectionTracker {
 	return &connectionTracker{
+		metrics:        metrics,
 		log:            log,
 		connectedPeers: make(map[peer.ID]bool),
 		trackCh:        make(chan commons.ConnectionEvent),
@@ -79,6 +81,7 @@ func (ct *connectionTracker) sendConnected(peerID peer.ID) {
 		Event:  commons.Connected,
 	}
 
+	ct.metrics.ConnectedPeerCount.Inc()
 	return
 }
 
@@ -89,5 +92,6 @@ func (ct *connectionTracker) sendDisconnected(peerID peer.ID) {
 		Event:  commons.Disconnected,
 	}
 
+	ct.metrics.DisconnectedPeerCount.Inc()
 	return
 }
