@@ -299,6 +299,8 @@ func (pss *Server) Gossip(msg message.OutboundMessage) error {
 }
 
 func (pss *Server) optApprove(cpeer peer.ID, bytes []byte, sendauth bool) {
+	defer pss.metrics.ApproveMsgCount.Inc()
+
 	var am = new(messages.ApproveMsg)
 	err := json.Unmarshal(bytes, &am)
 
@@ -423,6 +425,8 @@ func (pss *Server) optApprove(cpeer peer.ID, bytes []byte, sendauth bool) {
 
 // Create a 'pong' message and stream it to the peer that received the 'ping' message.
 func (pss *Server) optPing(cpeer peer.ID, uuidBytes []byte) {
+	defer pss.metrics.PingMsgCount.Inc()
+
 	msg, err := pss.omb.Pong(uuidBytes)
 	if err != nil {
 		return
@@ -433,6 +437,8 @@ func (pss *Server) optPing(cpeer peer.ID, uuidBytes []byte) {
 
 // Set the latency value by checking the UUID and peer match in the received 'pong' message.
 func (pss *Server) optPong(cpeer peer.ID, uuidBytes []byte) {
+	defer pss.metrics.PongMsgCount.Inc()
+
 	var newUUID uuid.NullUUID
 	err := newUUID.UnmarshalBinary(uuidBytes)
 	if err != nil {
@@ -458,6 +464,8 @@ func (pss *Server) optPong(cpeer peer.ID, uuidBytes []byte) {
 
 // Create a 'version' message and stream it to the peer that received the 'getversion' message.
 func (pss *Server) optGetVersion(cpeer peer.ID) {
+	defer pss.metrics.GetVersionMsgCount.Inc()
+
 	msg, err := pss.omb.Version(pss.cfg.Version())
 	if err != nil {
 		return
@@ -468,11 +476,15 @@ func (pss *Server) optGetVersion(cpeer peer.ID) {
 
 // store peer version info in approved peers map
 func (pss *Server) optVersion(cpeer peer.ID, bytes []byte) {
+	defer pss.metrics.VersionMsgCount.Inc()
+
 	pss.apm.SetPeerInfoVersion(cpeer, bytes)
 }
 
 // Create a 'peerlist' message and stream it to the peer that received the 'getpeerlist' message.
 func (pss *Server) optGetPeerList(cpeer peer.ID) {
+	defer pss.metrics.GetPeerListMsgCount.Inc()
+
 	msg, err := pss.omb.PeerList(pss.apm.ListApprovedPeerAddrs())
 	if err != nil {
 		return
@@ -483,6 +495,8 @@ func (pss *Server) optGetPeerList(cpeer peer.ID) {
 
 // get peerlist from other peers
 func (pss *Server) optPeerList(cpeer peer.ID, bytes []byte) {
+	defer pss.metrics.PeerListMsgCount.Inc()
+
 	var addrs []peer.AddrInfo
 
 	err := json.Unmarshal(bytes, &addrs)
@@ -504,6 +518,8 @@ func (pss *Server) optPeerList(cpeer peer.ID, bytes []byte) {
 
 // process and transfer signature to the channel
 func (pss *Server) optSignature(cpeer peer.ID, bytes []byte) {
+	defer pss.metrics.SignatureMsgCount.Inc()
+
 	pss.signatureCh <- messages.PeerMsg{
 		Peer:  cpeer,
 		Bytes: bytes,
@@ -512,6 +528,8 @@ func (pss *Server) optSignature(cpeer peer.ID, bytes []byte) {
 
 // process and transfer block key to the channel
 func (pss *Server) optBlockKey(cpeer peer.ID, bytes []byte) {
+	defer pss.metrics.BlockKeyMsgCount.Inc()
+
 	pss.blockKeyCh <- messages.PeerMsg{
 		Peer:  cpeer,
 		Bytes: bytes,
@@ -520,6 +538,8 @@ func (pss *Server) optBlockKey(cpeer peer.ID, bytes []byte) {
 
 // process and transfer bundle to the channel
 func (pss *Server) optBundle(cpeer peer.ID, bytes []byte) {
+	defer pss.metrics.BundleMsgCount.Inc()
+
 	pss.bundleCh <- messages.PeerMsg{
 		Peer:  cpeer,
 		Bytes: bytes,
@@ -528,6 +548,8 @@ func (pss *Server) optBundle(cpeer peer.ID, bytes []byte) {
 
 // process and transfer preconfirmation bids to the channel
 func (pss *Server) optPreconfBid(cpeer peer.ID, bytes []byte) {
+	defer pss.metrics.PreconfBidMsgCount.Inc()
+
 	pss.preconfCh <- messages.PeerMsg{
 		Peer:  cpeer,
 		Bytes: bytes,
