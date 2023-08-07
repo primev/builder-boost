@@ -26,13 +26,15 @@ type ConnectionGater interface {
 }
 
 type connectionGater struct {
+	metrics      *metrics
 	rollup       rollup.Rollup
 	minimalStake *big.Int
 }
 
 // newConnectionGater creates a new instance of ConnectionGater
-func newConnectionGater(rollup rollup.Rollup, minimalStake *big.Int) ConnectionGater {
+func newConnectionGater(metrics *metrics, rollup rollup.Rollup, minimalStake *big.Int) ConnectionGater {
 	return &connectionGater{
+		metrics:      metrics,
 		rollup:       rollup,
 		minimalStake: minimalStake,
 	}
@@ -86,6 +88,9 @@ func (cg *connectionGater) InterceptUpgraded(conn network.Conn) (bool, control.D
 // if the validation succeeds and the peer's stake is greater than zero, the connection is allowed
 // otherwise, the connection is rejected
 func (cg *connectionGater) validateInboundConnection(p peer.ID, connMultiaddrs network.ConnMultiaddrs) bool {
+
+	cg.metrics.IncomingConnectionCount.Inc()
+
 	pub, err := p.ExtractPublicKey()
 	if err != nil {
 		return false
@@ -118,6 +123,9 @@ func (cg *connectionGater) validateInboundConnection(p peer.ID, connMultiaddrs n
 // if the validation succeeds and the peer's stake is greater than zero, the connection is allowed
 // otherwise, the connection is rejected
 func (cg *connectionGater) validateOutboundConnection(p peer.ID, connMultiaddrs network.ConnMultiaddrs) bool {
+
+	cg.metrics.OutgoingConnectionCount.Inc()
+
 	pub, err := p.ExtractPublicKey()
 	if err != nil {
 		return false

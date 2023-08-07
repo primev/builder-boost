@@ -12,6 +12,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/lthibault/log"
+	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/libp2p/go-libp2p"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
@@ -129,6 +130,8 @@ type Node struct {
 	bundleCh    chan messages.PeerMsg
 	preconfCh   chan messages.PeerMsg
 
+	metrics *metrics
+
 	once  sync.Once
 	ready chan struct{}
 }
@@ -138,6 +141,10 @@ func CreateNode(logger log.Logger, peerKey *ecdsa.PrivateKey, rollup rollup.Roll
 	if logger == nil {
 		logger = log.New().WithField("service", "p2p")
 	}
+
+	// create metrics
+	reg := prometheus.NewRegistry()
+	metrics := newMetrics(reg)
 
 	logger.With(log.F{
 		"service":    "p2p createnode",
@@ -160,7 +167,7 @@ func CreateNode(logger log.Logger, peerKey *ecdsa.PrivateKey, rollup rollup.Roll
 	}
 
 	// gater activated intercept secured
-	conngtr := newConnectionGater(rollup, cfg.MinimalStake())
+	conngtr := newConnectionGater(metrics, rollup, cfg.MinimalStake())
 
 	connmgr, err := connmgr.NewConnManager(
 		100, // Lowwater
@@ -320,6 +327,7 @@ func CreateNode(logger log.Logger, peerKey *ecdsa.PrivateKey, rollup rollup.Roll
 		blockKeyCh:  blockKeyCh,
 		bundleCh:    bundleCh,
 		preconfCh:   preconfCh,
+		metrics:     metrics,
 	}
 
 	// start default streams
