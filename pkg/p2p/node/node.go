@@ -7,12 +7,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
+	"net/http"
 	"sync"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/lthibault/log"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/libp2p/go-libp2p"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
@@ -143,8 +145,8 @@ func CreateNode(logger log.Logger, peerKey *ecdsa.PrivateKey, rollup rollup.Roll
 	}
 
 	// create metrics
-	reg := prometheus.NewRegistry()
-	metrics := newMetrics(reg)
+	registry := prometheus.NewRegistry()
+	metrics := newMetrics(registry)
 
 	logger.With(log.F{
 		"service":    "p2p createnode",
@@ -338,6 +340,13 @@ func CreateNode(logger log.Logger, peerKey *ecdsa.PrivateKey, rollup rollup.Roll
 	go node.initDiscovery()
 	// signal handler for closing
 	go node.waitSignal(cancel)
+
+	// start p2p metrics handler
+	go func() {
+		promHandler := promhttp.HandlerFor(registry, promhttp.HandlerOpts{})
+		http.Handle("/metrics_p2p", promHandler)
+		http.ListenAndServe(":8081", nil)
+	}()
 
 	// TODO the temporary hold will be lifted once the discovery options are provided
 	time.Sleep(time.Second * 3)
