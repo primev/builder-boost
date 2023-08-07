@@ -29,6 +29,8 @@ type Config struct {
 	scoreInterval time.Duration
 	// builder minimal stake
 	minimalStake *big.Int
+	// metrics namespace
+	metricsNamespace string
 }
 
 type ConfigOption func(*Config)
@@ -45,6 +47,7 @@ func New(options ...ConfigOption) *Config {
 		latencyInterval:     time.Hour * 2,
 		scoreInterval:       time.Hour * 3,
 		minimalStake:        big.NewInt(0),
+		metricsNamespace:    "builder_boost",
 	}
 
 	for _, option := range options {
@@ -124,6 +127,13 @@ func WithMinimalStake(minimalStake *big.Int) ConfigOption {
 	}
 }
 
+// WithMetricsNamespace sets the metrics namespace option for Config
+func WithMetricsNamespace(metricsNamespace string) ConfigOption {
+	return func(cfg *Config) {
+		cfg.metricsNamespace = metricsNamespace
+	}
+}
+
 // Version returns the version from Config
 func (cfg *Config) Version() string {
 	return cfg.version
@@ -172,4 +182,9 @@ func (cfg *Config) ScoreInterval() time.Duration {
 // MinimalStake returns the minimal stake from Config
 func (cfg *Config) MinimalStake() *big.Int {
 	return cfg.minimalStake
+}
+
+// MetricsNamespace returns the metrics namespace from Config
+func (cfg *Config) MetricsNamespace() string {
+	return cfg.metricsNamespace
 }

@@ -21,8 +21,7 @@ type metrics struct {
 	PreconfBidMsgCount  prometheus.Counter
 }
 
-func newMetrics(registry prometheus.Registerer) *metrics {
-	namespace := "builder_boost"
+func newMetrics(registry prometheus.Registerer, namespace string) *metrics {
 	subsystem := "p2p_pubsub"
 
 	m := &metrics{

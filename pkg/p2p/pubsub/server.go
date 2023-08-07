@@ -75,7 +75,7 @@ func New(
 	apm := newApprovedPeersMap()
 
 	// register pubsub metrics
-	metrics := newMetrics(registry)
+	metrics := newMetrics(registry, cfg.MetricsNamespace())
 
 	pss = &Server{
 		ctx:         ctx,

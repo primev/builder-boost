@@ -144,10 +144,6 @@ func CreateNode(logger log.Logger, peerKey *ecdsa.PrivateKey, rollup rollup.Roll
 		logger = log.New().WithField("service", "p2p")
 	}
 
-	// create metrics
-	registry := prometheus.NewRegistry()
-	metrics := newMetrics(registry)
-
 	logger.With(log.F{
 		"service":    "p2p createnode",
 		"start time": commons.GetNow(),
@@ -160,6 +156,7 @@ func CreateNode(logger log.Logger, peerKey *ecdsa.PrivateKey, rollup rollup.Roll
 		config.WithVersion("0.0.2"),
 		config.WithDiscoveryInterval(30*time.Minute),
 		config.WithMinimalStake(big.NewInt(1)),
+		config.WithMetricsNamespace("primev"),
 	)
 
 	// Set your own keypair
@@ -167,6 +164,10 @@ func CreateNode(logger log.Logger, peerKey *ecdsa.PrivateKey, rollup rollup.Roll
 	if err != nil {
 		panic(err)
 	}
+
+	// create metrics
+	registry := prometheus.NewRegistry()
+	metrics := newMetrics(registry, cfg.MetricsNamespace())
 
 	// gater activated intercept secured
 	conngtr := newConnectionGater(metrics, rollup, cfg.MinimalStake())

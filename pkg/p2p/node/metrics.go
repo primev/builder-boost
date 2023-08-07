@@ -9,8 +9,7 @@ type metrics struct {
 	DisconnectedPeerCount   prometheus.Counter
 }
 
-func newMetrics(registry prometheus.Registerer) *metrics {
-	namespace := "builder_boost"
+func newMetrics(registry prometheus.Registerer, namespace string) *metrics {
 	subsystem := "p2p_node"
 
 	m := &metrics{
