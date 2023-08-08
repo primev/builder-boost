@@ -645,17 +645,22 @@ func (pss *Server) events(trackCh <-chan commons.ConnectionEvent) {
 				}
 
 				pss.Stream(eventCopy.PeerID, msg)
+				// Take into account incoming and outgoing connections to use the current
+				// connected peer count within the metric.
+				pss.metrics.ApprovedPeerCount.Set(float64(len(pss.GetApprovedPeers())))
 			}()
 
 		case commons.Disconnected:
 			pss.apm.DelPeer(eventCopy.PeerID)
+			// Take into account incoming and outgoing connections to use the current
+			// connected peer count within the metric.
+			pss.metrics.ApprovedPeerCount.Set(float64(len(pss.GetApprovedPeers())))
 		}
 	}
 }
 
 // periodically check the status of peers and update latency information
 func (pss *Server) latencyUpdater() {
-
 	// get latency check interval
 	interval := pss.cfg.LatencyInterval()
 

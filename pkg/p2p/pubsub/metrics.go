@@ -3,6 +3,8 @@ package pubsub
 import "github.com/prometheus/client_golang/prometheus"
 
 type metrics struct {
+	// the current number of connected peers in the p2p network
+	ApprovedPeerCount prometheus.Gauge
 	// outgoing metrics
 	PublishedMsgCount prometheus.Counter
 	StreamedMsgCount  prometheus.Counter
@@ -25,6 +27,13 @@ func newMetrics(registry prometheus.Registerer, namespace string) *metrics {
 	subsystem := "p2p_pubsub"
 
 	m := &metrics{
+		ApprovedPeerCount: prometheus.NewGauge(prometheus.GaugeOpts{
+			Namespace: namespace,
+			Subsystem: subsystem,
+			Name:      "approved_peer_count",
+			Help:      "Number of approved peers.",
+		}),
+
 		// outgoing metrics
 		PublishedMsgCount: prometheus.NewCounter(prometheus.CounterOpts{
 			Namespace: namespace,
@@ -114,6 +123,8 @@ func newMetrics(registry prometheus.Registerer, namespace string) *metrics {
 	}
 
 	registry.MustRegister(
+		//
+		m.ApprovedPeerCount,
 		// out
 		m.PublishedMsgCount,
 		m.StreamedMsgCount,
