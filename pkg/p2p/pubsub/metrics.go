@@ -21,12 +21,17 @@ type metrics struct {
 	BlockKeyMsgCount    prometheus.Counter
 	BundleMsgCount      prometheus.Counter
 	PreconfBidMsgCount  prometheus.Counter
+	// rtt measurements are used to determine the latency in communication between peers
+	LatencyPeers *prometheus.GaugeVec
+	// the score values assigned by this peer address to other peers
+	ScorePeers *prometheus.GaugeVec
 }
 
 func newMetrics(registry prometheus.Registerer, namespace string) *metrics {
 	subsystem := "p2p_pubsub"
 
 	m := &metrics{
+		// system metrics
 		ApprovedPeerCount: prometheus.NewGauge(prometheus.GaugeOpts{
 			Namespace: namespace,
 			Subsystem: subsystem,
@@ -53,6 +58,7 @@ func newMetrics(registry prometheus.Registerer, namespace string) *metrics {
 			Name:      "gossiped_msg_count",
 			Help:      "Number of gossiped messages count.",
 		}),
+
 		// incoming metrics
 		ApproveMsgCount: prometheus.NewCounter(prometheus.CounterOpts{
 			Namespace: namespace,
@@ -120,10 +126,30 @@ func newMetrics(registry prometheus.Registerer, namespace string) *metrics {
 			Name:      "preconfbid_msg_count",
 			Help:      "Number of incoming preconfbid messages count.",
 		}),
+
+		// rtt metrics
+		LatencyPeers: prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: namespace,
+			Subsystem: subsystem,
+			Name:      "peer_latency_seconds",
+			Help:      "Peer to peer latency.",
+		},
+			[]string{"peer_id"},
+		),
+
+		// score metrics
+		ScorePeers: prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: namespace,
+			Subsystem: subsystem,
+			Name:      "peer_score",
+			Help:      "Peer to peer score.",
+		},
+			[]string{"peer_id"},
+		),
 	}
 
 	registry.MustRegister(
-		//
+		// system
 		m.ApprovedPeerCount,
 		// out
 		m.PublishedMsgCount,
@@ -141,6 +167,10 @@ func newMetrics(registry prometheus.Registerer, namespace string) *metrics {
 		m.BlockKeyMsgCount,
 		m.BundleMsgCount,
 		m.PreconfBidMsgCount,
+		// rtt
+		m.LatencyPeers,
+		// score
+		m.ScorePeers,
 	)
 
 	return m
