@@ -132,7 +132,10 @@ func (pss *Server) baseProtocol(once sync.Once) {
 
 	sub, err := pss.topic.Subscribe()
 	if err != nil {
-		panic(err)
+		pss.log.With(log.F{
+			"service": "p2p pubsub",
+			"time":    commons.GetNow(),
+		}).Fatal(err)
 	}
 
 	defer sub.Cancel()

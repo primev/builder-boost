@@ -42,10 +42,16 @@ func NewDiscovery(cfg *config.Config, h host.Host, ctx context.Context, logger l
 	// inhibiting future peer discovery.
 	idht, err := dht.New(ctx, h)
 	if err != nil {
-		panic(err)
+		logger.With(log.F{
+			"service":  "p2p dht discover",
+			"log time": commons.GetNow(),
+		}).Fatal(err)
 	}
 	if err = idht.Bootstrap(ctx); err != nil {
-		panic(err)
+		logger.With(log.F{
+			"service":  "p2p bootstrap discover",
+			"log time": commons.GetNow(),
+		}).Fatal(err)
 	}
 
 	return &Discovery{
@@ -116,7 +122,10 @@ func (d *Discovery) discoverPeersWithRendezvous() {
 		time.Sleep(time.Second)
 		peerChan, err := routingDiscovery.FindPeers(d.ctx, d.cfg.Topic())
 		if err != nil {
-			panic(err)
+			d.log.With(log.F{
+				"service":  "p2p rendezvous",
+				"log time": commons.GetNow(),
+			}).Warn(err)
 		}
 
 		for peer := range peerChan {

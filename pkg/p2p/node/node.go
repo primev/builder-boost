@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math/big"
 	"net/http"
@@ -165,10 +166,14 @@ func CreateNode(logger log.Logger, peerKey *ecdsa.PrivateKey, rollup rollup.Roll
 	// Set your own keypair
 	privKey, err := crypto.UnmarshalSecp256k1PrivateKey(peerKey.D.Bytes())
 	if err != nil {
-		panic(err)
+		logger.With(log.F{
+			"service":  "p2p keypair",
+			"log time": commons.GetNow(),
+		}).Fatal(err)
 	}
 
 	// create metrics
+	// @iowar: If system metrics need to be combined, use the main system's registry variable
 	registry := prometheus.NewRegistry()
 	metrics := newMetrics(registry, cfg.MetricsNamespace())
 
@@ -181,7 +186,10 @@ func CreateNode(logger log.Logger, peerKey *ecdsa.PrivateKey, rollup rollup.Roll
 		connmgr.WithGracePeriod(time.Minute),
 	)
 	if err != nil {
-		panic(err)
+		logger.With(log.F{
+			"service":  "p2p connmngr",
+			"log time": commons.GetNow(),
+		}).Fatal(err)
 	}
 	host, err := libp2p.New(
 		// Use the keypair we generated
@@ -219,7 +227,10 @@ func CreateNode(logger log.Logger, peerKey *ecdsa.PrivateKey, rollup rollup.Roll
 		libp2p.EnableNATService(),
 	)
 	if err != nil {
-		panic(err)
+		logger.With(log.F{
+			"service":  "p2p init",
+			"log time": commons.GetNow(),
+		}).Fatal(err)
 	}
 
 	for _, addr := range host.Addrs() {
@@ -245,14 +256,20 @@ func CreateNode(logger log.Logger, peerKey *ecdsa.PrivateKey, rollup rollup.Roll
 	// create a new PubSub instance
 	ps, err := pubsub.NewGossipSub(ctx, host)
 	if err != nil {
-		panic(err)
+		logger.With(log.F{
+			"service":  "p2p create pubsub server",
+			"log time": commons.GetNow(),
+		}).Fatal(err)
 	}
 
 	// direct publish operations are deprecated
 	// join the topic as a publisher
 	topic, err := ps.Join(cfg.PubSubTopic())
 	if err != nil {
-		panic(err)
+		logger.With(log.F{
+			"service":  "p2p pubsub join",
+			"log time": commons.GetNow(),
+		}).Fatal(err)
 	}
 
 	// create inbound and outbound message builders
@@ -270,22 +287,36 @@ func CreateNode(logger log.Logger, peerKey *ecdsa.PrivateKey, rollup rollup.Roll
 	sig, err := newSigner.Sign(peerKey, msgBytes)
 	if err != nil {
 		logger.With(log.F{
-			"service":  "signer",
-			"err time": commons.GetNow(),
-		}).Error(err)
-		panic(err)
+			"service":  "p2p create signed msg",
+			"log time": commons.GetNow(),
+		}).Fatal(err)
 	}
 
 	am.Sig = sig
 	token, err := json.Marshal(am)
 	if err != nil {
-		panic(err)
+		logger.With(log.F{
+			"service":  "p2p token",
+			"log time": commons.GetNow(),
+		}).Fatal(err)
 	}
 
 	// get stake amount
 	stake, err := rollup.GetMinimalStake(am.Address)
 	if err != nil {
-		panic(err)
+		logger.With(log.F{
+			"service":  "p2p minimal stake",
+			"log time": commons.GetNow(),
+		}).Fatal(err)
+	}
+
+	// if there is not enough stake, close node
+	if stake.Cmp(cfg.MinimalStake()) < 0 {
+		err = errors.New("not enough stake")
+		logger.With(log.F{
+			"service":  "p2p minimal stake",
+			"log time": commons.GetNow(),
+		}).Fatal(err)
 	}
 
 	// create ofx channels
@@ -466,7 +497,10 @@ func (n *Node) initDiscovery() {
 
 	// setup local mDNS discovery
 	if err := discovery.StartMdnsDiscovery(); err != nil {
-		panic(err)
+		n.log.With(log.F{
+			"service":  "p2p mdns discovery",
+			"log time": commons.GetNow(),
+		}).Warn(err)
 	}
 
 	// connect default nodes
