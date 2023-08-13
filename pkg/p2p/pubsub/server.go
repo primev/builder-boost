@@ -665,6 +665,9 @@ func (pss *Server) events(trackCh <-chan commons.ConnectionEvent) {
 			// Take into account incoming and outgoing connections to use the current
 			// connected peer count within the metric.
 			pss.metrics.ApprovedPeerCount.Set(float64(len(pss.GetApprovedPeers())))
+
+			// delete metrics when peer is disconnected
+			pss.deleteMetrics(eventCopy.PeerID)
 		}
 	}
 }
@@ -752,4 +755,16 @@ func (pss *Server) scoreUpdater() {
 			pss.metrics.ScorePeers.WithLabelValues(peerID.String()).Set(float64(score))
 		}
 	}
+}
+
+// delete metrics when peer is disconnected
+func (pss *Server) deleteMetrics(peerID peer.ID) {
+	// remove latency
+	pss.metrics.LatencyPeers.Delete(
+		prometheus.Labels{"peer_id": peerID.String()},
+	)
+	// remove score
+	pss.metrics.ScorePeers.Delete(
+		prometheus.Labels{"peer_id": peerID.String()},
+	)
 }
