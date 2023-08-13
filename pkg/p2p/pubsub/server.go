@@ -142,7 +142,7 @@ func (pss *Server) baseProtocol(once sync.Once) {
 			pss.log.With(log.F{
 				"service":   "p2p pubsub",
 				"stop time": commons.GetNow(),
-			}).Info("stopped pubsub protocol...")
+			}).Warn("stopped pubsub protocol...")
 
 			return
 		default:
@@ -183,7 +183,7 @@ func (pss *Server) baseProtocol(once sync.Once) {
 					"op":       inMsg.Op(),
 					"peer":     inMsg.Peer(),
 					"msg time": commons.GetNow(),
-				}).Info("unverified peer message")
+				}).Debug("unverified peer message")
 
 				switch inMsg.Op() {
 				case message.Approve:
@@ -194,7 +194,7 @@ func (pss *Server) baseProtocol(once sync.Once) {
 						"op":       inMsg.Op(),
 						"peer":     inMsg.Peer(),
 						"msg time": commons.GetNow(),
-					}).Info("unknown approve option!")
+					}).Warn("unknown approve option!")
 				}
 			}()
 			continue
@@ -206,7 +206,7 @@ func (pss *Server) baseProtocol(once sync.Once) {
 				"op":       inMsg.Op(),
 				"peer":     inMsg.Peer(),
 				"msg time": commons.GetNow(),
-			}).Info("verified peer message")
+			}).Debug("verified peer message")
 
 			switch inMsg.Op() {
 			// pass auth option in this side for now
@@ -245,7 +245,7 @@ func (pss *Server) baseProtocol(once sync.Once) {
 					"op":       inMsg.Op(),
 					"peer":     inMsg.Peer(),
 					"msg time": commons.GetNow(),
-				}).Info("unknown option!")
+				}).Warn("unknown option!")
 			}
 		}()
 	}
@@ -419,7 +419,7 @@ func (pss *Server) optApprove(cpeer peer.ID, bytes []byte, sendauth bool) {
 			"service":    "p2p pubsub approve",
 			"peer":       cpeer,
 			"close time": commons.GetNow(),
-		}).Info("not enough stake")
+		}).Warn("not enough stake")
 	}
 }
 

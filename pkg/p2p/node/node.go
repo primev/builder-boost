@@ -494,7 +494,7 @@ func (n *Node) waitSignal(cancel context.CancelFunc) {
 		"reason":     signal.Reason,
 		"code":       signal.Code,
 		"start time": commons.GetNow(),
-	}).Info("node is being turned off...")
+	}).Warn("node is being turned off...")
 }
 
 func (n *Node) Ready() <-chan struct{} {

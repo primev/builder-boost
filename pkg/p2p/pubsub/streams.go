@@ -41,7 +41,7 @@ func (pss *Server) peerStreamHandler(stream network.Stream) {
 			"op":       inMsg.Op(),
 			"peer":     inMsg.Peer(),
 			"msg time": commons.GetNow(),
-		}).Info("unverified peer message")
+		}).Debug("unverified peer message")
 
 		switch inMsg.Op() {
 		case message.Approve:
@@ -52,7 +52,7 @@ func (pss *Server) peerStreamHandler(stream network.Stream) {
 				"op":       inMsg.Op(),
 				"peer":     inMsg.Peer(),
 				"msg time": commons.GetNow(),
-			}).Info("unknown approve option!")
+			}).Warn("unknown approve option!")
 		}
 		return
 	}
@@ -62,7 +62,7 @@ func (pss *Server) peerStreamHandler(stream network.Stream) {
 		"op":       inMsg.Op(),
 		"peer":     inMsg.Peer(),
 		"msg time": commons.GetNow(),
-	}).Info("verified peer message")
+	}).Debug("verified peer message")
 
 	switch inMsg.Op() {
 	// pass auth option in this side for now
@@ -104,6 +104,6 @@ func (pss *Server) peerStreamHandler(stream network.Stream) {
 			"op":       inMsg.Op(),
 			"peer":     inMsg.Peer(),
 			"msg time": commons.GetNow(),
-		}).Info("unknown option!")
+		}).Warn("unknown option!")
 	}
 }
