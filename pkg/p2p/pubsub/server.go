@@ -397,7 +397,10 @@ func (pss *Server) optApprove(cpeer peer.ID, bytes []byte, sendauth bool) {
 
 		addrInfo := pss.host.Peerstore().PeerInfo(cpeer)
 
-		pss.apm.SetPeerInfoStart(cpeer, time.Now())
+		joinDate := time.Now()
+		pss.metrics.JoinDatePeers.WithLabelValues(cpeer.String()).Set(float64(joinDate.UnixNano()))
+
+		pss.apm.SetPeerInfoJoinDate(cpeer, joinDate)
 		pss.apm.SetPeerInfoAddress(cpeer, address)
 		pss.apm.SetPeerInfoStake(cpeer, stake)
 		pss.apm.SetPeerInfoAddrs(cpeer, addrInfo.Addrs)
@@ -765,6 +768,11 @@ func (pss *Server) deleteMetrics(peerID peer.ID) {
 	)
 	// remove score
 	pss.metrics.ScorePeers.Delete(
+		prometheus.Labels{"peer_id": peerID.String()},
+	)
+
+	// remove join date
+	pss.metrics.JoinDatePeers.Delete(
 		prometheus.Labels{"peer_id": peerID.String()},
 	)
 }

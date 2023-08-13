@@ -378,8 +378,8 @@ func (a *approvedPeersMap) ListApprovedGossipPeers() []peer.ID {
 	return approvedGossipPeers
 }
 
-// SetPeerInfoStart sets the start time of a peer.
-func (a *approvedPeersMap) SetPeerInfoStart(peer peer.ID, start time.Time) {
+// SetPeerInfoJoinDate sets the join date of a peer.
+func (a *approvedPeersMap) SetPeerInfoJoinDate(peer peer.ID, start time.Time) {
 	a.Lock()
 	defer a.Unlock()
 	if val, ok := a.peers[peer]; ok {

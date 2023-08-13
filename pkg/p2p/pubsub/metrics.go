@@ -25,6 +25,8 @@ type metrics struct {
 	LatencyPeers *prometheus.GaugeVec
 	// the score values assigned by this peer address to other peers
 	ScorePeers *prometheus.GaugeVec
+	// the times when the peers joined to the network
+	JoinDatePeers *prometheus.GaugeVec
 }
 
 func newMetrics(registry prometheus.Registerer, namespace string) *metrics {
@@ -146,6 +148,16 @@ func newMetrics(registry prometheus.Registerer, namespace string) *metrics {
 		},
 			[]string{"peer_id"},
 		),
+
+		// join date metrics
+		JoinDatePeers: prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: namespace,
+			Subsystem: subsystem,
+			Name:      "peer_join_date",
+			Help:      "Unix time peer join date.",
+		},
+			[]string{"peer_id"},
+		),
 	}
 
 	registry.MustRegister(
@@ -171,6 +183,8 @@ func newMetrics(registry prometheus.Registerer, namespace string) *metrics {
 		m.LatencyPeers,
 		// score
 		m.ScorePeers,
+		// join date
+		m.JoinDatePeers,
 	)
 
 	return m
