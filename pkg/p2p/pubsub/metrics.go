@@ -131,7 +131,7 @@ func newMetrics(registry prometheus.Registerer, namespace string) *metrics {
 		LatencyPeers: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Namespace: namespace,
 			Subsystem: subsystem,
-			Name:      "peer_latency_seconds",
+			Name:      "peer_latency_milliseconds",
 			Help:      "Peer to peer latency.",
 		},
 			[]string{"peer_id"},

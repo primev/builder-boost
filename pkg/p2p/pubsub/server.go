@@ -458,7 +458,8 @@ func (pss *Server) optPong(cpeer peer.ID, uuidBytes []byte) {
 		pss.apm.SetPeerInfoLatency(cpeer, latency)
 
 		// set metric values
-		pss.metrics.LatencyPeers.WithLabelValues(cpeer.String()).Set(latency.Seconds())
+		latencyMs := float64(latency.Microseconds()) / 1000.0
+		pss.metrics.LatencyPeers.WithLabelValues(cpeer.String()).Set(latencyMs)
 
 		// change uuid for next ping-pong
 		pss.apm.SetPeerInfoUUID(cpeer, uuid.New())
