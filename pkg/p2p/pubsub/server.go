@@ -451,8 +451,14 @@ func (pss *Server) optPong(cpeer peer.ID, uuidBytes []byte) {
 		pss.apm.SetPeerInfoPongTime(cpeer, time.Now().UnixNano())
 		info := pss.apm.GetPeerInfo(cpeer)
 
+		// calculate latency value
+		latency := time.Duration(info.pongTime - info.pingTime)
+
 		// set latency value
-		pss.apm.SetPeerInfoLatency(cpeer, time.Duration(info.pongTime-info.pingTime))
+		pss.apm.SetPeerInfoLatency(cpeer, latency)
+
+		// set metric values
+		pss.metrics.LatencyPeers.WithLabelValues(cpeer.String()).Set(latency.Seconds())
 
 		// change uuid for next ping-pong
 		pss.apm.SetPeerInfoUUID(cpeer, uuid.New())
@@ -685,7 +691,10 @@ func (pss *Server) latencyUpdater() {
 	}
 }
 
+// TODO: @iowar: For a more accurate calculation, consult the team.
+// the score is calculated taking into account lifetime, stake amount, and rtt values
 // periodically update score information
+// TODO: @iowar : New factors that will modify the scoring based on peer behavior can be included.
 func (pss *Server) scoreUpdater() {
 
 	// sigmoid activation function
@@ -709,8 +718,8 @@ func (pss *Server) scoreUpdater() {
 			stake := info.getStake()
 			latency := info.getLatency()
 
-			// normalize v1 by dividing milliseconds by the number of milliseconds in a day
-			v1 := float64(time.Now().Sub(start).Milliseconds() / 864000000.)
+			// normalize v1 by dividing milliseconds by the number of milliseconds in a 30 day
+			v1 := float64(time.Now().Sub(start).Milliseconds() / 3. * 864000000.)
 			if v1 > 1 {
 				v1 = 1.
 			}
@@ -721,17 +730,22 @@ func (pss *Server) scoreUpdater() {
 				v2 = 1.
 			}
 
-			// normalize v3 by subtracting latency from 1000 milliseconds and taking the maximum of 0
-			v3 := float64(1000 - latency.Milliseconds())
+			// normalize v3 by subtracting latency from 10 milliseconds and taking the min of 0
+			v3 := float64(10 - latency.Milliseconds())
 			if v3 < 0 {
 				v3 = 0.
 			}
+
+			v3 /= 10.
 
 			// calculate the score using the sigmoid activation function with the weighted values
 			score := int(sigmoid(w1*v1+w2*v2+w3*v3) * 100.)
 
 			// update the score for the peer
 			pss.apm.SetPeerInfoScore(peerID, score)
+
+			// set score metrics
+			pss.metrics.ScorePeers.WithLabelValues(peerID.String()).Set(float64(score))
 		}
 	}
 }

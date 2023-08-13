@@ -155,8 +155,8 @@ func CreateNode(logger log.Logger, peerKey *ecdsa.PrivateKey, rollup rollup.Roll
 	cfg := config.New(
 		config.WithVersion("0.0.2"),
 		config.WithDiscoveryInterval(30*time.Minute),
-		config.WithLatencyInterval(time.Hour*2),
-		config.WithScoreInterval(time.Hour*3),
+		config.WithLatencyInterval(time.Hour*1),
+		config.WithScoreInterval(time.Minute*10),
 		config.WithMinimalStake(big.NewInt(1)),
 		config.WithMetricsNamespace("primev"),
 		config.WithMetricsPort(8081),
