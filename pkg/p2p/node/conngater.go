@@ -17,14 +17,14 @@ type connectionAllowance int
 
 const (
 	Undecided connectionAllowance = iota
-	DenyBannedPeer
+	DenyBlockedPeer
 	DenyNotEnoughStake
 	Accept
 )
 
 var connectionAllowanceStrings = map[connectionAllowance]string{
 	Undecided:          "Undecided",
-	DenyBannedPeer:     "DenyBannedPeer",
+	DenyBlockedPeer:    "DenyBlockedPeer",
 	DenyNotEnoughStake: "DenyNotEnoughStake",
 	Accept:             "Allow",
 }
@@ -71,13 +71,13 @@ func (cg *connectionGater) checkPeerTrusted(p peer.ID) connectionAllowance {
 	return Undecided
 }
 
-// checkPeerBanned checks if a peer is banned and returns the appropriate connection allowance status
-func (cg *connectionGater) checkPeerBanned(p peer.ID) connectionAllowance {
+// checkPeerBlocked checks if a peer is blocked and returns the appropriate connection allowance status
+func (cg *connectionGater) checkPeerBlocked(p peer.ID) connectionAllowance {
 
 	// check if the peer is in the list of blocked peers, and deny the connection if found
 	for _, peerID := range cg.blocker.list() {
 		if p == peerID {
-			return DenyBannedPeer
+			return DenyBlockedPeer
 		}
 	}
 
@@ -105,7 +105,7 @@ func (cg *connectionGater) checkPeerStake(p peer.ID) connectionAllowance {
 	// get stake
 	stake, err := cg.rollup.GetMinimalStake(ethAddress)
 	if err != nil {
-		return DenyBannedPeer
+		return DenyBlockedPeer
 	}
 
 	// check minimal stake
@@ -114,24 +114,24 @@ func (cg *connectionGater) checkPeerStake(p peer.ID) connectionAllowance {
 	}
 
 	// deny the connection if the stake is not enough.
-	return DenyBannedPeer
+	return DenyBlockedPeer
 }
 
-// resolveConnectionAllowance resolves the connection allowance based on trusted and banned statuses
+// resolveConnectionAllowance resolves the connection allowance based on trusted and blocked statuses
 func resolveConnectionAllowance(
 	trustedStatus connectionAllowance,
-	bannedStatus connectionAllowance,
+	blockedStatus connectionAllowance,
 ) connectionAllowance {
-	// if the peer's trusted status is 'Undecided', resolve the connection allowance based on the banned status
+	// if the peer's trusted status is 'Undecided', resolve the connection allowance based on the blocked status
 	if trustedStatus == Undecided {
-		return bannedStatus
+		return blockedStatus
 	}
 	return trustedStatus
 }
 
 // checks if a peer is allowed to dial/accept
 func (cg *connectionGater) checkAllowedPeer(p peer.ID) connectionAllowance {
-	return resolveConnectionAllowance(cg.checkPeerTrusted(p), cg.checkPeerBanned(p))
+	return resolveConnectionAllowance(cg.checkPeerTrusted(p), cg.checkPeerBlocked(p))
 }
 
 // InterceptPeerDial intercepts the process of dialing a peer

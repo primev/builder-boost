@@ -3,7 +3,7 @@ package commons
 type Broadcast byte
 
 const (
-	UNDEFINED Broadcast = iota
+	UNDEFINED_br Broadcast = iota
 	Publish
 	Stream
 	Gossip
