@@ -177,8 +177,11 @@ func CreateNode(logger log.Logger, peerKey *ecdsa.PrivateKey, rollup rollup.Roll
 	registry := prometheus.NewRegistry()
 	metrics := newMetrics(registry, cfg.MetricsNamespace())
 
+	// create blocker
+	blocker := newBlocker(metrics, logger)
+
 	// gater activated intercept secured
-	conngtr := newConnectionGater(metrics, rollup, cfg.MinimalStake())
+	conngtr := newConnectionGater(metrics, rollup, blocker, logger, cfg.MinimalStake())
 
 	connmgr, err := connmgr.NewConnManager(
 		100, // Lowwater

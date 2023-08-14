@@ -256,28 +256,32 @@ func (pss *Server) baseProtocol(once sync.Once) {
 
 // publish message on topic
 func (pss *Server) Publish(msg message.OutboundMessage) error {
+	defer pss.metrics.PublishedMsgCount.Inc()
+
 	msgBytes, err := msg.MarshalJSON()
 	if err != nil {
 		return err
 	}
 
-	pss.metrics.PublishedMsgCount.Inc()
 	return pss.topic.Publish(pss.ctx, msgBytes)
 }
 
 // stream message for specific peer
 func (pss *Server) Stream(peerID peer.ID, msg message.OutboundMessage) error {
+	defer pss.metrics.StreamedMsgCount.Inc()
+
 	msgBytes, err := msg.MarshalJSON()
 	if err != nil {
 		return err
 	}
 
-	pss.metrics.StreamedMsgCount.Inc()
 	return pss.psp.Send(peerID, msgBytes)
 }
 
 // stream message for gossip peers
 func (pss *Server) Gossip(msg message.OutboundMessage) error {
+	defer pss.metrics.GossipedMsgCount.Inc()
+
 	msgBytes, err := msg.MarshalJSON()
 	if err != nil {
 		return err
@@ -290,14 +294,13 @@ func (pss *Server) Gossip(msg message.OutboundMessage) error {
 		err = pss.psp.Send(peerID, msgBytes)
 		if err != nil {
 			pss.log.With(log.F{
-				"service":    "p2p pubsub gossip",
-				"close time": commons.GetNow(),
-				"peer id":    peerID,
+				"service":     "p2p pubsub gossip",
+				"gossip time": commons.GetNow(),
+				"peer id":     peerID,
 			}).Error(err)
 		}
 	}
 
-	pss.metrics.GossipedMsgCount.Inc()
 	return nil
 }
 
@@ -398,7 +401,6 @@ func (pss *Server) optApprove(cpeer peer.ID, bytes []byte, sendauth bool) {
 		addrInfo := pss.host.Peerstore().PeerInfo(cpeer)
 
 		joinDate := time.Now()
-		pss.metrics.JoinDatePeers.WithLabelValues(cpeer.String()).Set(float64(joinDate.UnixNano()))
 
 		pss.apm.SetPeerInfoJoinDate(cpeer, joinDate)
 		pss.apm.SetPeerInfoAddress(cpeer, address)
@@ -407,6 +409,8 @@ func (pss *Server) optApprove(cpeer peer.ID, bytes []byte, sendauth bool) {
 		pss.apm.SetPeerInfoUUID(cpeer, uuid.New())
 		// temporary gossip
 		pss.apm.SetPeerInfoGossip(cpeer, true)
+
+		pss.metrics.JoinDatePeers.WithLabelValues(cpeer.String()).Set(float64(joinDate.Unix()))
 
 		if sendauth {
 			// create approve message and stream this message for new peer
@@ -665,8 +669,8 @@ func (pss *Server) events(trackCh <-chan commons.ConnectionEvent) {
 
 		case commons.Disconnected:
 			pss.apm.DelPeer(eventCopy.PeerID)
-			// Take into account incoming and outgoing connections to use the current
-			// connected peer count within the metric.
+			// Take into account incoming and outgoing connections to use the
+			// current connected peer count within the metric.
 			pss.metrics.ApprovedPeerCount.Set(float64(len(pss.GetApprovedPeers())))
 
 			// delete metrics when peer is disconnected
@@ -724,12 +728,12 @@ func (pss *Server) scoreUpdater() {
 			// weights for each feature in the scoring formula
 			w1, w2, w3 := 0.2, 0.3, 0.5
 
-			start := info.getStart()
+			joinDate := info.getJoinDate()
 			stake := info.getStake()
 			latency := info.getLatency()
 
 			// normalize v1 by dividing milliseconds by the number of milliseconds in a 30 day
-			v1 := float64(time.Now().Sub(start).Milliseconds() / 3. * 864000000.)
+			v1 := float64(time.Now().Sub(joinDate).Milliseconds() / 3. * 864000000.)
 			if v1 > 1 {
 				v1 = 1.
 			}
@@ -770,7 +774,6 @@ func (pss *Server) deleteMetrics(peerID peer.ID) {
 	pss.metrics.ScorePeers.Delete(
 		prometheus.Labels{"peer_id": peerID.String()},
 	)
-
 	// remove join date
 	pss.metrics.JoinDatePeers.Delete(
 		prometheus.Labels{"peer_id": peerID.String()},

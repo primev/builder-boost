@@ -12,8 +12,8 @@ import (
 )
 
 type info struct {
-	// start time of the peer
-	start time.Time
+	// join date of the peer
+	joinDate time.Time
 	// version information of the peer
 	version string
 	// address of the peer
@@ -38,12 +38,12 @@ type info struct {
 	sync.RWMutex
 }
 
-// getStart returns the start time of the peer.
-func (i *info) getStart() time.Time {
+// getJoinDate returns the join date of the peer.
+func (i *info) getJoinDate() time.Time {
 	i.RLock()
 	defer i.RUnlock()
 
-	return i.start
+	return i.joinDate
 }
 
 // getVersion returns the version information of the peer.
@@ -126,12 +126,12 @@ func (i *info) getGossip() bool {
 	return i.gossip
 }
 
-// setStart sets the start time of the peer.
-func (i *info) setStart(start time.Time) {
+// setJoinDate sets the joinDate of the peer.
+func (i *info) setJoinDate(joinDate time.Time) {
 	i.Lock()
 	defer i.Unlock()
 
-	i.start = start
+	i.joinDate = joinDate
 }
 
 // setVersion sets the version information of the peer.
@@ -256,7 +256,7 @@ func (a *approvedPeersMap) GetPeerInfo(peer peer.ID) *info {
 
 	if val, ok := a.peers[peer]; ok {
 		infoCopy := &info{
-			start:     val.getStart(),
+			joinDate:  val.getJoinDate(),
 			version:   val.getVersion(),
 			address:   val.getAddress(),
 			stake:     val.getStake(),
@@ -283,7 +283,7 @@ func (a *approvedPeersMap) GetPeers() map[peer.ID]*info {
 	var peers = make(map[peer.ID]*info)
 	for k, v := range a.peers {
 		infoCopy := &info{
-			start:     v.getStart(),
+			joinDate:  v.getJoinDate(),
 			version:   v.getVersion(),
 			address:   v.getAddress(),
 			stake:     v.getStake(),
@@ -343,7 +343,7 @@ func (a *approvedPeersMap) GetGossipPeers() map[peer.ID]*info {
 	for k, v := range a.peers {
 		if v.getGossip() {
 			infoCopy := &info{
-				start:     v.getStart(),
+				joinDate:  v.getJoinDate(),
 				version:   v.getVersion(),
 				address:   v.getAddress(),
 				stake:     v.getStake(),
@@ -379,11 +379,11 @@ func (a *approvedPeersMap) ListApprovedGossipPeers() []peer.ID {
 }
 
 // SetPeerInfoJoinDate sets the join date of a peer.
-func (a *approvedPeersMap) SetPeerInfoJoinDate(peer peer.ID, start time.Time) {
+func (a *approvedPeersMap) SetPeerInfoJoinDate(peer peer.ID, joinDate time.Time) {
 	a.Lock()
 	defer a.Unlock()
 	if val, ok := a.peers[peer]; ok {
-		val.setStart(start)
+		val.setJoinDate(joinDate)
 	}
 }
 

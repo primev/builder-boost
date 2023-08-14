@@ -9,8 +9,8 @@ import (
 	"github.com/primev/builder-boost/pkg/p2p/commons"
 )
 
-// the purpose of the connection tracker packet is to trigger incoming and outgoing connections
-// it was not designed for any other use case
+// the purpose of the connection tracker packet is to trigger incoming and
+// outgoing connections it was not designed for any other use case
 type connectionTracker struct {
 	metrics        *metrics
 	log            log.Logger
@@ -34,7 +34,7 @@ func (ct *connectionTracker) handleConnected(net network.Network, conn network.C
 	ct.mux.Lock()
 	defer ct.mux.Unlock()
 
-	// Skip if the peer is already connected
+	// skip if the peer is already connected
 	if ct.connectedPeers[remotePeerID] {
 		return
 	}
@@ -55,7 +55,7 @@ func (ct *connectionTracker) handleDisconnected(net network.Network, conn networ
 	ct.mux.Lock()
 	defer ct.mux.Unlock()
 
-	// Skip if the peer is already disconnected
+	// skip if the peer is already disconnected
 	if !ct.connectedPeers[remotePeerID] {
 		return
 	}

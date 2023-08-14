@@ -7,6 +7,9 @@ type metrics struct {
 	OutgoingConnectionCount prometheus.Counter
 	ConnectedPeerCount      prometheus.Counter
 	DisconnectedPeerCount   prometheus.Counter
+	BlockedPeerCount        prometheus.Counter
+	CurrentBlockedPeerCount prometheus.Gauge
+	BlockedPeers            *prometheus.GaugeVec
 }
 
 func newMetrics(registry prometheus.Registerer, namespace string) *metrics {
@@ -29,21 +32,44 @@ func newMetrics(registry prometheus.Registerer, namespace string) *metrics {
 			Namespace: namespace,
 			Subsystem: subsystem,
 			Name:      "connected_peer_count",
-			Help:      "Number of connected peer.",
+			Help:      "Number of connected peers.",
 		}),
 		DisconnectedPeerCount: prometheus.NewCounter(prometheus.CounterOpts{
 			Namespace: namespace,
 			Subsystem: subsystem,
 			Name:      "disconnected_peer_count",
-			Help:      "Number of disconnected peer.",
+			Help:      "Number of disconnected peers.",
 		}),
+		BlockedPeerCount: prometheus.NewCounter(prometheus.CounterOpts{
+			Namespace: namespace,
+			Subsystem: subsystem,
+			Name:      "blocked_peer_count",
+			Help:      "Number of blocked peers.",
+		}),
+		CurrentBlockedPeerCount: prometheus.NewGauge(prometheus.GaugeOpts{
+			Namespace: namespace,
+			Subsystem: subsystem,
+			Name:      "current_blocked_peer_count",
+			Help:      "Number of current blocked peers.",
+		}),
+		BlockedPeers: prometheus.NewGaugeVec(
+			prometheus.GaugeOpts{
+				Namespace: namespace,
+				Subsystem: subsystem,
+				Name:      "blocked_peers",
+				Help:      "Blocked peers with reason.",
+			},
+			[]string{"peer_id", "reason"},
+		),
 	}
 
 	registry.MustRegister(
 		m.IncomingConnectionCount,
 		m.OutgoingConnectionCount,
 		m.ConnectedPeerCount,
-		m.DisconnectedPeerCount,
+		m.BlockedPeerCount,
+		m.CurrentBlockedPeerCount,
+		m.BlockedPeers,
 	)
 
 	return m
