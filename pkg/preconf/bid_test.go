@@ -14,7 +14,7 @@ func TestBid(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	address, err := bid.VerifySignature()
+	address, err := bid.VerifySearcherSignature()
 	if err != nil {
 		t.Fatal(err)
 	}
