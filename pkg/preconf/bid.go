@@ -29,7 +29,7 @@ type UnsignedPreConfBid struct {
 // Most of the bid details can go to the data-availabilty layer if needed, and only have the hash+sig live on chian
 // Preconf bid structure
 // PreConfBid represents the bid data.
-type PreConfBid struct {
+type PreConfBid struct { // Adds blocknumber for pre-conf bid - Will need to manage how to reciever acts on a bid / TTL is the blocknumber
 	UnsignedPreConfBid
 
 	BidHash   []byte `json:"bidhash"` // TODO(@ckaritk): name better
