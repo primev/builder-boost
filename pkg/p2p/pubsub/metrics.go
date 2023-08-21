@@ -1,14 +1,23 @@
 package pubsub
 
-import "github.com/prometheus/client_golang/prometheus"
+import (
+	"github.com/primev/builder-boost/pkg/p2p/commons"
+	"github.com/prometheus/client_golang/prometheus"
+)
 
 type metrics struct {
 	// the current number of connected peers in the p2p network
 	ApprovedPeerCount prometheus.Gauge
-	// outgoing metrics
-	PublishedMsgCount prometheus.Counter
-	StreamedMsgCount  prometheus.Counter
-	GossipedMsgCount  prometheus.Counter
+	BuilderPeerCount  prometheus.Gauge
+	SearcherPeerCount prometheus.Gauge
+	// outgoing metrics b2b
+	PublishedB2BMsgCount prometheus.Counter
+	StreamedB2BMsgCount  prometheus.Counter
+	GossipedB2BMsgCount  prometheus.Counter
+	// outgoing metrics b2s
+	PublishedB2SMsgCount prometheus.Counter
+	StreamedB2SMsgCount  prometheus.Counter
+	GossipedB2SMsgCount  prometheus.Counter
 	// incoming metrics
 	ApproveMsgCount     prometheus.Counter
 	PingMsgCount        prometheus.Counter
@@ -21,6 +30,7 @@ type metrics struct {
 	BlockKeyMsgCount    prometheus.Counter
 	BundleMsgCount      prometheus.Counter
 	PreconfBidMsgCount  prometheus.Counter
+	BidMsgCount         prometheus.Counter
 	// rtt measurements are used to determine the latency in communication between peers
 	LatencyPeers *prometheus.GaugeVec
 	// the score values assigned by this peer address to other peers
@@ -29,7 +39,7 @@ type metrics struct {
 	JoinDatePeers *prometheus.GaugeVec
 }
 
-func newMetrics(registry prometheus.Registerer, namespace string) *metrics {
+func newMetrics(registry prometheus.Registerer, namespace string, peerType commons.PeerType) *metrics {
 	subsystem := "p2p_pubsub"
 
 	m := &metrics{
@@ -41,24 +51,58 @@ func newMetrics(registry prometheus.Registerer, namespace string) *metrics {
 			Help:      "Number of approved peers.",
 		}),
 
-		// outgoing metrics
-		PublishedMsgCount: prometheus.NewCounter(prometheus.CounterOpts{
+		BuilderPeerCount: prometheus.NewGauge(prometheus.GaugeOpts{
 			Namespace: namespace,
 			Subsystem: subsystem,
-			Name:      "published_msg_count",
-			Help:      "Number of published messages count.",
+			Name:      "approved_builder_peer_count",
+			Help:      "Number of approved peers.",
 		}),
-		StreamedMsgCount: prometheus.NewCounter(prometheus.CounterOpts{
+
+		SearcherPeerCount: prometheus.NewGauge(prometheus.GaugeOpts{
 			Namespace: namespace,
 			Subsystem: subsystem,
-			Name:      "streamed_msg_count",
-			Help:      "Number of streamed messages count.",
+			Name:      "approved_searcher_peer_count",
+			Help:      "Number of approved peers.",
 		}),
-		GossipedMsgCount: prometheus.NewCounter(prometheus.CounterOpts{
+
+		// outgoing metrics b2b
+		PublishedB2BMsgCount: prometheus.NewCounter(prometheus.CounterOpts{
 			Namespace: namespace,
 			Subsystem: subsystem,
-			Name:      "gossiped_msg_count",
-			Help:      "Number of gossiped messages count.",
+			Name:      "published_b2b_msg_count",
+			Help:      "Number of published b2b messages count.",
+		}),
+		StreamedB2BMsgCount: prometheus.NewCounter(prometheus.CounterOpts{
+			Namespace: namespace,
+			Subsystem: subsystem,
+			Name:      "streamed_b2b_msg_count",
+			Help:      "Number of streamed b2b messages count.",
+		}),
+		GossipedB2BMsgCount: prometheus.NewCounter(prometheus.CounterOpts{
+			Namespace: namespace,
+			Subsystem: subsystem,
+			Name:      "gossiped_b2b_msg_count",
+			Help:      "Number of gossiped b2b messages count.",
+		}),
+
+		// outgoing metrics b2s
+		PublishedB2SMsgCount: prometheus.NewCounter(prometheus.CounterOpts{
+			Namespace: namespace,
+			Subsystem: subsystem,
+			Name:      "published_b2s_msg_count",
+			Help:      "Number of published b2s messages count.",
+		}),
+		StreamedB2SMsgCount: prometheus.NewCounter(prometheus.CounterOpts{
+			Namespace: namespace,
+			Subsystem: subsystem,
+			Name:      "streamed_b2s_msg_count",
+			Help:      "Number of streamed b2s messages count.",
+		}),
+		GossipedB2SMsgCount: prometheus.NewCounter(prometheus.CounterOpts{
+			Namespace: namespace,
+			Subsystem: subsystem,
+			Name:      "gossiped_b2s_msg_count",
+			Help:      "Number of gossiped b2s messages count.",
 		}),
 
 		// incoming metrics
@@ -128,6 +172,12 @@ func newMetrics(registry prometheus.Registerer, namespace string) *metrics {
 			Name:      "preconfbid_msg_count",
 			Help:      "Number of incoming preconfbid messages count.",
 		}),
+		BidMsgCount: prometheus.NewCounter(prometheus.CounterOpts{
+			Namespace: namespace,
+			Subsystem: subsystem,
+			Name:      "bid_msg_count",
+			Help:      "Number of incoming bid messages count.",
+		}),
 
 		// rtt metrics
 		LatencyPeers: prometheus.NewGaugeVec(prometheus.GaugeOpts{
@@ -160,32 +210,68 @@ func newMetrics(registry prometheus.Registerer, namespace string) *metrics {
 		),
 	}
 
-	registry.MustRegister(
-		// system
-		m.ApprovedPeerCount,
-		// out
-		m.PublishedMsgCount,
-		m.StreamedMsgCount,
-		m.GossipedMsgCount,
-		// in
-		m.ApproveMsgCount,
-		m.PingMsgCount,
-		m.PongMsgCount,
-		m.GetVersionMsgCount,
-		m.VersionMsgCount,
-		m.GetPeerListMsgCount,
-		m.PeerListMsgCount,
-		m.SignatureMsgCount,
-		m.BlockKeyMsgCount,
-		m.BundleMsgCount,
-		m.PreconfBidMsgCount,
-		// rtt
-		m.LatencyPeers,
-		// score
-		m.ScorePeers,
-		// join date
-		m.JoinDatePeers,
-	)
+	switch peerType {
+	case commons.Builder:
+		registry.MustRegister(
+			// system
+			m.ApprovedPeerCount,
+			m.BuilderPeerCount,
+			m.SearcherPeerCount,
+			// out b2b
+			m.PublishedB2BMsgCount,
+			m.StreamedB2BMsgCount,
+			m.GossipedB2BMsgCount,
+			// out b2s
+			m.PublishedB2SMsgCount,
+			m.StreamedB2SMsgCount,
+			m.GossipedB2SMsgCount,
+			// in
+			m.ApproveMsgCount,
+			m.PingMsgCount,
+			m.PongMsgCount,
+			m.GetVersionMsgCount,
+			m.VersionMsgCount,
+			m.GetPeerListMsgCount,
+			m.PeerListMsgCount,
+			m.SignatureMsgCount,
+			m.BlockKeyMsgCount,
+			m.BundleMsgCount,
+			m.PreconfBidMsgCount,
+			m.BidMsgCount,
+			// rtt
+			m.LatencyPeers,
+			// score
+			m.ScorePeers,
+			// join date
+			m.JoinDatePeers,
+		)
+
+	case commons.Searcher:
+		registry.MustRegister(
+			// system
+			m.ApprovedPeerCount,
+			// out b2s
+			m.PublishedB2SMsgCount,
+			m.StreamedB2SMsgCount,
+			m.GossipedB2SMsgCount,
+			// in
+			m.ApproveMsgCount,
+			m.PingMsgCount,
+			m.PongMsgCount,
+			m.GetVersionMsgCount,
+			m.VersionMsgCount,
+			m.GetPeerListMsgCount,
+			m.PeerListMsgCount,
+			//TODO I'm not sure if Searchers will be take bid from the builders
+			m.BidMsgCount,
+			// rtt
+			m.LatencyPeers,
+			// score
+			m.ScorePeers,
+			// join date
+			m.JoinDatePeers,
+		)
+	}
 
 	return m
 }

@@ -14,6 +14,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/lthibault/log"
+	"github.com/multiformats/go-multiaddr"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
@@ -37,13 +38,21 @@ import (
 	"github.com/primev/builder-boost/pkg/rollup"
 )
 
-// BoostNode interface defines the functionality of a P2P node.
-type BoostNode interface {
+var _ IBuilderNode = (*BuilderNode)(nil)
+var _ ISearcherNode = (*SearcherNode)(nil)
+
+type INode interface {
+	// GetPeerID returns the peer id of the node.
+	GetPeerID() peer.ID
+
+	//GetAddrs() returns the peer addrs of the node.
+	GetAddrs() []multiaddr.Multiaddr
+
 	// GetToken returns the token of the node.
 	GetToken() []byte
 
-	// GetAddress returns the address of the node.
-	GetAddress() common.Address
+	// GetEthAddress returns the eth address of the node.
+	GetEthAddress() common.Address
 
 	// GetStake returns the stake amount of the node.
 	GetStake() *big.Int
@@ -51,35 +60,66 @@ type BoostNode interface {
 	// GetPeers returns the list of connected peers.
 	GetPeers() peer.IDSlice
 
-	// GetPeersOnTopic returns the list of connected peers on the topic.
-	GetPeersOnTopic() peer.IDSlice
-
-	// GetApprovedPeers returns the list of approved peers.
-	GetApprovedPeers() []peer.ID
-
-	// CreateStream creates a new stream with the given protocol and handler function.
-	CreateStream(string, func(stream network.Stream))
-
-	// SendMsg sends a message to a peer over the specified protocol.
-	SendMsg(protocol.ID, peer.ID, string) error
-
-	// Publish publishes a message over the topic.
-	Publish(message.OutboundMessage) error
-
-	// Stream stream a message over the proto to specific peer.
-	Stream(peer.ID, message.OutboundMessage) error
-
-	// Gossip gossip a message over the gossip proto to specific peers.
-	Gossip(message.OutboundMessage) error
-
-	// Approve approves the node and publishes the approval message.
-	Approve()
-
 	// Close closes the node with the given reason and code.
 	Close(string, int)
 
 	// Ready returns a channel that signals when the node is ready.
 	Ready() <-chan struct{}
+}
+
+type ISearcherNode interface {
+	// INode extends the ISearcherNode interface and adds methods specific to node functionality.
+	INode
+
+	// GetBuilderPeersOnTopic returns the list of connected builder peers on the topic.
+	GetBuilderPeersOnTopic() peer.IDSlice
+
+	// GetApprovedBuilderPeers returns the list of approved builder peers on the psio.
+	GetApprovedBuilderPeers() []peer.ID
+
+	// Publish publishes a message over the topic.
+	PublishS(message.OutboundMessage) error
+
+	// Stream stream a message over the proto to specific peer.
+	StreamS(peer.ID, message.OutboundMessage) error
+
+	// Gossip gossip a message over the gossip proto to specific peers.
+	GossipS(message.OutboundMessage) error
+
+	// BidReader returns a channel for reading bids from the node. NOTE: currently in the testing phase
+	BidReader() <-chan messages.PeerMsg
+
+	// BidSend sends bid over the node.	NOTE: currently in the testing phase
+	BidSend(commons.Broadcast, []byte) error
+}
+
+type IBuilderNode interface {
+	// INode extends the IBuilderNode interface and adds methods specific to node functionality.
+	INode
+
+	// ISearcherNode extends the IBuilderNode interface and adds methods specific to searchers functionality.
+	ISearcherNode
+
+	// GetBuilderPeersOnTopic returns the list of connected builder peers on the topic.
+	GetBuilderPeersOnTopic() peer.IDSlice
+
+	// GetSearcherPeersOnTopic returns the list of connected searcher peers on the topic.
+	GetSearcherPeersOnTopic() peer.IDSlice
+
+	// GetApprovedBuilderPeers returns the list of approved builder peers on the psio.
+	GetApprovedBuilderPeers() []peer.ID
+
+	// GetApprovedBuilderPeers returns the list of approved searcher peers on the psio.
+	GetApprovedSearcherPeers() []peer.ID
+
+	// Publish publishes a message over the topic.
+	PublishB(message.OutboundMessage) error
+
+	// Stream stream a message over the proto to specific peer.
+	StreamB(peer.ID, message.OutboundMessage) error
+
+	// Gossip gossip a message over the gossip proto to specific peers.
+	GossipB(message.OutboundMessage) error
 
 	// SignatureReader returns a channel for reading signatures from the node.
 	SignatureReader() <-chan messages.PeerMsg
@@ -112,14 +152,25 @@ type closeSignal struct {
 	Code   int
 }
 
+type SearcherNode struct {
+	Node
+	scomChannels map[commons.ComChannels]chan messages.PeerMsg
+}
+
+type BuilderNode struct {
+	Node
+	SearcherNode
+	bcomChannels map[commons.ComChannels]chan messages.PeerMsg
+}
+
 // specific node fields
 type Node struct {
-	log      log.Logger
-	host     host.Host
-	topic    *pubsub.Topic
-	msgBuild message.OutboundMsgBuilder
-	pubSub   *pubsubio.Server
-
+	peerType  commons.PeerType
+	log       log.Logger
+	host      host.Host
+	topics    map[commons.Topic]*pubsub.Topic
+	msgBuild  message.OutboundMsgBuilder
+	psio      *pubsubio.PubSubIO
 	ctx       context.Context
 	cfg       *config.Config
 	token     []byte
@@ -127,61 +178,83 @@ type Node struct {
 	address   common.Address
 	stake     *big.Int
 	closeChan chan closeSignal
-
-	signatureCh chan messages.PeerMsg
-	blockKeyCh  chan messages.PeerMsg
-	bundleCh    chan messages.PeerMsg
-	preconfCh   chan messages.PeerMsg
-
-	metrics *metrics
-
-	once  sync.Once
-	ready chan struct{}
+	metrics   *metrics
+	once      sync.Once
+	ready     chan struct{}
 }
 
 // create p2p node
-func CreateNode(logger log.Logger, peerKey *ecdsa.PrivateKey, rollup rollup.Rollup) BoostNode {
+func New(logger log.Logger, key *ecdsa.PrivateKey, rollup rollup.Rollup, registry *prometheus.Registry, peerType commons.PeerType) interface{} {
+
 	if logger == nil {
-		logger = log.New().WithField("service", "p2p")
+		switch peerType {
+		case commons.Builder:
+			logger = log.New().WithField("service", "p2p-builder")
+		case commons.Searcher:
+			logger = log.New().WithField("service", "p2p-searcher")
+		default:
+			return nil
+		}
+	}
+
+	switch peerType {
+	case commons.Builder:
+	case commons.Searcher:
+	default:
+		logger.With(log.F{
+			"caller": commons.GetCallerName(),
+			"date":   commons.GetNow(),
+			"mode":   peerType,
+		}).Fatal("unknown peer type!")
+
 	}
 
 	logger.With(log.F{
-		"service":    "p2p createnode",
-		"start time": commons.GetNow(),
-	}).Info("starting node...")
+		"caller": commons.GetCallerName(),
+		"date":   commons.GetNow(),
+		"mode":   peerType.String(),
+	}).Info("p2p node initialization...")
 
 	ctx, cancel := context.WithCancel(context.Background())
 
 	// load config
 	cfg := config.New(
-		config.WithVersion("0.0.2"),
+		config.WithVersion("0.0.1"),
 		config.WithDiscoveryInterval(30*time.Minute),
 		config.WithLatencyInterval(time.Hour*1),
-		config.WithScoreInterval(time.Minute*10),
+		config.WithScoreInterval(time.Minute*1),
 		config.WithMinimalStake(big.NewInt(1)),
 		config.WithMetricsNamespace("primev"),
 		config.WithMetricsPort(8081),
+		config.WithMetricsRoute("/metrics_p2p"),
 	)
 
 	// Set your own keypair
-	privKey, err := crypto.UnmarshalSecp256k1PrivateKey(peerKey.D.Bytes())
+	privKey, err := crypto.UnmarshalSecp256k1PrivateKey(key.D.Bytes())
 	if err != nil {
 		logger.With(log.F{
-			"service":  "p2p keypair",
-			"log time": commons.GetNow(),
+			"caller":  commons.GetCallerName(),
+			"date":    commons.GetNow(),
+			"service": "p2p keypair",
 		}).Fatal(err)
 	}
 
 	// create metrics
 	// @iowar: If system metrics need to be combined, use the main system's registry variable
-	registry := prometheus.NewRegistry()
+	var newRegistry bool
+	if registry == nil {
+		registry = prometheus.NewRegistry()
+		newRegistry = true
+	} else {
+		newRegistry = false
+	}
 	metrics := newMetrics(registry, cfg.MetricsNamespace())
 
 	// create blocker
 	blocker := newBlocker(metrics, logger)
 
 	// gater activated intercept secured
-	conngtr := newConnectionGater(metrics, rollup, blocker, logger, cfg.MinimalStake())
+	conngtr := newConnectionGater(metrics, rollup, blocker, logger, cfg.MinimalStake(), peerType)
 
 	connmgr, err := connmgr.NewConnManager(
 		100, // Lowwater
@@ -190,8 +263,9 @@ func CreateNode(logger log.Logger, peerKey *ecdsa.PrivateKey, rollup rollup.Roll
 	)
 	if err != nil {
 		logger.With(log.F{
-			"service":  "p2p connmngr",
-			"log time": commons.GetNow(),
+			"caller":  commons.GetCallerName(),
+			"date":    commons.GetNow(),
+			"service": "p2p connmngr",
 		}).Fatal(err)
 	}
 	host, err := libp2p.New(
@@ -231,22 +305,24 @@ func CreateNode(logger log.Logger, peerKey *ecdsa.PrivateKey, rollup rollup.Roll
 	)
 	if err != nil {
 		logger.With(log.F{
-			"service":  "p2p init",
-			"log time": commons.GetNow(),
+			"caller":  commons.GetCallerName(),
+			"date":    commons.GetNow(),
+			"service": "p2p init",
 		}).Fatal(err)
 	}
 
 	for _, addr := range host.Addrs() {
 		logger.With(log.F{
-			"service":  "p2p host",
-			"addr":     addr,
-			"host":     host.ID().Pretty(),
-			"log time": commons.GetNow(),
+			"caller":  commons.GetCallerName(),
+			"date":    commons.GetNow(),
+			"service": "p2p host",
+			"addr":    addr,
+			"host":    host.ID().Pretty(),
 		}).Info("host address")
 	}
 
 	// create a connectionTracker for connection tracking
-	connectionTracker := newConnectionTracker(metrics, logger)
+	connectionTracker := newConnectionTracker(conngtr, metrics, logger)
 
 	// listen to network events
 	host.Network().Notify(&network.NotifyBundle{
@@ -254,121 +330,186 @@ func CreateNode(logger log.Logger, peerKey *ecdsa.PrivateKey, rollup rollup.Roll
 		DisconnectedF: connectionTracker.handleDisconnected,
 	})
 
-	trackCh := connectionTracker.trackCh
+	connTrackCh := connectionTracker.trackCh
 
 	// create a new PubSub instance
 	ps, err := pubsub.NewGossipSub(ctx, host)
 	if err != nil {
 		logger.With(log.F{
-			"service":  "p2p create pubsub server",
-			"log time": commons.GetNow(),
+			"caller":  commons.GetCallerName(),
+			"date":    commons.GetNow(),
+			"service": "p2p create pubsub server",
 		}).Fatal(err)
 	}
 
-	// direct publish operations are deprecated
-	// join the topic as a publisher
-	topic, err := ps.Join(cfg.PubSubTopic())
-	if err != nil {
-		logger.With(log.F{
-			"service":  "p2p pubsub join",
-			"log time": commons.GetNow(),
-		}).Fatal(err)
+	// NOTE: direct publish operations are deprecated
+	createTopics := func() map[commons.Topic]*pubsub.Topic {
+		switch peerType {
+		case commons.Builder:
+			topic_b2b, err := ps.Join(cfg.PubSubTopicB2B())
+			if err != nil {
+				logger.With(log.F{
+					"caller":  commons.GetCallerName(),
+					"date":    commons.GetNow(),
+					"service": "p2p pubsub b2b topic join",
+				}).Fatal(err)
+			}
+
+			topic_b2s, err := ps.Join(cfg.PubSubTopicB2S())
+			if err != nil {
+				logger.With(log.F{
+					"caller":  commons.GetCallerName(),
+					"date":    commons.GetNow(),
+					"service": "p2p pubsub b2s topic join",
+				}).Fatal(err)
+			}
+
+			return map[commons.Topic]*pubsub.Topic{
+				commons.TopicB2B: topic_b2b,
+				commons.TopicB2S: topic_b2s,
+			}
+
+		case commons.Searcher:
+			topic_b2s, err := ps.Join(cfg.PubSubTopicB2S())
+			if err != nil {
+				logger.With(log.F{
+					"caller":  commons.GetCallerName(),
+					"date":    commons.GetNow(),
+					"service": "p2p pubsub b2s topic join",
+				}).Fatal(err)
+			}
+
+			return map[commons.Topic]*pubsub.Topic{
+				commons.TopicB2S: topic_b2s,
+			}
+		default:
+		}
+
+		return nil
 	}
 
 	// create inbound and outbound message builders
 	imb, omb := message.NewInboundBuilder(), message.NewOutboundBuilder()
 
-	// generate token
-	newSigner := signer.New()
-
-	am := messages.ApproveMsg{
-		Peer:    host.ID(),
-		Address: commons.GetAddressFromPrivateKey(peerKey),
-	}
-
-	msgBytes := am.GetUnsignedMessage()
-	sig, err := newSigner.Sign(peerKey, msgBytes)
+	token, err := generateToken(peerType, host.ID(), key)
 	if err != nil {
 		logger.With(log.F{
-			"service":  "p2p create signed msg",
-			"log time": commons.GetNow(),
+			"caller":  commons.GetCallerName(),
+			"date":    commons.GetNow(),
+			"service": "p2p generate builder token",
 		}).Fatal(err)
 	}
 
-	am.Sig = sig
-	token, err := json.Marshal(am)
-	if err != nil {
-		logger.With(log.F{
-			"service":  "p2p token",
-			"log time": commons.GetNow(),
-		}).Fatal(err)
-	}
+	// eth address
+	address := commons.GetAddressFromPrivateKey(key)
 
-	// get stake amount
-	stake, err := rollup.GetMinimalStake(am.Address)
-	if err != nil {
-		logger.With(log.F{
-			"service":  "p2p minimal stake",
-			"log time": commons.GetNow(),
-		}).Fatal(err)
-	}
-
-	// if there is not enough stake, close node
-	if stake.Cmp(cfg.MinimalStake()) < 0 {
-		err = errors.New("not enough stake")
-		logger.With(log.F{
-			"service":  "p2p minimal stake",
-			"log time": commons.GetNow(),
-		}).Fatal(err)
-	}
-
-	// create ofx channels
+	// get stake amount of builder
 	var (
-		signatureCh = make(chan messages.PeerMsg)
-		blockKeyCh  = make(chan messages.PeerMsg)
-		bundleCh    = make(chan messages.PeerMsg)
-		preconfCh   = make(chan messages.PeerMsg)
+		stake = big.NewInt(0)
+	)
+	switch peerType {
+	case commons.Builder:
+		stake, err := rollup.GetMinimalStake(address)
+		if err != nil {
+			logger.With(log.F{
+				"caller":  commons.GetCallerName(),
+				"date":    commons.GetNow(),
+				"service": "p2p rollup",
+			}).Fatal(err)
+		}
+
+		// if there is not enough stake, close node
+		if stake.Cmp(cfg.MinimalStake()) < 0 {
+			err = errors.New("not enough stake")
+			logger.With(log.F{
+				"service":  "p2p minimal stake",
+				"log time": commons.GetNow(),
+			}).Fatal(err)
+		}
+	case commons.Searcher:
+		//TODO no scenario has been designed for Searchers yet, follow the team opinions
+	}
+
+	var topics = createTopics()
+
+	var (
+		scomChannels map[commons.ComChannels]chan messages.PeerMsg
+		bcomChannels map[commons.ComChannels]chan messages.PeerMsg
 	)
 
+	switch peerType {
+	case commons.Builder:
+		scomChannels = map[commons.ComChannels]chan messages.PeerMsg{
+			commons.BidCh: make(chan messages.PeerMsg),
+		}
+
+		bcomChannels = map[commons.ComChannels]chan messages.PeerMsg{
+			commons.SignatureCh: make(chan messages.PeerMsg),
+			commons.BlockKeyCh:  make(chan messages.PeerMsg),
+			commons.BundleCh:    make(chan messages.PeerMsg),
+			commons.PreconfCh:   make(chan messages.PeerMsg),
+		}
+
+	case commons.Searcher:
+		scomChannels = map[commons.ComChannels]chan messages.PeerMsg{
+			commons.BidCh: make(chan messages.PeerMsg),
+		}
+	}
+
+	comChannels := mergeChannelMaps(scomChannels, bcomChannels)
+
 	// create pubsub server
-	psio := pubsubio.New(
+	psio, err := pubsubio.New(
 		ctx,
 		cfg,
 		logger,
+		peerType,
 		host,
 		registry,
-		trackCh,
+		connTrackCh,
 		token,
-		am.Address,
+		address,
 		rollup,
-		topic,
+		topics,
 		imb,
 		omb,
-		signatureCh,
-		blockKeyCh,
-		bundleCh,
-		preconfCh,
+		comChannels,
 	)
+	if err != nil {
+		logger.With(log.F{
+			"caller":  commons.GetCallerName(),
+			"date":    commons.GetNow(),
+			"service": "pubsubio server initialization",
+		}).Fatal(err)
+	}
 
 	// fill node fields
 	node := &Node{
-		log:         logger,
-		host:        host,
-		topic:       topic,
-		msgBuild:    omb,
-		pubSub:      psio,
-		ctx:         ctx,
-		cfg:         cfg,
-		token:       token,
-		rollup:      rollup,
-		address:     am.Address,
-		stake:       stake,
-		closeChan:   make(chan closeSignal),
-		signatureCh: signatureCh,
-		blockKeyCh:  blockKeyCh,
-		bundleCh:    bundleCh,
-		preconfCh:   preconfCh,
-		metrics:     metrics,
+		peerType:  peerType,
+		log:       logger,
+		host:      host,
+		topics:    topics,
+		msgBuild:  omb,
+		psio:      psio,
+		ctx:       ctx,
+		cfg:       cfg,
+		token:     token,
+		rollup:    rollup,
+		address:   address,
+		stake:     stake,
+		closeChan: make(chan closeSignal),
+		metrics:   metrics,
+	}
+
+	searcherNode := &SearcherNode{
+		Node:         *node,
+		scomChannels: scomChannels,
+	}
+
+	builderNode := &BuilderNode{
+		Node:         *node,
+		SearcherNode: *searcherNode,
+		bcomChannels: bcomChannels,
 	}
 
 	// start default streams
@@ -381,27 +522,46 @@ func CreateNode(logger log.Logger, peerKey *ecdsa.PrivateKey, rollup rollup.Roll
 	go node.waitSignal(cancel)
 
 	// start p2p metrics handler
-	go func() {
-		promHandler := promhttp.HandlerFor(registry, promhttp.HandlerOpts{})
-		http.Handle("/metrics_p2p", promHandler)
-		http.ListenAndServe(fmt.Sprintf(":%d", cfg.MetricsPort()), nil)
-	}()
+	if newRegistry {
+		go node.initMetrics(registry)
+	}
 
 	// TODO the temporary hold will be lifted once the discovery options are provided
-	time.Sleep(time.Second * 3)
-	node.setReady()
+	//time.Sleep(time.Second * 3)
 
-	return node
+	switch peerType {
+	case commons.Builder:
+		builderNode.setReady()
+		return builderNode
+	case commons.Searcher:
+		searcherNode.setReady()
+		return searcherNode
+	}
+	return nil
 }
 
+// get peer id
+func (n *Node) GetPeerID() peer.ID {
+	return n.host.ID()
+}
+
+// get peer addrs
+func (n *Node) GetAddrs() []multiaddr.Multiaddr {
+	return n.host.Addrs()
+}
+
+// get node signed auth token
 func (n *Node) GetToken() []byte {
 	return n.token
 }
 
-func (n *Node) GetAddress() common.Address {
+// get node eth address
+func (n *Node) GetEthAddress() common.Address {
 	return n.address
 }
 
+// get stake amount (rollup builder: on|rollup searcher=(off))
+// TODO: rollup improvement
 func (n *Node) GetStake() *big.Int {
 	return n.stake
 }
@@ -411,14 +571,34 @@ func (n *Node) GetPeers() peer.IDSlice {
 	return n.host.Peerstore().Peers()
 }
 
-// get connected peer list on topic
-func (n *Node) GetPeersOnTopic() peer.IDSlice {
-	return n.topic.ListPeers()
+// get connected builder peer list on topic
+func (bn *BuilderNode) GetBuilderPeersOnTopic() peer.IDSlice {
+	return bn.topics[commons.TopicB2B].ListPeers()
 }
 
-// get approved peers
-func (n *Node) GetApprovedPeers() []peer.ID {
-	return n.pubSub.GetApprovedPeers()
+// get connected searcher peer list on topic
+func (bn *BuilderNode) GetSearcherPeersOnTopic() peer.IDSlice {
+	return bn.topics[commons.TopicB2S].ListPeers()
+}
+
+// get connected builder peer list on topic
+func (sn *SearcherNode) GetBuilderPeersOnTopic() peer.IDSlice {
+	return sn.topics[commons.TopicB2S].ListPeers()
+}
+
+// get approved builder peers
+func (bn *BuilderNode) GetApprovedBuilderPeers() []peer.ID {
+	return bn.psio.BuilderServer.GetApprovedBuilderPeers()
+}
+
+// get approved searcher peers
+func (bn *BuilderNode) GetApprovedSearcherPeers() []peer.ID {
+	return bn.psio.BuilderServer.GetApprovedBuilderPeers()
+}
+
+// get approved builder peers
+func (sn *SearcherNode) GetApprovedBuilderPeers() []peer.ID {
+	return sn.psio.SearcherServer.GetApprovedBuilderPeers()
 }
 
 // create new stream proto
@@ -427,6 +607,7 @@ func (n *Node) CreateStream(proto string, handler func(stream network.Stream)) {
 }
 
 // send message to peer over given protocol
+// TODO this method is used for testing purposes and will be removed in the future
 func (n *Node) SendMsg(proto protocol.ID, p peer.ID, msg string) error {
 	s, err := n.host.NewStream(n.ctx, p, proto)
 	if err != nil {
@@ -451,35 +632,39 @@ func (n *Node) SendMsg(proto protocol.ID, p peer.ID, msg string) error {
 }
 
 // publish message over pubsub topic
-func (n *Node) Publish(msg message.OutboundMessage) error {
+func (bn *BuilderNode) PublishB(msg message.OutboundMessage) error {
 	// send message to all approved peers
-	return n.pubSub.Publish(msg)
+	return bn.psio.BuilderServer.Publish(msg)
 }
 
 // stream message over pubsub stream proto
-func (n *Node) Stream(peerID peer.ID, msg message.OutboundMessage) error {
+func (bn *BuilderNode) StreamB(peerID peer.ID, msg message.OutboundMessage) error {
 	// stream message to specific peer
-	return n.pubSub.Stream(peerID, msg)
+	return bn.psio.BuilderServer.Stream(peerID, msg)
 }
 
 // gossip message over pubsub gossip proto
-func (n *Node) Gossip(msg message.OutboundMessage) error {
+func (bn *BuilderNode) GossipB(msg message.OutboundMessage) error {
 	// gossip message to specific peers
-	return n.pubSub.Gossip(msg)
+	return bn.psio.BuilderServer.Gossip(msg)
 }
 
-// approve over node
-func (n *Node) Approve() {
-	msg, err := n.msgBuild.Approve(n.GetToken())
-	if err != nil {
-		panic(err)
-	}
+// publish message over pubsub topic
+func (sn *SearcherNode) PublishS(msg message.OutboundMessage) error {
+	// send message to all approved peers
+	return sn.psio.SearcherServer.Publish(msg)
+}
 
-	//err = n.Publish(msg.MarshalJSON())
-	err = n.Publish(msg)
-	if err != nil {
-		panic(err)
-	}
+// stream message over pubsub stream proto
+func (sn *SearcherNode) StreamS(peerID peer.ID, msg message.OutboundMessage) error {
+	// stream message to specific peer
+	return sn.psio.SearcherServer.Stream(peerID, msg)
+}
+
+// gossip message over pubsub gossip proto
+func (sn *SearcherNode) GossipS(msg message.OutboundMessage) error {
+	// gossip message to specific peers
+	return sn.psio.SearcherServer.Gossip(msg)
 }
 
 // send close signal to node
@@ -501,8 +686,9 @@ func (n *Node) initDiscovery() {
 	// setup local mDNS discovery
 	if err := discovery.StartMdnsDiscovery(); err != nil {
 		n.log.With(log.F{
-			"service":  "p2p mdns discovery",
-			"log time": commons.GetNow(),
+			"caller":  commons.GetCallerName(),
+			"date":    commons.GetNow(),
+			"service": "p2p mdns discovery",
 		}).Warn(err)
 	}
 
@@ -519,18 +705,22 @@ func (n *Node) waitSignal(cancel context.CancelFunc) {
 
 	// ps.Leave(config.Topic)
 
-	// close topic
-	n.topic.Close()
+	// close topics
+	for _, topic := range n.topics {
+		topic.Close()
+	}
+
 	// close host
 	n.host.Close()
 	// context cancel
 	cancel()
 
 	n.log.With(log.F{
-		"service":    "p2p node",
-		"reason":     signal.Reason,
-		"code":       signal.Code,
-		"start time": commons.GetNow(),
+		"caller":  commons.GetCallerName(),
+		"date":    commons.GetNow(),
+		"service": "p2p node",
+		"reason":  signal.Reason,
+		"code":    signal.Code,
 	}).Warn("node is being turned off...")
 }
 
@@ -539,6 +729,24 @@ func (n *Node) Ready() <-chan struct{} {
 		n.ready = make(chan struct{})
 	})
 	return n.ready
+}
+
+func (n *Node) initMetrics(registry *prometheus.Registry) {
+	var (
+		port  = n.cfg.MetricsPort()
+		route = n.cfg.MetricsRoute()
+	)
+	n.log.With(log.F{
+		"caller":  commons.GetCallerName(),
+		"date":    commons.GetNow(),
+		"service": "p2p metrics",
+		"port":    port,
+		"route":   route,
+	}).Info("p2p metrics started...")
+
+	promHandler := promhttp.HandlerFor(registry, promhttp.HandlerOpts{})
+	http.Handle(route, promHandler)
+	http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
 }
 
 func (n *Node) setReady() {
@@ -550,33 +758,38 @@ func (n *Node) setReady() {
 }
 
 // read signatures from the node
-func (n *Node) SignatureReader() <-chan messages.PeerMsg {
-	return n.signatureCh
+func (bn *BuilderNode) SignatureReader() <-chan messages.PeerMsg {
+	return bn.bcomChannels[commons.SignatureCh]
 }
 
 // read block keys from the node
-func (n *Node) BlockKeyReader() <-chan messages.PeerMsg {
-	return n.blockKeyCh
+func (bn *BuilderNode) BlockKeyReader() <-chan messages.PeerMsg {
+	return bn.bcomChannels[commons.BlockKeyCh]
 }
 
 // read bundles from the node
-func (n *Node) BundleReader() <-chan messages.PeerMsg {
-	return n.bundleCh
+func (bn *BuilderNode) BundleReader() <-chan messages.PeerMsg {
+	return bn.bcomChannels[commons.BundleCh]
 }
 
 // read preconfirmation bids from the node
-func (n *Node) PreconfReader() <-chan messages.PeerMsg {
-	return n.preconfCh
+func (bn *BuilderNode) PreconfReader() <-chan messages.PeerMsg {
+	return bn.bcomChannels[commons.PreconfCh]
+}
+
+// read bids from the node
+func (sn *SearcherNode) BidReader() <-chan messages.PeerMsg {
+	return sn.scomChannels[commons.BidCh]
 }
 
 // stream signature over the node for specific peer
-func (n *Node) SignatureSend(peer peer.ID, sig []byte) error {
-	msg, err := n.msgBuild.Signature(sig)
+func (bn *BuilderNode) SignatureSend(peer peer.ID, sig []byte) error {
+	msg, err := bn.msgBuild.Signature(sig)
 	if err != nil {
 		return err
 	}
 
-	err = n.Stream(peer, msg)
+	err = bn.StreamB(peer, msg)
 	if err != nil {
 		return err
 	}
@@ -585,13 +798,13 @@ func (n *Node) SignatureSend(peer peer.ID, sig []byte) error {
 }
 
 // stream block key over the node for specific peer
-func (n *Node) BlockKeySend(peer peer.ID, sig []byte) error {
-	msg, err := n.msgBuild.BlockKey(sig)
+func (bn *BuilderNode) BlockKeySend(peer peer.ID, sig []byte) error {
+	msg, err := bn.msgBuild.BlockKey(sig)
 	if err != nil {
 		return err
 	}
 
-	err = n.Stream(peer, msg)
+	err = bn.StreamB(peer, msg)
 	if err != nil {
 		return err
 	}
@@ -600,19 +813,19 @@ func (n *Node) BlockKeySend(peer peer.ID, sig []byte) error {
 }
 
 // gossip or publish bundles over the node
-func (n *Node) BundleSend(broadcastType commons.Broadcast, bundle []byte) error {
-	msg, err := n.msgBuild.Bundle(bundle)
+func (bn *BuilderNode) BundleSend(broadcastType commons.Broadcast, bundle []byte) error {
+	msg, err := bn.msgBuild.Bundle(bundle)
 	if err != nil {
 		return err
 	}
 
 	if broadcastType == commons.Publish {
-		err = n.Publish(msg)
+		err = bn.PublishB(msg)
 		if err != nil {
 			return err
 		}
 	} else if broadcastType == commons.Gossip {
-		err = n.Gossip(msg)
+		err = bn.GossipB(msg)
 		if err != nil {
 			return err
 		}
@@ -621,22 +834,84 @@ func (n *Node) BundleSend(broadcastType commons.Broadcast, bundle []byte) error 
 }
 
 // gossip or publish preconfirmation bids over the node
-func (n *Node) PreconfSend(broadcastType commons.Broadcast, preconf []byte) error {
-	msg, err := n.msgBuild.PreconfBid(preconf)
+func (bn *BuilderNode) PreconfSend(broadcastType commons.Broadcast, preconf []byte) error {
+	msg, err := bn.msgBuild.PreconfBid(preconf)
 	if err != nil {
 		return err
 	}
 
 	if broadcastType == commons.Publish {
-		err = n.Publish(msg)
+		err = bn.PublishB(msg)
 		if err != nil {
 			return err
 		}
 	} else if broadcastType == commons.Gossip {
-		err = n.Gossip(msg)
+		err = bn.GossipB(msg)
 		if err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+// gossip or publish bids over the node
+func (sn *SearcherNode) BidSend(broadcastType commons.Broadcast, bid []byte) error {
+	msg, err := sn.msgBuild.Bid(bid)
+	if err != nil {
+		return err
+	}
+
+	if broadcastType == commons.Publish {
+		err = sn.PublishS(msg)
+		if err != nil {
+			return err
+		}
+	} else if broadcastType == commons.Gossip {
+		err = sn.GossipS(msg)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// generate token for peer
+func generateToken(peerType commons.PeerType, peerID peer.ID, key *ecdsa.PrivateKey) ([]byte, error) {
+	newSigner := signer.New()
+
+	// eth address
+	address := commons.GetAddressFromPrivateKey(key)
+
+	am := messages.ApproveMsg{
+		PeerType: peerType,
+		Peer:     peerID,
+		Address:  address,
+	}
+
+	msgBytes := am.GetUnsignedMessage()
+	sig, err := newSigner.Sign(key, msgBytes)
+	if err != nil {
+		return nil, err
+	}
+
+	am.Sig = sig
+	token, err := json.Marshal(am)
+	if err != nil {
+		return nil, err
+	}
+
+	return token, nil
+}
+
+// bringing together communication channels through merging
+func mergeChannelMaps(maps ...map[commons.ComChannels]chan messages.PeerMsg) map[commons.ComChannels]chan messages.PeerMsg {
+	combinedMap := make(map[commons.ComChannels]chan messages.PeerMsg)
+
+	for _, m := range maps {
+		for k, v := range m {
+			combinedMap[k] = v
+		}
+	}
+
+	return combinedMap
 }

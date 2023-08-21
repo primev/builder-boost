@@ -43,14 +43,16 @@ func NewDiscovery(cfg *config.Config, h host.Host, ctx context.Context, logger l
 	idht, err := dht.New(ctx, h)
 	if err != nil {
 		logger.With(log.F{
-			"service":  "p2p dht discover",
-			"log time": commons.GetNow(),
+			"caller":  commons.GetCallerName(),
+			"date":    commons.GetNow(),
+			"service": "p2p dht discover",
 		}).Fatal(err)
 	}
 	if err = idht.Bootstrap(ctx); err != nil {
 		logger.With(log.F{
-			"service":  "p2p bootstrap discover",
-			"log time": commons.GetNow(),
+			"caller":  commons.GetCallerName(),
+			"date":    commons.GetNow(),
+			"service": "p2p bootstrap discover",
 		}).Fatal(err)
 	}
 
@@ -86,17 +88,18 @@ func (d *Discovery) ConnectBootstrap() {
 			defer wg.Done()
 			if err := d.h.Connect(d.ctx, *peerinfo); err != nil {
 				d.log.With(log.F{
-					"service":  "p2p bootstrap",
-					"err time": commons.GetNow(),
+					"caller":  commons.GetCallerName(),
+					"date":    commons.GetNow(),
+					"service": "p2p bootstrap",
 				}).Error(err)
 
 			} else {
 				d.log.With(log.F{
-					"service":  "p2p bootstrap",
-					"peer":     *peerinfo,
-					"log time": commons.GetNow(),
+					"caller":  commons.GetCallerName(),
+					"date":    commons.GetNow(),
+					"service": "p2p bootstrap",
+					"peer":    *peerinfo,
 				}).Info("connection established")
-
 			}
 		}()
 	}
@@ -114,8 +117,9 @@ func (d *Discovery) discoverPeersWithRendezvous() {
 
 	// Look for others who have announced and attempt to connect to them
 	d.log.With(log.F{
-		"service":  "p2p rendezvous",
-		"log time": commons.GetNow(),
+		"caller":  commons.GetCallerName(),
+		"date":    commons.GetNow(),
+		"service": "p2p rendezvous",
 	}).Info("searching for peers...")
 
 	for i := 0; i < 60; i++ {
@@ -123,8 +127,9 @@ func (d *Discovery) discoverPeersWithRendezvous() {
 		peerChan, err := routingDiscovery.FindPeers(d.ctx, d.cfg.Topic())
 		if err != nil {
 			d.log.With(log.F{
-				"service":  "p2p rendezvous",
-				"log time": commons.GetNow(),
+				"caller":  commons.GetCallerName(),
+				"date":    commons.GetNow(),
+				"service": "p2p rendezvous",
 			}).Warn(err)
 		}
 
@@ -135,9 +140,10 @@ func (d *Discovery) discoverPeersWithRendezvous() {
 			err := d.h.Connect(d.ctx, peer)
 			if err != nil {
 				d.log.With(log.F{
-					"service":  "p2p rendezvous",
-					"peer":     peer.ID.Pretty(),
-					"err time": commons.GetNow(),
+					"caller":  commons.GetCallerName(),
+					"date":    commons.GetNow(),
+					"service": "p2p rendezvous",
+					"peer":    peer.ID.Pretty(),
 				}).Error(err)
 			} else {
 				d.notify.HandlePeerFound(peer)
@@ -147,6 +153,8 @@ func (d *Discovery) discoverPeersWithRendezvous() {
 	}
 
 	d.log.With(log.F{
+		"caller":   commons.GetCallerName(),
+		"date":     commons.GetNow(),
 		"service":  "p2p rendezvous",
 		"log time": commons.GetNow(),
 	}).Info("peer discovery completed")

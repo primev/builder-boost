@@ -11,6 +11,7 @@ const (
 )
 
 type ConnectionEvent struct {
-	PeerID peer.ID
-	Event  Event
+	PeerID   peer.ID
+	PeerType PeerType
+	Event    Event
 }

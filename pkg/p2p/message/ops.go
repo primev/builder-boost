@@ -15,6 +15,7 @@ const (
 	BlockKey
 	Bundle
 	PreconfBid
+	Bid
 )
 
 func (op Op) String() string {
@@ -41,6 +42,8 @@ func (op Op) String() string {
 		return "bundle"
 	case PreconfBid:
 		return "preconfbid"
+	case Bid:
+		return "bid"
 	default:
 		return "Unknown Op"
 	}

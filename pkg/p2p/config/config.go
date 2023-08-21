@@ -18,9 +18,14 @@ type Config struct {
 	topic string
 	// General peer communication topic
 	// @iowar: If there arises a need for a new topic, a name change should be made
-	pubSubTopic string
-	// default stream protocol
-	peerStreamProto string
+	// builder<>builder
+	pubSubTopicB2B string
+	// builder<>searcher
+	pubSubTopicB2S string
+	// default stream protocol b<>b
+	peerStreamB2B string
+	// default stream protocol b<>s
+	peerStreamB2S string
 	// bootstrap peers
 	bootstrapPeers []multiaddr.Multiaddr
 	// latency update interval
@@ -33,6 +38,8 @@ type Config struct {
 	metricsNamespace string
 	// prometheus p2p metrics port
 	metricsPort int
+	// prometheus p2p metrics route
+	metricsRoute string
 }
 
 type ConfigOption func(*Config)
@@ -44,13 +51,16 @@ func New(options ...ConfigOption) *Config {
 		discoveryInterval:   time.Hour,
 		discoveryServiceTag: "PRIMEV-0.0.1",
 		topic:               "PRIMEV-TEST-45",
-		pubSubTopic:         "PRIMEVTOPIC",
-		peerStreamProto:     "/primev/stream-0.1",
+		pubSubTopicB2B:      "PRIMEVTOPICB2B",
+		pubSubTopicB2S:      "PRIMEVTOPICB2S",
+		peerStreamB2B:       "/primev/stream_b2b-0.1",
+		peerStreamB2S:       "/primev/stream_b2s-0.1",
 		latencyInterval:     time.Hour * 2,
 		scoreInterval:       time.Hour * 3,
 		minimalStake:        big.NewInt(0),
 		metricsNamespace:    "builder_boost",
 		metricsPort:         8081,
+		metricsRoute:        "/metrics_p2p",
 	}
 
 	for _, option := range options {
@@ -88,17 +98,31 @@ func WithTopic(topic string) ConfigOption {
 	}
 }
 
-// WithPubSubTopic sets the PubSub topic option for Config
-func WithPubSubTopic(pubSubTopic string) ConfigOption {
+// WithPubSubTopicB2B sets the PubSub topic option for Config
+func WithPubSubTopicB2B(pubSubTopicB2B string) ConfigOption {
 	return func(cfg *Config) {
-		cfg.pubSubTopic = pubSubTopic
+		cfg.pubSubTopicB2B = pubSubTopicB2B
 	}
 }
 
-// WithPeerStreamProto sets the peer stream protocol option for Config
-func WithPeerStreamProto(proto string) ConfigOption {
+// WithPubSubTopicB2S sets the PubSub topic option for Config
+func WithPubSubTopicB2S(pubSubTopicB2S string) ConfigOption {
 	return func(cfg *Config) {
-		cfg.peerStreamProto = proto
+		cfg.pubSubTopicB2S = pubSubTopicB2S
+	}
+}
+
+// WithPeerStreamB2B sets the peer stream protocol option for Config
+func WithPeerStreamB2B(proto string) ConfigOption {
+	return func(cfg *Config) {
+		cfg.peerStreamB2B = proto
+	}
+}
+
+// WithPeerStreamB2S sets the peer stream protocol option for Config
+func WithPeerStreamB2S(proto string) ConfigOption {
+	return func(cfg *Config) {
+		cfg.peerStreamB2S = proto
 	}
 }
 
@@ -144,6 +168,13 @@ func WithMetricsPort(metricsPort int) ConfigOption {
 	}
 }
 
+// WithMetricsRoute sets the metrics route option for Config
+func WithMetricsRoute(metricsRoute string) ConfigOption {
+	return func(cfg *Config) {
+		cfg.metricsRoute = metricsRoute
+	}
+}
+
 // Version returns the version from Config
 func (cfg *Config) Version() string {
 	return cfg.version
@@ -164,14 +195,24 @@ func (cfg *Config) Topic() string {
 	return cfg.topic
 }
 
-// PubSubTopic returns the PubSub topic from Config
-func (cfg *Config) PubSubTopic() string {
-	return cfg.pubSubTopic
+// PubSubTopicB2B returns the PubSub topic for b<>b from Config
+func (cfg *Config) PubSubTopicB2B() string {
+	return cfg.pubSubTopicB2B
 }
 
-// PeerStreamProto returns the peer stream protocol from Config
-func (cfg *Config) PeerStreamProto() string {
-	return cfg.peerStreamProto
+// PubSubTopicB2S returns the PubSub topic for b<>s from Config
+func (cfg *Config) PubSubTopicB2S() string {
+	return cfg.pubSubTopicB2S
+}
+
+// PeerStreamB2B returns the peer stream protocol from Config
+func (cfg *Config) PeerStreamB2B() string {
+	return cfg.peerStreamB2B
+}
+
+// PeerStreamB2S returns the peer stream protocol from Config
+func (cfg *Config) PeerStreamB2S() string {
+	return cfg.peerStreamB2S
 }
 
 // BootstrapPeers returns the bootstrap peers from Config
@@ -202,4 +243,9 @@ func (cfg *Config) MetricsNamespace() string {
 // MetricsPort returns the metrics port from Config
 func (cfg *Config) MetricsPort() int {
 	return cfg.metricsPort
+}
+
+// MetricsRoute returns the metrics route from Config
+func (cfg *Config) MetricsRoute() string {
+	return cfg.metricsRoute
 }

@@ -22,19 +22,21 @@ type discoveryNotifee struct {
 // HandlePeerFound connects to peers discovered via mDNS. Once they're connected,
 // the PubSub system will automatically start interacting with them if they also
 // support PubSub.
-func (n *discoveryNotifee) HandlePeerFound(pi peer.AddrInfo) {
+func (n *discoveryNotifee) HandlePeerFound(p peer.AddrInfo) {
 	n.log.With(log.F{
-		"service":  "p2p notify",
-		"peer":     pi.ID.Pretty(),
-		"log time": commons.GetNow(),
+		"caller":  commons.GetCallerName(),
+		"date":    commons.GetNow(),
+		"service": "p2p notify",
+		"peer":    p.ID.Pretty(),
 	}).Info("discovered new peer")
 
-	err := n.h.Connect(context.Background(), pi)
+	err := n.h.Connect(context.Background(), p)
 	if err != nil {
 		n.log.With(log.F{
-			"service":  "p2p notify",
-			"peer":     pi.ID.Pretty(),
-			"err time": commons.GetNow(),
+			"caller":  commons.GetCallerName(),
+			"date":    commons.GetNow(),
+			"service": "p2p notify",
+			"peer":    p.ID.Pretty(),
 		}).Error(err)
 	}
 }

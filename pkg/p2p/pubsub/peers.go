@@ -9,9 +9,12 @@ import (
 	"github.com/google/uuid"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/multiformats/go-multiaddr"
+	"github.com/primev/builder-boost/pkg/p2p/commons"
 )
 
 type info struct {
+	// peer type (builder or searcher)
+	peerType commons.PeerType
 	// join date of the peer
 	joinDate time.Time
 	// version information of the peer
@@ -36,6 +39,14 @@ type info struct {
 	gossip bool
 	// protect info
 	sync.RWMutex
+}
+
+// getMode returns the type of the peer.
+func (i *info) getPeerType() commons.PeerType {
+	i.RLock()
+	defer i.RUnlock()
+
+	return i.peerType
 }
 
 // getJoinDate returns the join date of the peer.
@@ -124,6 +135,14 @@ func (i *info) getGossip() bool {
 	defer i.RUnlock()
 
 	return i.gossip
+}
+
+// setMode sets the mode of the peer.
+func (i *info) setPeerType(peerType commons.PeerType) {
+	i.Lock()
+	defer i.Unlock()
+
+	i.peerType = peerType
 }
 
 // setJoinDate sets the joinDate of the peer.
@@ -249,6 +268,32 @@ func (a *approvedPeersMap) InPeers(peer peer.ID) bool {
 	return ok
 }
 
+// InBuilderPeers checks if a peer is in the approved builder peer.
+func (a *approvedPeersMap) InBuilderPeers(peer peer.ID) bool {
+	a.RLock()
+	defer a.RUnlock()
+
+	val, ok := a.peers[peer]
+	if ok {
+		return val.getPeerType() == commons.Builder
+	}
+
+	return false
+}
+
+// InSearcherPeers checks if a peer is in the approved searcher peer.
+func (a *approvedPeersMap) InSearcherPeers(peer peer.ID) bool {
+	a.RLock()
+	defer a.RUnlock()
+
+	val, ok := a.peers[peer]
+	if ok {
+		return val.getPeerType() == commons.Searcher
+	}
+
+	return false
+}
+
 // GetPeerInfo returns the information of a specific peer.
 func (a *approvedPeersMap) GetPeerInfo(peer peer.ID) *info {
 	a.RLock()
@@ -256,6 +301,7 @@ func (a *approvedPeersMap) GetPeerInfo(peer peer.ID) *info {
 
 	if val, ok := a.peers[peer]; ok {
 		infoCopy := &info{
+			peerType:  val.getPeerType(),
 			joinDate:  val.getJoinDate(),
 			version:   val.getVersion(),
 			address:   val.getAddress(),
@@ -283,6 +329,7 @@ func (a *approvedPeersMap) GetPeers() map[peer.ID]*info {
 	var peers = make(map[peer.ID]*info)
 	for k, v := range a.peers {
 		infoCopy := &info{
+			peerType:  v.getPeerType(),
 			joinDate:  v.getJoinDate(),
 			version:   v.getVersion(),
 			address:   v.getAddress(),
@@ -302,36 +349,113 @@ func (a *approvedPeersMap) GetPeers() map[peer.ID]*info {
 	return peers
 }
 
-// ListApprovedPeers returns a list of all the approved peer IDs.
-func (a *approvedPeersMap) ListApprovedPeers() []peer.ID {
+// GetPeerIDs returns a list of all the approved peer IDs.
+func (a *approvedPeersMap) GetPeerIDs() []peer.ID {
 	a.RLock()
 	defer a.RUnlock()
 
-	approvedPeers := []peer.ID{}
+	peerIDs := []peer.ID{}
 	for k := range a.peers {
-		approvedPeers = append(approvedPeers, k)
+		peerIDs = append(peerIDs, k)
 	}
 
-	return approvedPeers
+	return peerIDs
 }
 
-// ListApprovedPeerAddrs returns a list of all the approved peer addrs.
-func (a *approvedPeersMap) ListApprovedPeerAddrs() []peer.AddrInfo {
+// GetBuilderPeerIDs returns a list of all the approved builder peer IDs.
+func (a *approvedPeersMap) GetBuilderPeerIDs() []peer.ID {
 	a.RLock()
 	defer a.RUnlock()
 
-	approvedPeerAddrs := []peer.AddrInfo{}
-
-	for k, v := range a.peers {
-		addr := peer.AddrInfo{
-			ID:    k,
-			Addrs: v.getAddrs(),
+	peerIDs := []peer.ID{}
+	for k, val := range a.peers {
+		if val.getPeerType() == commons.Builder {
+			peerIDs = append(peerIDs, k)
 		}
-
-		approvedPeerAddrs = append(approvedPeerAddrs, addr)
 	}
 
-	return approvedPeerAddrs
+	return peerIDs
+}
+
+// GetSearcherPeerIDs returns a list of all the approved searcher peer IDs.
+func (a *approvedPeersMap) GetSearcherPeerIDs() []peer.ID {
+	a.RLock()
+	defer a.RUnlock()
+
+	peerIDs := []peer.ID{}
+	for k, val := range a.peers {
+		if val.getPeerType() == commons.Searcher {
+			peerIDs = append(peerIDs, k)
+		}
+	}
+
+	return peerIDs
+}
+
+// GetGossipPeerIDs returns a list of all the approved gossip peer IDs.
+func (a *approvedPeersMap) GetGossipPeerIDs() []peer.ID {
+	a.RLock()
+	defer a.RUnlock()
+
+	peerIDs := []peer.ID{}
+	for k, v := range a.peers {
+		if v.getGossip() {
+			peerIDs = append(peerIDs, k)
+		}
+	}
+
+	return peerIDs
+}
+
+// GetGossipBuilderPeerIDs returns a list of all the approved builder gossip peer IDs.
+func (a *approvedPeersMap) GetGossipBuilderPeerIDs() []peer.ID {
+	a.RLock()
+	defer a.RUnlock()
+
+	peerIDs := []peer.ID{}
+	for k, v := range a.peers {
+		if v.getGossip() && (v.getPeerType() == commons.Builder) {
+			peerIDs = append(peerIDs, k)
+		}
+	}
+
+	return peerIDs
+}
+
+// GetGossipSearcherPeerIDs returns a list of all the approved searcher gossip peer IDs.
+func (a *approvedPeersMap) GetGossipSearcherPeerIDs() []peer.ID {
+	a.RLock()
+	defer a.RUnlock()
+
+	peerIDs := []peer.ID{}
+	for k, v := range a.peers {
+		if v.getGossip() && (v.getPeerType() == commons.Searcher) {
+			peerIDs = append(peerIDs, k)
+		}
+	}
+
+	return peerIDs
+}
+
+// GetBuilderPeerAddrs returns a list of all the approved peer addrs.
+func (a *approvedPeersMap) GetBuilderPeerAddrs() []peer.AddrInfo {
+	a.RLock()
+	defer a.RUnlock()
+
+	peerAddrs := []peer.AddrInfo{}
+
+	for k, v := range a.peers {
+		if v.getPeerType() == commons.Builder {
+			addr := peer.AddrInfo{
+				ID:    k,
+				Addrs: v.getAddrs(),
+			}
+			peerAddrs = append(peerAddrs, addr)
+		}
+
+	}
+
+	return peerAddrs
 }
 
 // GetGossipPeers returns a map of all the approved gossip peers.
@@ -343,6 +467,7 @@ func (a *approvedPeersMap) GetGossipPeers() map[peer.ID]*info {
 	for k, v := range a.peers {
 		if v.getGossip() {
 			infoCopy := &info{
+				peerType:  v.getPeerType(),
 				joinDate:  v.getJoinDate(),
 				version:   v.getVersion(),
 				address:   v.getAddress(),
@@ -363,19 +488,13 @@ func (a *approvedPeersMap) GetGossipPeers() map[peer.ID]*info {
 	return peers
 }
 
-// ListApprovedGossipPeers returns a list of all the approved gossip peer IDs.
-func (a *approvedPeersMap) ListApprovedGossipPeers() []peer.ID {
-	a.RLock()
-	defer a.RUnlock()
-
-	approvedGossipPeers := []peer.ID{}
-	for k, v := range a.peers {
-		if v.getGossip() {
-			approvedGossipPeers = append(approvedGossipPeers, k)
-		}
+// SetPeerInfoPeerType sets the type of a peer.
+func (a *approvedPeersMap) SetPeerInfoPeerType(peer peer.ID, peerType commons.PeerType) {
+	a.Lock()
+	defer a.Unlock()
+	if val, ok := a.peers[peer]; ok {
+		val.setPeerType(peerType)
 	}
-
-	return approvedGossipPeers
 }
 
 // SetPeerInfoJoinDate sets the join date of a peer.

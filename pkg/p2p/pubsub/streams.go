@@ -15,7 +15,7 @@ const (
 
 // when communication needs to be between only two peers
 // this streaming protocol comes into play
-func (pss *Server) peerStreamHandler(stream network.Stream) {
+func (bs *BuilderServer) peerStreamHandlerB2B(stream network.Stream) {
 	peerID := stream.Conn().RemotePeer()
 
 	reader := bufio.NewReader(stream)
@@ -26,42 +26,46 @@ func (pss *Server) peerStreamHandler(stream network.Stream) {
 		return
 	}
 
-	inMsg, err := pss.imb.Parse(peerID, buf[:n])
+	inMsg, err := bs.imb.Parse(peerID, buf[:n])
 	if err != nil {
-		pss.log.With(log.F{
-			"service":  "p2p stream",
-			"err time": commons.GetNow(),
+		bs.log.With(log.F{
+			"caller":  commons.GetCallerName(),
+			"date":    commons.GetNow(),
+			"service": "p2p stream b2b",
 		}).Error(err)
 	}
 
 	// if not in approved peers try to authenticate
-	if !pss.apm.InPeers(peerID) {
-		pss.log.With(log.F{
-			"service":  "p2p stream",
-			"op":       inMsg.Op(),
-			"peer":     inMsg.Peer(),
-			"msg time": commons.GetNow(),
+	if !bs.apm.InBuilderPeers(peerID) {
+		bs.log.With(log.F{
+			"caller":  commons.GetCallerName(),
+			"date":    commons.GetNow(),
+			"service": "p2p stream b2b",
+			"op":      inMsg.Op(),
+			"peer":    inMsg.Peer(),
 		}).Debug("unverified peer message")
 
 		switch inMsg.Op() {
 		case message.Approve:
-			pss.optApprove(inMsg.Peer(), inMsg.Bytes(), false)
+			bs.optApprove(bs.Stream, inMsg.Peer(), inMsg.Bytes(), false)
 		default:
-			pss.log.With(log.F{
-				"service":  "p2p stream",
-				"op":       inMsg.Op(),
-				"peer":     inMsg.Peer(),
-				"msg time": commons.GetNow(),
+			bs.log.With(log.F{
+				"caller":  commons.GetCallerName(),
+				"date":    commons.GetNow(),
+				"service": "p2p stream b2b",
+				"op":      inMsg.Op(),
+				"peer":    inMsg.Peer(),
 			}).Warn("unknown approve option!")
 		}
 		return
 	}
 
-	pss.log.With(log.F{
-		"service":  "p2p stream",
-		"op":       inMsg.Op(),
-		"peer":     inMsg.Peer(),
-		"msg time": commons.GetNow(),
+	bs.log.With(log.F{
+		"caller":  commons.GetCallerName(),
+		"date":    commons.GetNow(),
+		"service": "p2p stream b2b",
+		"op":      inMsg.Op(),
+		"peer":    inMsg.Peer(),
 	}).Debug("verified peer message")
 
 	switch inMsg.Op() {
@@ -69,41 +73,136 @@ func (pss *Server) peerStreamHandler(stream network.Stream) {
 	case message.Approve:
 	// create pong message and publish to show you're alive
 	case message.Ping:
-		pss.optPing(inMsg.Peer(), inMsg.Bytes())
+		bs.optPing(bs.Stream, inMsg.Peer(), inMsg.Bytes())
 	// it can be use validate peer is alive
 	case message.Pong:
-		pss.optPong(inMsg.Peer(), inMsg.Bytes())
+		bs.optPong(inMsg.Peer(), inMsg.Bytes())
 	// publish version
 	case message.GetVersion:
-		pss.optGetVersion(inMsg.Peer())
+		bs.optGetVersion(bs.Stream, inMsg.Peer())
 	// store peers version
 	case message.Version:
-		pss.optVersion(inMsg.Peer(), inMsg.Bytes())
+		bs.optVersion(inMsg.Peer(), inMsg.Bytes())
 	// publish approved peers
 	case message.GetPeerList:
-		pss.optGetPeerList(inMsg.Peer())
+		bs.optGetPeerList(bs.Stream, inMsg.Peer())
 	// it can be use for connect to peers
 	case message.PeerList:
-		pss.optPeerList(inMsg.Peer(), inMsg.Bytes())
+		bs.optPeerList(inMsg.Peer(), inMsg.Bytes())
 	// handle the incoming signatures
 	case message.Signature:
-		pss.optSignature(inMsg.Peer(), inMsg.Bytes())
+		bs.optSignature(inMsg.Peer(), inMsg.Bytes())
 	// handle the incoming block keys
 	case message.BlockKey:
-		pss.optBlockKey(inMsg.Peer(), inMsg.Bytes())
+		bs.optBlockKey(inMsg.Peer(), inMsg.Bytes())
 	// handle the incoming encrypted transactions
 	case message.Bundle:
-		pss.optBundle(inMsg.Peer(), inMsg.Bytes())
+		bs.optBundle(inMsg.Peer(), inMsg.Bytes())
 	// handle the incoming preconf bids
 	case message.PreconfBid:
-		pss.optPreconfBid(inMsg.Peer(), inMsg.Bytes())
+		bs.optPreconfBid(inMsg.Peer(), inMsg.Bytes())
 
 	default:
-		pss.log.With(log.F{
-			"service":  "p2p stream",
-			"op":       inMsg.Op(),
-			"peer":     inMsg.Peer(),
-			"msg time": commons.GetNow(),
+		bs.log.With(log.F{
+			"caller":  commons.GetCallerName(),
+			"date":    commons.GetNow(),
+			"service": "p2p stream b2b",
+			"op":      inMsg.Op(),
+			"peer":    inMsg.Peer(),
+		}).Warn("unknown option!")
+	}
+}
+
+// when communication needs to be between only two peers
+// this streaming protocol comes into play
+// builders are not allowed to communicate with each other over this stream
+func (ss *SearcherServer) peerStreamHandlerB2S(stream network.Stream) {
+	peerID := stream.Conn().RemotePeer()
+
+	reader := bufio.NewReader(stream)
+	buf := make([]byte, maxMessageSize)
+
+	n, err := reader.Read(buf)
+	if err != nil {
+		return
+	}
+
+	inMsg, err := ss.imb.Parse(peerID, buf[:n])
+	if err != nil {
+		ss.log.With(log.F{
+			"caller":  commons.GetCallerName(),
+			"date":    commons.GetNow(),
+			"service": "p2p stream b2s",
+		}).Error(err)
+	}
+
+	// if not in approved peers try to authenticate
+	if ((ss.selfType == commons.Builder) && !(ss.apm.InSearcherPeers(peerID))) ||
+		((ss.selfType == commons.Searcher) && !(ss.apm.InBuilderPeers(peerID))) {
+		//if !ss.apm.InBuilderPeers(peerID) {
+		ss.log.With(log.F{
+			"caller":  commons.GetCallerName(),
+			"date":    commons.GetNow(),
+			"service": "p2p stream b2s",
+			"op":      inMsg.Op(),
+			"peer":    inMsg.Peer(),
+		}).Debug("unverified peer message")
+
+		switch inMsg.Op() {
+		case message.Approve:
+			ss.optApprove(ss.Stream, inMsg.Peer(), inMsg.Bytes(), false)
+		default:
+			ss.log.With(log.F{
+				"caller":  commons.GetCallerName(),
+				"date":    commons.GetNow(),
+				"service": "p2p stream b2s",
+				"op":      inMsg.Op(),
+				"peer":    inMsg.Peer(),
+			}).Warn("unknown approve option!")
+		}
+		return
+	}
+
+	ss.log.With(log.F{
+		"caller":  commons.GetCallerName(),
+		"date":    commons.GetNow(),
+		"service": "p2p stream b2s",
+		"op":      inMsg.Op(),
+		"peer":    inMsg.Peer(),
+	}).Debug("verified peer message")
+
+	switch inMsg.Op() {
+	// pass auth option in this side for now
+	case message.Approve:
+	// create pong message and publish to show you're alive
+	case message.Ping:
+		ss.optPing(ss.Stream, inMsg.Peer(), inMsg.Bytes())
+	// it can be use validate peer is alive
+	case message.Pong:
+		ss.optPong(inMsg.Peer(), inMsg.Bytes())
+	// publish version
+	case message.GetVersion:
+		ss.optGetVersion(ss.Stream, inMsg.Peer())
+	// store peers version
+	case message.Version:
+		ss.optVersion(inMsg.Peer(), inMsg.Bytes())
+	// publish approved peers
+	case message.GetPeerList:
+		ss.optGetPeerList(ss.Stream, inMsg.Peer())
+	// it can be use for connect to peers
+	case message.PeerList:
+		ss.optPeerList(inMsg.Peer(), inMsg.Bytes())
+	// searcher<>builder communication test
+	case message.Bid:
+		ss.optBid(inMsg.Peer(), inMsg.Bytes())
+
+	default:
+		ss.log.With(log.F{
+			"caller":  commons.GetCallerName(),
+			"date":    commons.GetNow(),
+			"service": "p2p stream b2s",
+			"op":      inMsg.Op(),
+			"peer":    inMsg.Peer(),
 		}).Warn("unknown option!")
 	}
 }

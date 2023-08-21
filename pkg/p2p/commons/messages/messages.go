@@ -5,18 +5,21 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/libp2p/go-libp2p/core/peer"
+	"github.com/primev/builder-boost/pkg/p2p/commons"
 )
 
 type ApproveMsg struct {
-	Address common.Address
-	Peer    peer.ID
-	Sig     []uint8
+	PeerType commons.PeerType
+	Address  common.Address
+	Peer     peer.ID
+	Sig      []uint8
 }
 
 func (a *ApproveMsg) GetUnsignedMessage() []byte {
 	return []byte(
 		fmt.Sprintf(
-			"%v:%v",
+			"%v:%v:%v",
+			a.PeerType,
 			a.Address.Hex(),
 			a.Peer.String(),
 		),

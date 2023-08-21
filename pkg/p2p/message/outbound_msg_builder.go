@@ -11,6 +11,7 @@ var _ OutboundMsgBuilder = (*outMsgBuilder)(nil)
 
 // OutboundMsgBuilder defines an interface for constructing various outbound communication messages.
 type OutboundMsgBuilder interface {
+	// builder and searchers use this msg types
 	Approve([]byte) (OutboundMessage, error)
 	Ping([]byte) (OutboundMessage, error)
 	Pong([]byte) (OutboundMessage, error)
@@ -18,10 +19,13 @@ type OutboundMsgBuilder interface {
 	Version(string) (OutboundMessage, error)
 	GetPeerList() (OutboundMessage, error)
 	PeerList([]peer.AddrInfo) (OutboundMessage, error)
+	// only builders use this msg types
 	Signature([]byte) (OutboundMessage, error)
 	BlockKey([]byte) (OutboundMessage, error)
 	Bundle([]byte) (OutboundMessage, error)
 	PreconfBid([]byte) (OutboundMessage, error)
+	// designed for searchers but builders use this msg types for provide communincation with searchers
+	Bid([]byte) (OutboundMessage, error)
 }
 
 // outMsgBuilder defines a structure used for creating outbound communication messages.
@@ -140,6 +144,15 @@ func (b *outMsgBuilder) Bundle(bundle []byte) (OutboundMessage, error) {
 func (b *outMsgBuilder) PreconfBid(bid []byte) (OutboundMessage, error) {
 	return b.builder.createOutbound(
 		PreconfBid,
+		time.Now().UnixNano(),
+		bid,
+	)
+}
+
+// Bid creates a "Bid" message with the specified bid data.
+func (b *outMsgBuilder) Bid(bid []byte) (OutboundMessage, error) {
+	return b.builder.createOutbound(
+		Bid,
 		time.Now().UnixNano(),
 		bid,
 	)

@@ -2,6 +2,7 @@ package node
 
 import (
 	"math/big"
+	"sync"
 
 	"github.com/libp2p/go-libp2p/core/control"
 	"github.com/libp2p/go-libp2p/core/network"
@@ -10,6 +11,7 @@ import (
 	"github.com/multiformats/go-multiaddr"
 	ma "github.com/multiformats/go-multiaddr"
 	"github.com/primev/builder-boost/pkg/p2p/commons"
+	"github.com/primev/builder-boost/pkg/p2p/config"
 	"github.com/primev/builder-boost/pkg/rollup"
 )
 
@@ -19,21 +21,28 @@ const (
 	Undecided connectionAllowance = iota
 	DenyBlockedPeer
 	DenyNotEnoughStake
+	DenySearcherToSearcher
 	Accept
 )
 
 var connectionAllowanceStrings = map[connectionAllowance]string{
-	Undecided:          "Undecided",
-	DenyBlockedPeer:    "DenyBlockedPeer",
-	DenyNotEnoughStake: "DenyNotEnoughStake",
-	Accept:             "Allow",
+	Undecided:              "Undecided",
+	DenyBlockedPeer:        "DenyBlockedPeer",
+	DenyNotEnoughStake:     "DenyNotEnoughStake",
+	DenySearcherToSearcher: "DenySearcherToSearcher",
+	Accept:                 "Allow",
 }
 
 func (c connectionAllowance) isDeny() bool {
 	return !(c == Accept || c == Undecided)
 }
 
+// make sure the connections are between builder<>builder, builder<>searcher!
 type ConnectionGater interface {
+	// GetPeerType get peer type builder or searcher
+	GetPeerType(p peer.ID) (peerType commons.PeerType)
+	//  DeletePeer delete registered peer
+	DeletePeer(p peer.ID)
 	// InterceptPeerDial intercepts peer dialing
 	InterceptPeerDial(p peer.ID) (allow bool)
 	// InterceptAddrDial intercepts address dialing
@@ -52,17 +61,44 @@ type connectionGater struct {
 	blocker      *blocker
 	logger       log.Logger
 	minimalStake *big.Int
+	peers        map[peer.ID]commons.PeerType
+	selfType     commons.PeerType
+	sync.RWMutex
 }
 
 // newConnectionGater creates a new instance of ConnectionGater
-func newConnectionGater(metrics *metrics, rollup rollup.Rollup, blocker *blocker, logger log.Logger, minimalStake *big.Int) ConnectionGater {
+func newConnectionGater(metrics *metrics, rollup rollup.Rollup, blocker *blocker, logger log.Logger, minimalStake *big.Int, peerType commons.PeerType) ConnectionGater {
 	return &connectionGater{
 		metrics:      metrics,
 		rollup:       rollup,
 		blocker:      blocker,
 		logger:       logger,
 		minimalStake: minimalStake,
+		peers:        make(map[peer.ID]commons.PeerType),
+		selfType:     peerType,
 	}
+}
+
+func (cg *connectionGater) GetPeerType(p peer.ID) commons.PeerType {
+	cg.RLock()
+	defer cg.RUnlock()
+	return cg.peers[p]
+}
+
+func (cg *connectionGater) registerPeer(p peer.ID, peerType commons.PeerType) bool {
+	cg.Lock()
+	defer cg.Unlock()
+	if (cg.selfType == commons.Searcher) && (peerType == commons.Searcher) {
+		return false
+	}
+	cg.peers[p] = peerType
+	return true
+}
+
+func (cg *connectionGater) DeletePeer(p peer.ID) {
+	cg.Lock()
+	defer cg.Unlock()
+	delete(cg.peers, p)
 }
 
 // checkPeerTrusted determines the trust status of a peer
@@ -88,6 +124,18 @@ func (cg *connectionGater) checkPeerBlocked(p peer.ID) connectionAllowance {
 // checkPeerStake checks if a peer has enough stake and returns the appropriate
 // connection allowance status
 func (cg *connectionGater) checkPeerStake(p peer.ID) connectionAllowance {
+	//NOTE: Temporarily allow searchers in the whitelist
+	for _, v := range config.SearcherPeerIDs {
+		pid, _ := peer.Decode(v)
+		if p == pid {
+			if cg.registerPeer(p, commons.Searcher) {
+				return Accept
+			} else {
+				return DenySearcherToSearcher
+			}
+		}
+	}
+
 	pub, err := p.ExtractPublicKey()
 	if err != nil {
 		return DenyNotEnoughStake
@@ -110,7 +158,9 @@ func (cg *connectionGater) checkPeerStake(p peer.ID) connectionAllowance {
 
 	// check minimal stake
 	if stake.Cmp(cg.minimalStake) >= 0 {
-		return Accept
+		if cg.registerPeer(p, commons.Builder) {
+			return Accept
+		}
 	}
 
 	// deny the connection if the stake is not enough.

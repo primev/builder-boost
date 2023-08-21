@@ -6,6 +6,8 @@ import (
 	"crypto/elliptic"
 	"fmt"
 	"net"
+	"runtime"
+	"strings"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -79,4 +81,12 @@ func ExtractIPFromMultiaddr(addr ma.Multiaddr) (net.IP, error) {
 
 	// IP address not found
 	return nil, fmt.Errorf("IP address not found in multiaddr")
+}
+
+func GetCallerName() string {
+	pc, _, _, _ := runtime.Caller(1)
+	function := runtime.FuncForPC(pc)
+	fullName := function.Name()
+	parts := strings.Split(fullName, ".")
+	return strings.ToLower(parts[len(parts)-1])
 }
