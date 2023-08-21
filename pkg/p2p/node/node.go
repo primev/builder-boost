@@ -183,8 +183,18 @@ type Node struct {
 	ready     chan struct{}
 }
 
+// create builder node
+func NewBuilderNode(logger log.Logger, key *ecdsa.PrivateKey, rollup rollup.Rollup, registry *prometheus.Registry) IBuilderNode {
+	return newNode(logger, key, rollup, registry, commons.Builder).(IBuilderNode)
+}
+
+// create searcher node
+func NewSearcherNode(logger log.Logger, key *ecdsa.PrivateKey, rollup rollup.Rollup, registry *prometheus.Registry) ISearcherNode {
+	return newNode(logger, key, rollup, registry, commons.Searcher).(ISearcherNode)
+}
+
 // create p2p node
-func New(logger log.Logger, key *ecdsa.PrivateKey, rollup rollup.Rollup, registry *prometheus.Registry, peerType commons.PeerType) interface{} {
+func newNode(logger log.Logger, key *ecdsa.PrivateKey, rollup rollup.Rollup, registry *prometheus.Registry, peerType commons.PeerType) interface{} {
 
 	if logger == nil {
 		switch peerType {
