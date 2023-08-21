@@ -10,7 +10,7 @@ import (
 
 func TestBid(t *testing.T) {
 	key, _ := crypto.GenerateKey()
-	bid, err := ConstructSignedBid(big.NewInt(10), "0xkartik", key)
+	bid, err := ConstructSignedBid(big.NewInt(10), "0xkartik", big.NewInt(2), key)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -18,7 +18,8 @@ func TestBid(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if address.Cmp(crypto.PubkeyToAddress(key.PublicKey)) != 0 {
+
+	if address.Big().Cmp(crypto.PubkeyToAddress(key.PublicKey).Big()) != 0 {
 		t.Fatal("Address not same as signer")
 	}
 }

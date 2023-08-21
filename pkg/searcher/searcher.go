@@ -5,6 +5,7 @@ import (
 	"crypto/ecdsa"
 	"encoding/json"
 	"io/ioutil"
+	"math/big"
 	"net/http"
 	"net/url"
 	"time"
@@ -15,11 +16,13 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	boost "github.com/primev/builder-boost/pkg"
+	"github.com/primev/builder-boost/pkg/preconf"
 	"github.com/primev/builder-boost/pkg/utils"
 )
 
 type Searcher interface {
 	Run(ctx context.Context) error
+	API(ctx context.Context) error
 }
 
 func New(config Config) Searcher {
@@ -58,6 +61,48 @@ func NewMetrics(reg prometheus.Registerer) *metrics {
 	return m
 }
 
+// Struct for processing bid amount, ID hash, and block number
+type PreconfRequest struct {
+	BidAmount uint64 `json:"bid_amount"`
+	IDHash    string `json:"id_hash"`
+	BlockNum  uint64 `json:"block_num"`
+}
+
+func (s *searcher) preconfHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	// Read input from request: Bid Amount, ID Hash, Block number
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		s.log.WithError(err).Error("failed to read request body")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	var pc PreconfRequest
+	err = json.Unmarshal(body, &pc)
+	if err != nil {
+		s.log.WithError(err).Error("failed to unmarshal request body")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	// Construct bid
+	bid, err := preconf.ConstructSignedBid(big.NewInt(int64(pc.BidAmount)), pc.IDHash, big.NewInt(int64(pc.BlockNum)), s.key)
+
+	bid.SubmitBid()
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (s *searcher) API(ctx context.Context) error {
+	s.log.Info("starting searcher api")
+	http.Handle("/preconf", http.HandlerFunc(s.preconfHandler))
+
+	http.ListenAndServe(":8081", nil)
+
+	return nil
+}
+
 func (s *searcher) Run(ctx context.Context) error {
 	if s.metricsEnabled {
 		reg := prometheus.NewRegistry()
@@ -68,6 +113,7 @@ func (s *searcher) Run(ctx context.Context) error {
 			promHandler := promhttp.HandlerFor(reg, promhttp.HandlerOpts{})
 
 			http.Handle("/metrics", promHandler)
+
 			http.ListenAndServe(":8080", nil)
 		}()
 	}

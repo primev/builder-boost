@@ -63,6 +63,12 @@ var flags = []cli.Flag{
 		Value:   false,
 		EnvVars: []string{"METRICS"},
 	},
+	&cli.BoolFlag{
+		Name:    "api",
+		Usage:   "enable api",
+		Value:   false,
+		EnvVars: []string{"API"},
+	},
 }
 var (
 	config = searcher.Config{Log: log.New()}
@@ -105,6 +111,13 @@ func run() cli.ActionFunc {
 		config.MetricsEnabled = c.Bool("metrics")
 		searcher := searcher.New(config)
 
+		apiMode := c.Bool("api")
+		if apiMode {
+			g.Go(func() error {
+				return searcher.API(ctx)
+			})
+			return g.Wait()
+		}
 		g.Go(func() error {
 			return searcher.Run(ctx)
 		})

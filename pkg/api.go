@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/gorilla/websocket"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -17,6 +18,7 @@ import (
 	"github.com/attestantio/go-builder-client/api/capella"
 
 	"github.com/lthibault/log"
+	"github.com/primev/builder-boost/pkg/preconf"
 	"github.com/primev/builder-boost/pkg/rollup"
 	"github.com/primev/builder-boost/pkg/utils"
 )
@@ -107,6 +109,7 @@ func (a *API) init() {
 		// Adds an endpoint to get commitment to the builder by searcher address
 		router.Handle("/commitment", a.authSearcher(http.HandlerFunc(a.handleSearcherCommitment)))
 
+		router.HandleFunc("/preconf", a.handlepreconf)
 		// TODO(@ckartik): Guard this to only by a requset made form an authorized internal service
 		router.HandleFunc(PathSubmitBlock, handler(a.submitBlock))
 
@@ -140,6 +143,33 @@ func (a *API) authenticateBuilder(next http.Handler) http.Handler {
 
 		next.ServeHTTP(w, r)
 	})
+}
+
+func (a *API) handlepreconf(w http.ResponseWriter, r *http.Request) {
+	var pc preconf.PreConfBid
+	key, _ := crypto.GenerateKey()
+
+	err := json.NewDecoder(r.Body).Decode(&pc)
+	if err != nil {
+		a.Log.WithError(err).Error("failed to decode preconf bid")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	address, err := pc.VerifySearcherSignature()
+	if err != nil {
+		a.Log.WithError(err).Error("failed to verify searcher signature")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	a.Log.WithField("address", address.Hex()).WithField("bid_txn", pc.TxnHash).WithField("bid_amt", pc.GetBidAmt()).Info("preconf bid verified")
+	commit, err := pc.ConstructCommitment(key)
+	if err != nil {
+		a.Log.WithError(err).Error("failed to construct commitment")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	a.Log.WithField("commit", commit).Info("commitment constructed")
+	w.WriteHeader(http.StatusOK)
 }
 
 func (a *API) authSearcher(next http.Handler) http.Handler {

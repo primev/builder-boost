@@ -4,8 +4,11 @@ import (
 	"bytes"
 	"crypto/ecdsa"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"math/big"
+	"net/http"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -21,8 +24,9 @@ var (
 )
 
 type UnsignedPreConfBid struct {
-	TxnHash string   `json:"txnHash"`
-	Bid     *big.Int `json:"bid"`
+	TxnHash     string   `json:"txnHash"`
+	Bid         *big.Int `json:"bid"`
+	Blocknumber *big.Int `json:"blocknumber"`
 	// UUID    string `json:"uuid"` // Assuming string representation for byte16
 }
 
@@ -48,13 +52,13 @@ type IPreconfBid interface {
 	GetTxnHash() string
 	GetBidAmt() *big.Int
 	VerifySearcherSignature() (common.Address, error)
-	BidOriginator() (common.Address, *ecdsa.PublicKey)
+	BidOriginator() (common.Address, *ecdsa.PublicKey, error)
 }
 
 type IPreconfCommitment interface {
 	IPreconfBid // TODO Implement for underlying data-structure
 	VerifyBuilderSignature() (common.Address, error)
-	CommitmentOriginator() (common.Address, *ecdsa.PublicKey)
+	CommitmentOriginator() (common.Address, *ecdsa.PublicKey, error)
 }
 
 type IPreconfCommitmentBuilder interface {
@@ -77,7 +81,7 @@ func (p PreconfCommitment) VerifyBuilderSignature() (common.Address, error) {
 		return common.Address{}, ErrMissingHashSignature
 	}
 
-	internalPayload := constructCommitmentPayload(p.TxnHash, p.Bid, p.BidHash, p.Signature)
+	internalPayload := constructCommitmentPayload(p.TxnHash, p.Bid, p.Blocknumber, p.BidHash, p.Signature)
 
 	return eipVerify(internalPayload, p.DataHash, p.Signature)
 }
@@ -156,7 +160,7 @@ func (p *PreconfCommitment) constructHashAndSignature(privKey *ecdsa.PrivateKey)
 		return ErrAlreadySignedCommitment
 	}
 
-	eip712Payload := constructCommitmentPayload(p.TxnHash, p.Bid, p.BidHash, p.Signature)
+	eip712Payload := constructCommitmentPayload(p.TxnHash, p.Bid, p.Blocknumber, p.BidHash, p.Signature)
 
 	dataHash, _, err := apitypes.TypedDataAndHash(eip712Payload)
 	if err != nil {
@@ -173,12 +177,28 @@ func (p *PreconfCommitment) constructHashAndSignature(privKey *ecdsa.PrivateKey)
 	return nil
 }
 
+func (p PreConfBid) SubmitBid() error {
+	// searlize p into json
+	payload, err := json.Marshal(p)
+	if err != nil {
+		return err
+	}
+	fmt.Println(payload)
+	// send payload to server at localhost:8080/preconf
+	//http client
+	request := http.Client{}
+	request.Post("http://localhost:8080/preconf", "application/json", bytes.NewBuffer(payload))
+
+	return nil
+}
+
 // Returns a PreConfBid Object with an EIP712 signature of the payload
-func ConstructSignedBid(bidamt *big.Int, txnhash string, key *ecdsa.PrivateKey) (IPreconfBid, error) {
+func ConstructSignedBid(bidamt *big.Int, txnhash string, blocknumber *big.Int, key *ecdsa.PrivateKey) (IPreconfBidSearcher, error) {
 	bid := &PreConfBid{
 		UnsignedPreConfBid: UnsignedPreConfBid{
-			Bid:     bidamt,
-			TxnHash: txnhash,
+			Bid:         bidamt,
+			TxnHash:     txnhash,
+			Blocknumber: blocknumber,
 		},
 	}
 
@@ -205,7 +225,7 @@ func (p PreConfBid) VerifySearcherSignature() (common.Address, error) {
 		return common.Address{}, ErrMissingHashSignature
 	}
 
-	return eipVerify(constructBidPayload(p.TxnHash, p.Bid), p.BidHash, p.Signature)
+	return eipVerify(constructBidPayload(p.TxnHash, p.Bid, p.Blocknumber), p.BidHash, p.Signature)
 }
 
 // Adds bidHash and Signature to preconfbid
@@ -215,7 +235,7 @@ func (p *PreConfBid) constructHashAndSignature(privKey *ecdsa.PrivateKey) (err e
 		return ErrAlreadySignedBid
 	}
 
-	internalPayload := constructBidPayload(p.TxnHash, p.Bid)
+	internalPayload := constructBidPayload(p.TxnHash, p.Bid, p.Blocknumber)
 
 	bidHash, _, err := apitypes.TypedDataAndHash(internalPayload)
 	if err != nil {
@@ -233,14 +253,15 @@ func (p *PreConfBid) constructHashAndSignature(privKey *ecdsa.PrivateKey) (err e
 }
 
 // Constructs the EIP712 formatted bid
-func constructCommitmentPayload(txnHash string, bid *big.Int, bidHash []byte, signature []byte) apitypes.TypedData {
+func constructCommitmentPayload(txnHash string, bid *big.Int, blockNumber *big.Int, bidHash []byte, signature []byte) apitypes.TypedData {
 	signerData := apitypes.TypedData{
 		Types: apitypes.Types{
 			"PreConfBid": []apitypes.Type{
-				{Name: "TxnHash", Type: "string"},
+				{Name: "txnHash", Type: "string"},
 				{Name: "bid", Type: "uint64"},
-				{Name: "BidHash", Type: "string"},   // Hex Encoded Hash
-				{Name: "Signature", Type: "string"}, // Hex Encoded Signature
+				{Name: "blockNumber", Type: "uint64"},
+				{Name: "bidHash", Type: "string"},   // Hex Encoded Hash
+				{Name: "signature", Type: "string"}, // Hex Encoded Signature
 			},
 			"EIP712Domain": []apitypes.Type{
 				{Name: "name", Type: "string"},
@@ -253,10 +274,11 @@ func constructCommitmentPayload(txnHash string, bid *big.Int, bidHash []byte, si
 			Version: "1",
 		},
 		Message: apitypes.TypedDataMessage{
-			"TxnHash":   txnHash,
-			"bid":       bid,
-			"bidHash":   hex.EncodeToString(bidHash),
-			"signature": hex.EncodeToString(signature),
+			"TxnHash":     txnHash,
+			"bid":         bid,
+			"blockNumber": blockNumber,
+			"bidHash":     hex.EncodeToString(bidHash),
+			"signature":   hex.EncodeToString(signature),
 		},
 	}
 
@@ -264,12 +286,13 @@ func constructCommitmentPayload(txnHash string, bid *big.Int, bidHash []byte, si
 }
 
 // Constructs the EIP712 formatted bid
-func constructBidPayload(txnHash string, bid *big.Int) apitypes.TypedData {
+func constructBidPayload(txnHash string, bid *big.Int, blockNumber *big.Int) apitypes.TypedData {
 	signerData := apitypes.TypedData{
 		Types: apitypes.Types{
 			"PreConfBid": []apitypes.Type{
 				{Name: "TxnHash", Type: "string"},
 				{Name: "bid", Type: "uint64"},
+				{Name: "blockNumber", Type: "uint64"},
 			},
 			"EIP712Domain": []apitypes.Type{
 				{Name: "name", Type: "string"},
@@ -282,8 +305,9 @@ func constructBidPayload(txnHash string, bid *big.Int) apitypes.TypedData {
 			Version: "1",
 		},
 		Message: apitypes.TypedDataMessage{
-			"TxnHash": txnHash,
-			"bid":     bid,
+			"TxnHash":     txnHash,
+			"bid":         bid,
+			"blockNumber": blockNumber,
 		},
 	}
 
