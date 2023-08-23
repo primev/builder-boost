@@ -260,7 +260,7 @@ func (p *PreConfBid) constructHashAndSignature(privKey *ecdsa.PrivateKey) (err e
 func constructCommitmentPayload(txnHash string, bid *big.Int, blockNumber *big.Int, bidHash []byte, signature []byte) apitypes.TypedData {
 	signerData := apitypes.TypedData{
 		Types: apitypes.Types{
-			"PreConfBid": []apitypes.Type{
+			"PreConfCommitment": []apitypes.Type{
 				{Name: "txnHash", Type: "string"},
 				{Name: "bid", Type: "uint64"},
 				{Name: "blockNumber", Type: "uint64"},
@@ -278,7 +278,7 @@ func constructCommitmentPayload(txnHash string, bid *big.Int, blockNumber *big.I
 			Version: "1",
 		},
 		Message: apitypes.TypedDataMessage{
-			"TxnHash":     txnHash,
+			"txnHash":     txnHash,
 			"bid":         bid,
 			"blockNumber": blockNumber,
 			"bidHash":     hex.EncodeToString(bidHash),
@@ -294,7 +294,7 @@ func constructBidPayload(txnHash string, bid *big.Int, blockNumber *big.Int) api
 	signerData := apitypes.TypedData{
 		Types: apitypes.Types{
 			"PreConfBid": []apitypes.Type{
-				{Name: "TxnHash", Type: "string"},
+				{Name: "txnHash", Type: "string"},
 				{Name: "bid", Type: "uint64"},
 				{Name: "blockNumber", Type: "uint64"},
 			},
@@ -309,7 +309,7 @@ func constructBidPayload(txnHash string, bid *big.Int, blockNumber *big.Int) api
 			Version: "1",
 		},
 		Message: apitypes.TypedDataMessage{
-			"TxnHash":     txnHash,
+			"txnHash":     txnHash,
 			"bid":         bid,
 			"blockNumber": blockNumber,
 		},

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"net"
 	"net/http"
@@ -16,6 +17,7 @@ import (
 	boost "github.com/primev/builder-boost/pkg"
 	"github.com/primev/builder-boost/pkg/boostcli"
 	"github.com/primev/builder-boost/pkg/p2p/node"
+	"github.com/primev/builder-boost/pkg/preconf"
 	"github.com/primev/builder-boost/pkg/rollup"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/sync/errgroup"
@@ -165,7 +167,22 @@ func run() cli.ActionFunc {
 		}
 		go func() {
 			for peerMsg := range buildernode.BidReader() {
-				config.Log.WithField("peer", peerMsg.Peer).Info(string(peerMsg.Bytes))
+				var pc preconf.PreConfBid
+				err := json.Unmarshal(peerMsg.Bytes, &pc)
+				if err != nil {
+					config.Log.WithError(err).Error("failed to unmarshal preconf bid")
+				}
+				address, err := pc.VerifySearcherSignature()
+				if err != nil {
+					config.Log.WithError(err).Error("failed to verify preconf bid")
+				}
+				config.Log.WithField("address", address.Hex()).WithField("bid_txn", pc.TxnHash).WithField("bid_amt", pc.GetBidAmt()).WithField("sending_peer", peerMsg.Peer).Info("preconf bid verified")
+				commit, err := pc.ConstructCommitment(builderKey)
+				if err != nil {
+					config.Log.WithError(err).Error("failed to construct commitment")
+				}
+				config.Log.WithField("commitment", commit).Info("commitment constructed")
+				// config.Log.WithField("peer", peerMsg.Peer).Info(string(peerMsg.Bytes))
 			}
 		}()
 
