@@ -235,7 +235,7 @@ func newNode(logger log.Logger, key *ecdsa.PrivateKey, rollup rollup.Rollup, reg
 		config.WithScoreInterval(time.Minute*1),
 		config.WithMinimalStake(big.NewInt(1)),
 		config.WithMetricsNamespace("primev"),
-		config.WithMetricsPort(8081),
+		config.WithMetricsPort(9000),
 		config.WithMetricsRoute("/metrics_p2p"),
 	)
 
