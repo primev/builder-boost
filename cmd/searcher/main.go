@@ -74,7 +74,7 @@ var flags = []cli.Flag{
 	&cli.StringFlag{
 		Name:    "rollupaddr",
 		Usage:   "Rollup RPC address",
-		Value:   "https://rpc.sepolia.org",
+		Value:   "https://ethereum-sepolia.blockpi.network/v1/rpc/public",
 		EnvVars: []string{"ROLLUP_ADDR"},
 	},
 	&cli.StringFlag{
