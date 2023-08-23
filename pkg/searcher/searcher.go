@@ -16,7 +16,9 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	boost "github.com/primev/builder-boost/pkg"
+	"github.com/primev/builder-boost/pkg/p2p/node"
 	"github.com/primev/builder-boost/pkg/preconf"
+	"github.com/primev/builder-boost/pkg/rollup"
 	"github.com/primev/builder-boost/pkg/utils"
 )
 
@@ -31,6 +33,7 @@ func New(config Config) Searcher {
 		key:            config.Key,
 		addr:           config.Addr,
 		metricsEnabled: config.MetricsEnabled,
+		ru:             config.Ru,
 	}
 }
 
@@ -40,6 +43,8 @@ type searcher struct {
 	addr           string
 	m              *metrics
 	metricsEnabled bool
+	ru             rollup.Rollup
+	p2pEngine      node.ISearcherNode
 }
 
 type metrics struct {
@@ -88,8 +93,12 @@ func (s *searcher) preconfHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Construct bid
 	bid, err := preconf.ConstructSignedBid(big.NewInt(int64(pc.BidAmount)), pc.IDHash, big.NewInt(int64(pc.BlockNum)), s.key)
-
-	bid.SubmitBid()
+	if err != nil {
+		s.log.WithError(err).Error("failed to construct bid")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	bid.SubmitBid(s.p2pEngine)
 
 	w.WriteHeader(http.StatusOK)
 }
@@ -98,6 +107,11 @@ func (s *searcher) API(ctx context.Context) error {
 	s.log.Info("starting searcher api")
 	http.Handle("/preconf", http.HandlerFunc(s.preconfHandler))
 
+	searchernode := node.NewSearcherNode(s.log, s.key, s.ru, nil)
+	select {
+	case <-searchernode.Ready():
+	}
+	s.p2pEngine = searchernode
 	http.ListenAndServe(":8081", nil)
 
 	return nil

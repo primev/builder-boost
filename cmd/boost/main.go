@@ -15,6 +15,7 @@ import (
 	"github.com/lthibault/log"
 	boost "github.com/primev/builder-boost/pkg"
 	"github.com/primev/builder-boost/pkg/boostcli"
+	"github.com/primev/builder-boost/pkg/p2p/node"
 	"github.com/primev/builder-boost/pkg/rollup"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/sync/errgroup"
@@ -158,6 +159,15 @@ func run() cli.ActionFunc {
 		if err != nil {
 			return err
 		}
+		buildernode := node.NewBuilderNode(config.Log, builderKey, ru, nil)
+		select {
+		case <-buildernode.Ready():
+		}
+		go func() {
+			for peerMsg := range buildernode.BidReader() {
+				config.Log.WithField("peer", peerMsg.Peer).Info(string(peerMsg.Bytes))
+			}
+		}()
 
 		g.Go(func() error {
 			return ru.Run(ctx)

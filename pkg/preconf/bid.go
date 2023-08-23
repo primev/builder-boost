@@ -13,6 +13,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
+	"github.com/primev/builder-boost/pkg/p2p/commons"
+	"github.com/primev/builder-boost/pkg/p2p/node"
 )
 
 var (
@@ -68,7 +70,7 @@ type IPreconfCommitmentBuilder interface {
 
 type IPreconfBidSearcher interface {
 	IPreconfBid
-	SubmitBid() error
+	SubmitBid(node.ISearcherNode) error
 }
 
 type IPreconfBidBuilder interface {
@@ -177,13 +179,15 @@ func (p *PreconfCommitment) constructHashAndSignature(privKey *ecdsa.PrivateKey)
 	return nil
 }
 
-func (p PreConfBid) SubmitBid() error {
+func (p PreConfBid) SubmitBid(p2pEngine node.ISearcherNode) error {
 	// searlize p into json
 	payload, err := json.Marshal(p)
 	if err != nil {
 		return err
 	}
+
 	fmt.Println(payload)
+	p2pEngine.BidSend(commons.Gossip, payload)
 	// send payload to server at localhost:8080/preconf
 	//http client
 	request := http.Client{}

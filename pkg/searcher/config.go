@@ -4,6 +4,7 @@ import (
 	"crypto/ecdsa"
 
 	"github.com/lthibault/log"
+	"github.com/primev/builder-boost/pkg/rollup"
 )
 
 type Config struct {
@@ -11,4 +12,5 @@ type Config struct {
 	Key            *ecdsa.PrivateKey
 	Addr           string
 	MetricsEnabled bool
+	Ru             rollup.Rollup
 }
