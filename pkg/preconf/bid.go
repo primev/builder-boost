@@ -72,7 +72,7 @@ type IPreconfCommitment interface {
 type IPreconfCommitmentBuilder interface {
 	IPreconfCommitment
 	PublishCommitment() error
-	StoreCommitmentToDA(*ecdsa.PrivateKey, string) (*types.Transaction, error)
+	StoreCommitmentToDA(*ecdsa.PrivateKey, string) (*types.Transaction, error) // // TODO(@ckartik): Turn into Singleton client for production
 }
 
 type IPreconfBidSearcher interface {
