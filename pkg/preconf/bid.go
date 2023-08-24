@@ -2,17 +2,23 @@ package preconf
 
 import (
 	"bytes"
+	"context"
 	"crypto/ecdsa"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"math/big"
 	"net/http"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
+	"github.com/primev/builder-boost/pkg/contracts"
 	"github.com/primev/builder-boost/pkg/p2p/commons"
 	"github.com/primev/builder-boost/pkg/p2p/node"
 )
@@ -66,6 +72,7 @@ type IPreconfCommitment interface {
 type IPreconfCommitmentBuilder interface {
 	IPreconfCommitment
 	PublishCommitment() error
+	StoreCommitmentToDA(*ecdsa.PrivateKey, string) (*types.Transaction, error)
 }
 
 type IPreconfBidSearcher interface {
@@ -76,6 +83,45 @@ type IPreconfBidSearcher interface {
 type IPreconfBidBuilder interface {
 	IPreconfBid
 	ConstructCommitment(*ecdsa.PrivateKey) (PreconfCommitment, error) // Verfiy Signature and than constrcut the commitment
+}
+
+func (p PreconfCommitment) StoreCommitmentToDA(privateKey *ecdsa.PrivateKey, contractAddress string, endpoint string) (*types.Transaction, error) {
+	client, err := ethclient.Dial(endpoint)
+	if err != nil {
+		log.Fatalf("Failed to connect to the Ethereum client: %v", err)
+	}
+	preconf, err := contracts.NewPreConfCommitmentStore(common.HexToAddress(contractAddress), client)
+	if err != nil {
+		return nil, err
+	}
+	publicKey := privateKey.Public()
+	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
+	if !ok {
+		log.Fatalf("Failed to assert type: publicKey is not of type *ecdsa.PublicKey")
+	}
+
+	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
+
+	nonce, err := client.PendingNonceAt(context.Background(), fromAddress)
+	if err != nil {
+		log.Fatalf("Failed to retrieve nonce: %v", err)
+	}
+	gasPrice, err := client.SuggestGasPrice(context.Background())
+	if err != nil {
+		log.Fatalf("Failed to suggest gas price: %v", err)
+	}
+
+	auth := bind.NewKeyedTransactor(privateKey)
+	auth.Nonce = big.NewInt(int64(nonce))
+	auth.Value = big.NewInt(0)      // in wei
+	auth.GasLimit = uint64(3000000) // in units
+	auth.GasPrice = gasPrice
+
+	txn, err := preconf.StoreCommitment(auth, p.PreConfBid.TxnHash, p.Bid.Uint64(), p.Blocknumber.Uint64(), hex.EncodeToString(p.BidHash), hex.EncodeToString(p.PreConfBid.Signature), hex.EncodeToString(p.CommitmentSignature))
+	if err != nil {
+		return nil, err
+	}
+	return txn, nil
 }
 
 func (p PreconfCommitment) VerifyBuilderSignature() (common.Address, error) {
