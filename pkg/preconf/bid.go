@@ -72,7 +72,7 @@ type IPreconfCommitment interface {
 type IPreconfCommitmentBuilder interface {
 	IPreconfCommitment
 	PublishCommitment() error
-	StoreCommitmentToDA(*ecdsa.PrivateKey, string) (*types.Transaction, error) // // TODO(@ckartik): Turn into Singleton client for production
+	StoreCommitmentToDA(*ecdsa.PrivateKey, *ethclient.Client) (*types.Transaction, error) // // TODO(@ckartik): Turn into Singleton client for production
 }
 
 type IPreconfBidSearcher interface {
@@ -85,11 +85,7 @@ type IPreconfBidBuilder interface {
 	ConstructCommitment(*ecdsa.PrivateKey) (PreconfCommitment, error) // Verfiy Signature and than constrcut the commitment
 }
 
-func (p PreconfCommitment) StoreCommitmentToDA(privateKey *ecdsa.PrivateKey, contractAddress string, endpoint string) (*types.Transaction, error) {
-	client, err := ethclient.Dial(endpoint)
-	if err != nil {
-		log.Fatalf("Failed to connect to the Ethereum client: %v", err)
-	}
+func (p PreconfCommitment) StoreCommitmentToDA(privateKey *ecdsa.PrivateKey, contractAddress string, client *ethclient.Client) (*types.Transaction, error) {
 	preconf, err := contracts.NewPreConfCommitmentStore(common.HexToAddress(contractAddress), client)
 	if err != nil {
 		return nil, err

@@ -8,6 +8,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/ethclient"
 )
 
 func TestBid(t *testing.T) {
@@ -36,7 +37,10 @@ func TestBid(t *testing.T) {
 }
 
 func TestCommitment(t *testing.T) {
-
+	client, err := ethclient.Dial("http://54.200.76.18:8545")
+	if err != nil {
+		t.Fatalf("Failed to connect to the Ethereum client: %v", err)
+	}
 	key, _ := crypto.GenerateKey()
 	bid, err := ConstructSignedBid(big.NewInt(10), "0xkadrtik", big.NewInt(2), key)
 	if err != nil {
@@ -54,7 +58,7 @@ func TestCommitment(t *testing.T) {
 	commit.VerifyBuilderSignature()
 	privateKey, _ := crypto.HexToECDSA("a9b36f394d2133174158d2eed84ffd4da979a73fd26eaa7a516fe4927ec29bcc")
 
-	txn, err := commit.StoreCommitmentToDA(privateKey, "0xac27A2cbdBA8768D49e359ebA326fC1F27832ED4", "http://54.200.76.18:8545")
+	txn, err := commit.StoreCommitmentToDA(privateKey, "0xac27A2cbdBA8768D49e359ebA326fC1F27832ED4", client)
 	if err != nil {
 		t.Fatal(err)
 	}

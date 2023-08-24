@@ -178,6 +178,10 @@ func run() cli.ActionFunc {
 		case <-buildernode.Ready():
 		}
 		go func() {
+			client, err := ethclient.Dial("http://54.200.76.18:8545")
+			if err != nil {
+				log.Fatalf("Failed to connect to the Ethereum client: %v", err)
+			}
 			for peerMsg := range buildernode.BidReader() {
 				var pc preconf.PreConfBid
 				err := json.Unmarshal(peerMsg.Bytes, &pc)
@@ -195,7 +199,7 @@ func run() cli.ActionFunc {
 				}
 
 				config.Log.WithField("commitment", commit).Info("commitment constructed")
-				txn, err := commit.StoreCommitmentToDA(builderKey, c.String("dacontract"), c.String("daaddr"))
+				txn, err := commit.StoreCommitmentToDA(builderKey, "0xac27A2cbdBA8768D49e359ebA326fC1F27832ED4", client)
 				if err != nil {
 					config.Log.WithError(err).Error("failed to store commitment to DA")
 				}
