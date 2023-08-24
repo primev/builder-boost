@@ -112,7 +112,8 @@ func (s *searcher) API(ctx context.Context) error {
 	case <-searchernode.Ready():
 	}
 	s.p2pEngine = searchernode
-	http.ListenAndServe(":8081", nil)
+	s.log.Info("searcher node ready for api")
+	http.ListenAndServe(":8082", nil)
 
 	return nil
 }

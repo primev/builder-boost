@@ -90,6 +90,18 @@ var flags = []cli.Flag{
 		Value:   false,
 		EnvVars: []string{"METRICS"},
 	},
+	&cli.StringFlag{
+		Name:    "dacontract",
+		Usage:   "DA contract address",
+		Value:   "0xac27A2cbdBA8768D49e359ebA326fC1F27832ED4",
+		EnvVars: []string{"ROLLUP_CONTRACT"},
+	},
+	&cli.StringFlag{
+		Name:    "daaddr",
+		Usage:   "DA RPC address",
+		Value:   "http://54.200.76.18:8545",
+		EnvVars: []string{"ROLLUP_ADDR"},
+	},
 }
 
 var (
@@ -181,7 +193,13 @@ func run() cli.ActionFunc {
 				if err != nil {
 					config.Log.WithError(err).Error("failed to construct commitment")
 				}
+
 				config.Log.WithField("commitment", commit).Info("commitment constructed")
+				txn, err := commit.StoreCommitmentToDA(builderKey, c.String("dacontract"), c.String("daaddr"))
+				if err != nil {
+					config.Log.WithError(err).Error("failed to store commitment to DA")
+				}
+				config.Log.WithField("txn", txn.Hash().Hex()).Info("commitment stored to DA")
 				// config.Log.WithField("peer", peerMsg.Peer).Info(string(peerMsg.Bytes))
 			}
 		}()

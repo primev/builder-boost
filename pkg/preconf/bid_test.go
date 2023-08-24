@@ -38,7 +38,7 @@ func TestBid(t *testing.T) {
 func TestCommitment(t *testing.T) {
 
 	key, _ := crypto.GenerateKey()
-	bid, err := ConstructSignedBid(big.NewInt(10), "0xkartik", big.NewInt(2), key)
+	bid, err := ConstructSignedBid(big.NewInt(10), "0xkadrtik", big.NewInt(2), key)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -52,9 +52,9 @@ func TestCommitment(t *testing.T) {
 		t.Fatal(err)
 	}
 	commit.VerifyBuilderSignature()
-	privateKey, _ := crypto.HexToECDSA("2c440a842f6afc128360dc3e7cafefd66eef4929e7df50bdf0372b93f524ea63")
+	privateKey, _ := crypto.HexToECDSA("a9b36f394d2133174158d2eed84ffd4da979a73fd26eaa7a516fe4927ec29bcc")
 
-	txn, err := commit.StoreCommitmentToDA(privateKey, "0x1D2D5eC8afeF61AfC9B25bEd51681A3B80989473", "http://localhost:8545")
+	txn, err := commit.StoreCommitmentToDA(privateKey, "0xac27A2cbdBA8768D49e359ebA326fC1F27832ED4", "http://54.200.76.18:8545")
 	if err != nil {
 		t.Fatal(err)
 	}
