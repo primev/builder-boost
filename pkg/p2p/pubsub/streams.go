@@ -119,6 +119,11 @@ func (bs *BuilderServer) peerStreamHandlerB2B(stream network.Stream) {
 func (ss *SearcherServer) peerStreamHandlerB2S(stream network.Stream) {
 	peerID := stream.Conn().RemotePeer()
 
+	// builder to builder communication is not allowed
+	if (ss.selfType == commons.Builder) && (ss.apm.InBuilderPeers(peerID)) {
+		return
+	}
+
 	reader := bufio.NewReader(stream)
 	buf := make([]byte, maxMessageSize)
 
@@ -195,6 +200,9 @@ func (ss *SearcherServer) peerStreamHandlerB2S(stream network.Stream) {
 	// searcher<>builder communication test
 	case message.Bid:
 		ss.optBid(inMsg.Peer(), inMsg.Bytes())
+	// searcher<>builder communication test
+	case message.Commitment:
+		ss.optCommitment(inMsg.Peer(), inMsg.Bytes())
 
 	default:
 		ss.log.With(log.F{

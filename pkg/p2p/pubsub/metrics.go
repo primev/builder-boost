@@ -31,6 +31,7 @@ type metrics struct {
 	BundleMsgCount      prometheus.Counter
 	PreconfBidMsgCount  prometheus.Counter
 	BidMsgCount         prometheus.Counter
+	CommitmentMsgCount  prometheus.Counter
 	// rtt measurements are used to determine the latency in communication between peers
 	LatencyPeers *prometheus.GaugeVec
 	// the score values assigned by this peer address to other peers
@@ -178,6 +179,12 @@ func newMetrics(registry prometheus.Registerer, namespace string, peerType commo
 			Name:      "bid_msg_count",
 			Help:      "Number of incoming bid messages count.",
 		}),
+		CommitmentMsgCount: prometheus.NewCounter(prometheus.CounterOpts{
+			Namespace: namespace,
+			Subsystem: subsystem,
+			Name:      "commitment_msg_count",
+			Help:      "Number of incoming commitment messages count.",
+		}),
 
 		// rtt metrics
 		LatencyPeers: prometheus.NewGaugeVec(prometheus.GaugeOpts{
@@ -238,6 +245,7 @@ func newMetrics(registry prometheus.Registerer, namespace string, peerType commo
 			m.BundleMsgCount,
 			m.PreconfBidMsgCount,
 			m.BidMsgCount,
+			m.CommitmentMsgCount,
 			// rtt
 			m.LatencyPeers,
 			// score
@@ -262,8 +270,9 @@ func newMetrics(registry prometheus.Registerer, namespace string, peerType commo
 			m.VersionMsgCount,
 			m.GetPeerListMsgCount,
 			m.PeerListMsgCount,
-			//TODO I'm not sure if Searchers will be take bid from the builders
+			//TODO I'm not sure if Searchers will be take bid from the builders if not remove
 			m.BidMsgCount,
+			m.CommitmentMsgCount,
 			// rtt
 			m.LatencyPeers,
 			// score

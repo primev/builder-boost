@@ -38,7 +38,7 @@ const (
 	BuilderTopicsCount       = 2
 	SearcherTopicsCount      = 1
 	BuilderComChannelsCount  = 4
-	SearcherComChannelsCount = 1
+	SearcherComChannelsCount = 2
 )
 
 type streamFunc func(peer.ID, message.OutboundMessage) error
@@ -316,7 +316,7 @@ func (bs *BuilderServer) builderProtocol(once sync.Once) {
 					bs.log.With(log.F{
 						"caller":  commons.GetCallerName(),
 						"date":    commons.GetNow(),
-						"service": "p2p pubsub",
+						"service": "p2p pubsub builder",
 						"op":      inMsg.Op(),
 						"peer":    inMsg.Peer(),
 					}).Warn("unknown approve option!")
@@ -428,6 +428,11 @@ func (ss *SearcherServer) searcherProtocol(once sync.Once) {
 			continue
 		}
 
+		// builder to builder communication is not allowed
+		if (ss.selfType == commons.Builder) && (ss.apm.InBuilderPeers(msg.ReceivedFrom)) {
+			continue
+		}
+
 		inMsg, err := ss.imb.Parse(msg.ReceivedFrom, msg.Data)
 		if err != nil {
 			ss.log.With(log.F{
@@ -438,7 +443,7 @@ func (ss *SearcherServer) searcherProtocol(once sync.Once) {
 			continue
 		}
 
-		// if not in approved peers try to authenticate
+		// if not in approved peers try to approve
 		if ((ss.selfType == commons.Builder) && !(ss.apm.InSearcherPeers(msg.ReceivedFrom))) ||
 			((ss.selfType == commons.Searcher) && !(ss.apm.InBuilderPeers(msg.ReceivedFrom))) {
 			//if !ss.apm.InBuilderPeers(msg.ReceivedFrom) {
@@ -459,7 +464,7 @@ func (ss *SearcherServer) searcherProtocol(once sync.Once) {
 					ss.log.With(log.F{
 						"caller":  commons.GetCallerName(),
 						"date":    commons.GetNow(),
-						"service": "p2p pubsub",
+						"service": "p2p pubsub searcher",
 						"op":      inMsg.Op(),
 						"peer":    inMsg.Peer(),
 					}).Warn("unknown approve option!")
@@ -501,6 +506,10 @@ func (ss *SearcherServer) searcherProtocol(once sync.Once) {
 			// searcher<>builder communication test
 			case message.Bid:
 				ss.optBid(inMsg.Peer(), inMsg.Bytes())
+			// searcher<>builder communication test
+			case message.Commitment:
+				ss.optCommitment(inMsg.Peer(), inMsg.Bytes())
+
 			default:
 				ss.log.With(log.F{
 					"caller":  commons.GetCallerName(),
@@ -938,6 +947,16 @@ func (ss *SearcherServer) optBid(cpeer peer.ID, bytes []byte) {
 	defer ss.metrics.BidMsgCount.Inc()
 
 	ss.comChannels[commons.BidCh] <- messages.PeerMsg{
+		Peer:  cpeer,
+		Bytes: bytes,
+	}
+}
+
+// process and transfer commitments to the channel
+func (ss *SearcherServer) optCommitment(cpeer peer.ID, bytes []byte) {
+	defer ss.metrics.CommitmentMsgCount.Inc()
+
+	ss.comChannels[commons.CommitmentCh] <- messages.PeerMsg{
 		Peer:  cpeer,
 		Bytes: bytes,
 	}

@@ -3,7 +3,7 @@ package message
 type Op byte
 
 const (
-	UNDEFINED Op = iota
+	UNDEFINED_op Op = iota
 	Approve
 	Ping
 	Pong
@@ -16,6 +16,7 @@ const (
 	Bundle
 	PreconfBid
 	Bid
+	Commitment
 )
 
 func (op Op) String() string {
@@ -44,6 +45,9 @@ func (op Op) String() string {
 		return "preconfbid"
 	case Bid:
 		return "bid"
+	case Commitment:
+		return "commitment"
+
 	default:
 		return "Unknown Op"
 	}

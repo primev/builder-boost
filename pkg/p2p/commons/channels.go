@@ -11,4 +11,5 @@ const (
 	PreconfCh
 	// searcher channels
 	BidCh
+	CommitmentCh
 )

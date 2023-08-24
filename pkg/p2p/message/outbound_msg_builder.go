@@ -26,6 +26,7 @@ type OutboundMsgBuilder interface {
 	PreconfBid([]byte) (OutboundMessage, error)
 	// designed for searchers but builders use this msg types for provide communincation with searchers
 	Bid([]byte) (OutboundMessage, error)
+	Commitment([]byte) (OutboundMessage, error)
 }
 
 // outMsgBuilder defines a structure used for creating outbound communication messages.
@@ -155,5 +156,14 @@ func (b *outMsgBuilder) Bid(bid []byte) (OutboundMessage, error) {
 		Bid,
 		time.Now().UnixNano(),
 		bid,
+	)
+}
+
+// Commitment creates a "commitment" message with the specified commitment data.
+func (b *outMsgBuilder) Commitment(commitment []byte) (OutboundMessage, error) {
+	return b.builder.createOutbound(
+		Commitment,
+		time.Now().UnixNano(),
+		commitment,
 	)
 }

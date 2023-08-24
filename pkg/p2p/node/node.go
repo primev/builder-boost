@@ -38,8 +38,10 @@ import (
 	"github.com/primev/builder-boost/pkg/rollup"
 )
 
-var _ IBuilderNode = (*BuilderNode)(nil)
-var _ ISearcherNode = (*SearcherNode)(nil)
+var (
+	_ IBuilderNode  = (*BuilderNode)(nil)
+	_ ISearcherNode = (*SearcherNode)(nil)
+)
 
 type INode interface {
 	// GetPeerID returns the peer id of the node.
@@ -86,11 +88,21 @@ type ISearcherNode interface {
 	// Gossip gossip a message over the gossip proto to specific peers.
 	GossipS(message.OutboundMessage) error
 
+	// read the bids from searchers on the builders
 	// BidReader returns a channel for reading bids from the node. NOTE: currently in the testing phase
 	BidReader() <-chan messages.PeerMsg
 
+	// read the commitments from builders on the searchers
+	// CommitmentReader returns a channel for reading commitments from the node. NOTE: currently in the testing phase
+	CommitmentReader() <-chan messages.PeerMsg
+
+	// send from searchers to builders | recommended broadcast type: Publish
 	// BidSend sends bid over the node.	NOTE: currently in the testing phase
 	BidSend(commons.Broadcast, []byte) error
+
+	// send from builders to searchers | recommended broadcast type: Gossip
+	// CommitmentSend sends commitments over the node.	NOTE: currently in the testing phase
+	CommitmentSend(commons.Broadcast, []byte) error
 }
 
 type IBuilderNode interface {
@@ -286,6 +298,7 @@ func newNode(logger log.Logger, key *ecdsa.PrivateKey, rollup rollup.Rollup, reg
 		// Multiple listen addresses
 		libp2p.ListenAddrStrings(
 			"/ip4/0.0.0.0/tcp/0", // regular tcp connections
+			//"/ip4/0.0.0.0/tcp/43765", // regular tcp connections
 			//"/ip4/0.0.0.0/tcp/0/ws", // websocket endpoint
 			//"/ip4/0.0.0.0/udp/0/quic", // a UDP endpoint for the QUIC transport
 		),
@@ -450,7 +463,8 @@ func newNode(logger log.Logger, key *ecdsa.PrivateKey, rollup rollup.Rollup, reg
 	switch peerType {
 	case commons.Builder:
 		scomChannels = map[commons.ComChannels]chan messages.PeerMsg{
-			commons.BidCh: make(chan messages.PeerMsg),
+			commons.BidCh:        make(chan messages.PeerMsg),
+			commons.CommitmentCh: make(chan messages.PeerMsg),
 		}
 
 		bcomChannels = map[commons.ComChannels]chan messages.PeerMsg{
@@ -462,7 +476,8 @@ func newNode(logger log.Logger, key *ecdsa.PrivateKey, rollup rollup.Rollup, reg
 
 	case commons.Searcher:
 		scomChannels = map[commons.ComChannels]chan messages.PeerMsg{
-			commons.BidCh: make(chan messages.PeerMsg),
+			commons.BidCh:        make(chan messages.PeerMsg),
+			commons.CommitmentCh: make(chan messages.PeerMsg),
 		}
 	}
 
@@ -792,6 +807,11 @@ func (sn *SearcherNode) BidReader() <-chan messages.PeerMsg {
 	return sn.scomChannels[commons.BidCh]
 }
 
+// read commitments from the node
+func (sn *SearcherNode) CommitmentReader() <-chan messages.PeerMsg {
+	return sn.scomChannels[commons.CommitmentCh]
+}
+
 // stream signature over the node for specific peer
 func (bn *BuilderNode) SignatureSend(peer peer.ID, sig []byte) error {
 	msg, err := bn.msgBuild.Signature(sig)
@@ -867,6 +887,27 @@ func (bn *BuilderNode) PreconfSend(broadcastType commons.Broadcast, preconf []by
 // gossip or publish bids over the node
 func (sn *SearcherNode) BidSend(broadcastType commons.Broadcast, bid []byte) error {
 	msg, err := sn.msgBuild.Bid(bid)
+	if err != nil {
+		return err
+	}
+
+	if broadcastType == commons.Publish {
+		err = sn.PublishS(msg)
+		if err != nil {
+			return err
+		}
+	} else if broadcastType == commons.Gossip {
+		err = sn.GossipS(msg)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// gossip or publish commitments over the node
+func (sn *SearcherNode) CommitmentSend(broadcastType commons.Broadcast, commitment []byte) error {
+	msg, err := sn.msgBuild.Commitment(commitment)
 	if err != nil {
 		return err
 	}
