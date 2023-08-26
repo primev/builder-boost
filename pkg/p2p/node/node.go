@@ -308,6 +308,7 @@ func newNode(logger log.Logger, key *ecdsa.PrivateKey, rollup rollup.Rollup, reg
 		libp2p.Security(noise.ID, noise.New),
 		// support any other default transports (TCP)
 		libp2p.DefaultTransports,
+		//libp2p.Transport(tcp.NewTCPTransport, tcp.DisableReuseport()),
 		// Let's prevent our peer from having too many
 		// connections by attaching a connection manager.
 		libp2p.ConnectionManager(connmgr),

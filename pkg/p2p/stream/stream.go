@@ -10,9 +10,12 @@ import (
 	"github.com/libp2p/go-libp2p/core/protocol"
 )
 
+// TODO research streams: Can communication continue without closing a stream?
+// Is this a correct approach? If so, how?"
+
 // stream is an interface for sending messages over a network stream
 type Stream interface {
-	Send(peer.ID, []byte) error
+	Send(context.Context, peer.ID, []byte) error
 	Close() error
 }
 
@@ -23,7 +26,7 @@ type stream struct {
 	// The protocol ID
 	proto protocol.ID
 
-	// the network stream
+	// the network stream (NOTE:unused for now)
 	stream network.Stream
 }
 
@@ -42,8 +45,8 @@ func New(
 }
 
 // it sends a message to the specified peer over the given protocol
-func (s *stream) Send(p peer.ID, msg []byte) error {
-	stream, err := s.host.NewStream(context.Background(), p, s.proto)
+func (s *stream) Send(ctx context.Context, p peer.ID, msg []byte) error {
+	stream, err := s.host.NewStream(ctx, p, s.proto)
 	if err != nil {
 		return err
 	}
@@ -55,6 +58,7 @@ func (s *stream) Send(p peer.ID, msg []byte) error {
 	if err != nil {
 		return err
 	}
+
 	if err = writer.Flush(); err != nil {
 		return err
 	}

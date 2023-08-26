@@ -34,6 +34,10 @@ var (
 	errInvalidPeerType     = errors.New("invalid peer type!")
 )
 
+var (
+	streamTimeout = time.Second * 10
+)
+
 const (
 	BuilderTopicsCount       = 2
 	SearcherTopicsCount      = 1
@@ -195,12 +199,12 @@ func New(
 	case commons.Builder:
 		// event tracking
 		go server.events(connTrackCh, builderServer.Stream, searcherServer.Stream)
-		// start RTT test
+		// start RTT test | don't use libp2p ping
 		go server.latencyUpdater(builderServer.Stream, searcherServer.Stream)
 	case commons.Searcher:
 		// event tracking
 		go server.events(connTrackCh, searcherServer.Stream)
-		// start RTT test
+		// start RTT test | don't use libp2p ping
 		go server.latencyUpdater(searcherServer.Stream)
 	default:
 	}
@@ -544,7 +548,10 @@ func (bs *BuilderServer) Stream(peerID peer.ID, msg message.OutboundMessage) err
 		return err
 	}
 
-	return bs.stream_b2b.Send(peerID, msgBytes)
+	ctx, cancel := context.WithTimeout(bs.ctx, streamTimeout)
+	defer cancel()
+
+	return bs.stream_b2b.Send(ctx, peerID, msgBytes)
 }
 
 // stream message for gossip peers
@@ -560,7 +567,8 @@ func (bs *BuilderServer) Gossip(msg message.OutboundMessage) error {
 	peers := bs.apm.GetGossipPeers()
 
 	for peerID, _ := range peers {
-		err = bs.stream_b2b.Send(peerID, msgBytes)
+		ctx, cancel := context.WithTimeout(bs.ctx, streamTimeout)
+		err = bs.stream_b2b.Send(ctx, peerID, msgBytes)
 		if err != nil {
 			bs.log.With(log.F{
 				"caller":  commons.GetCallerName(),
@@ -569,6 +577,7 @@ func (bs *BuilderServer) Gossip(msg message.OutboundMessage) error {
 				"peer id": peerID,
 			}).Error(err)
 		}
+		cancel()
 	}
 
 	return nil
@@ -595,7 +604,10 @@ func (ss *SearcherServer) Stream(peerID peer.ID, msg message.OutboundMessage) er
 		return err
 	}
 
-	return ss.stream_b2s.Send(peerID, msgBytes)
+	ctx, cancel := context.WithTimeout(ss.ctx, streamTimeout)
+	defer cancel()
+
+	return ss.stream_b2s.Send(ctx, peerID, msgBytes)
 }
 
 // stream message for gossip peers
@@ -611,7 +623,8 @@ func (ss *SearcherServer) Gossip(msg message.OutboundMessage) error {
 	peers := ss.apm.GetGossipPeers()
 
 	for peerID, _ := range peers {
-		err = ss.stream_b2s.Send(peerID, msgBytes)
+		ctx, cancel := context.WithTimeout(ss.ctx, streamTimeout)
+		err = ss.stream_b2s.Send(ctx, peerID, msgBytes)
 		if err != nil {
 			ss.log.With(log.F{
 				"caller":  commons.GetCallerName(),
@@ -620,6 +633,7 @@ func (ss *SearcherServer) Gossip(msg message.OutboundMessage) error {
 				"peer id": peerID,
 			}).Error(err)
 		}
+		cancel()
 	}
 
 	return nil
