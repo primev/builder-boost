@@ -10,6 +10,8 @@ import (
 type Config struct {
 	// p2p last version
 	version string
+	// p2p port
+	p2pPort int
 	// DiscoveryInterval is how often we re-publish our mDNS records.
 	discoveryInterval time.Duration
 	// DiscoveryServiceTag is used in our mDNS advertisements to discover other peers.
@@ -48,6 +50,7 @@ type ConfigOption func(*Config)
 func New(options ...ConfigOption) *Config {
 	cfg := &Config{
 		version:             "0.0.1",
+		p2pPort:             0,
 		discoveryInterval:   time.Hour,
 		discoveryServiceTag: "PRIMEV-0.0.1",
 		topic:               "PRIMEV-TEST-45",
@@ -74,6 +77,13 @@ func New(options ...ConfigOption) *Config {
 func WithVersion(version string) ConfigOption {
 	return func(cfg *Config) {
 		cfg.version = version
+	}
+}
+
+// WithP2PPort sets the version option for Config
+func WithP2PPort(port int) ConfigOption {
+	return func(cfg *Config) {
+		cfg.p2pPort = port
 	}
 }
 
@@ -178,6 +188,11 @@ func WithMetricsRoute(metricsRoute string) ConfigOption {
 // Version returns the version from Config
 func (cfg *Config) Version() string {
 	return cfg.version
+}
+
+// P2PPort returns the p2p port from Config
+func (cfg *Config) P2PPort() int {
+	return cfg.p2pPort
 }
 
 // DiscoveryInterval returns the discovery interval from Config
