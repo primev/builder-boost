@@ -84,10 +84,14 @@ func (d *Discovery) ConnectBootstrap() {
 	var wg sync.WaitGroup
 	for _, peerAddr := range d.cfg.BootstrapPeers() {
 		peerinfo, _ := peer.AddrInfoFromP2pAddr(peerAddr)
+		if peerinfo.ID == d.h.ID() {
+			continue
+		}
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			if err := d.h.Connect(d.ctx, *peerinfo); err != nil {
+
 				d.log.With(log.F{
 					"caller":  commons.GetCallerName(),
 					"date":    commons.GetNow(),
@@ -166,5 +170,4 @@ func (d *Discovery) discoverPeersWithRendezvous() {
 		"service":  "p2p rendezvous",
 		"log time": commons.GetNow(),
 	}).Info("peer discovery completed")
-
 }
