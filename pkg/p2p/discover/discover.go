@@ -7,6 +7,7 @@ import (
 
 	dht "github.com/libp2p/go-libp2p-kad-dht"
 	"github.com/libp2p/go-libp2p/core/host"
+	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/p2p/discovery/mdns"
 	drouting "github.com/libp2p/go-libp2p/p2p/discovery/routing"
@@ -134,9 +135,16 @@ func (d *Discovery) discoverPeersWithRendezvous() {
 		}
 
 		for peer := range peerChan {
+			// no self connection
 			if peer.ID == d.h.ID() {
-				continue // No self connection
+				continue
 			}
+
+			// already connected
+			if d.h.Network().Connectedness(peer.ID) == network.Connected {
+				continue
+			}
+
 			err := d.h.Connect(d.ctx, peer)
 			if err != nil {
 				d.log.With(log.F{

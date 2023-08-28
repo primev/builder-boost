@@ -1,7 +1,7 @@
 package config
 
 // NOTE: temporary file
-// searcher whitelist
+// searcher whitelist NOTE: only searchers not builders!
 var (
 	SearcherPeerIDs = []string{
 		"16Uiu2HAmLqo7aCBqrU5D6CwmfxWpLyDp83beFsJM1rZdEBR9W5mN",
