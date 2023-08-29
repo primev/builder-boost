@@ -35,7 +35,8 @@ var (
 )
 
 var (
-	streamTimeout = time.Second * 10
+	streamTimeout  = time.Second * 10
+	connectTimeout = time.Second * 10
 )
 
 const (
@@ -910,8 +911,12 @@ func (server *Server) optPeerList(cpeer peer.ID, bytes []byte) {
 		}
 
 		if !server.apm.InPeers(addr.ID) {
-			//TODO make test without mdns
-			go server.host.Connect(context.Background(), addr)
+			// NOTE: tested with remote peers
+			go func(addr peer.AddrInfo) {
+				ctx, cancel := context.WithTimeout(server.ctx, connectTimeout)
+				defer cancel()
+				server.host.Connect(ctx, addr)
+			}(addr)
 		}
 	}
 }
