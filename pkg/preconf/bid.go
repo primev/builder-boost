@@ -229,7 +229,7 @@ func (p PreConfBid) SubmitBid(p2pEngine node.ISearcherNode) error {
 	}
 
 	fmt.Println(payload)
-	p2pEngine.BidSend(commons.Gossip, payload)
+	p2pEngine.BidSend(commons.Publish, payload)
 	// send payload to server at localhost:8080/preconf
 	//http client
 	request := http.Client{}
