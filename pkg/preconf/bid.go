@@ -67,12 +67,14 @@ type IPreconfCommitment interface {
 	IPreconfBid // TODO Implement for underlying data-structure
 	VerifyBuilderSignature() (common.Address, error)
 	CommitmentOriginator() (common.Address, *ecdsa.PublicKey, error)
+	SendCommitmentToSearcher(*node.IBuilderNode) error
 }
 
 type IPreconfCommitmentBuilder interface {
 	IPreconfCommitment
 	PublishCommitment() error
 	StoreCommitmentToDA(*ecdsa.PrivateKey, *ethclient.Client) (*types.Transaction, error) // // TODO(@ckartik): Turn into Singleton client for production
+
 }
 
 type IPreconfBidSearcher interface {
@@ -83,6 +85,16 @@ type IPreconfBidSearcher interface {
 type IPreconfBidBuilder interface {
 	IPreconfBid
 	ConstructCommitment(*ecdsa.PrivateKey) (PreconfCommitment, error) // Verfiy Signature and than constrcut the commitment
+}
+
+func (p PreconfCommitment) SendCommitmentToSearcher(builderNode node.IBuilderNode) error {
+	json, err := json.Marshal(p)
+	if err != nil {
+		return err
+	}
+
+	builderNode.CommitmentSend(commons.Gossip, json)
+	return nil
 }
 
 func (p PreconfCommitment) StoreCommitmentToDA(privateKey *ecdsa.PrivateKey, contractAddress string, client *ethclient.Client) (*types.Transaction, error) {

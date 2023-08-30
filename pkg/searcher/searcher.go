@@ -111,6 +111,14 @@ func (s *searcher) API(ctx context.Context) error {
 	select {
 	case <-searchernode.Ready():
 	}
+
+	go func(n node.ISearcherNode, s *searcher) {
+		commitment := n.CommitmentReader()
+		for c := range commitment {
+			// Print the commitment details
+			s.log.Info(c)
+		}
+	}(searchernode, s)
 	s.p2pEngine = searchernode
 	s.log.Info("searcher node ready for api")
 	http.ListenAndServe(":8082", nil)

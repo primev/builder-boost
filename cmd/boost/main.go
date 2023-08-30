@@ -203,6 +203,7 @@ func run() cli.ActionFunc {
 				if err != nil {
 					config.Log.WithError(err).Error("failed to store commitment to DA")
 				}
+
 				config.Log.WithField("txn", txn.Hash().Hex()).Info("commitment stored to DA")
 				// config.Log.WithField("peer", peerMsg.Peer).Info(string(peerMsg.Bytes))
 			}
