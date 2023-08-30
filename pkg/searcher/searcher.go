@@ -123,7 +123,12 @@ func (s *searcher) API(ctx context.Context) error {
 			if err != nil {
 				s.log.Error()
 			}
-			s.log.Info(pc)
+			builder, err := pc.VerifyBuilderSignature()
+			if err != nil {
+				s.log.Error("failed to verify builder signature for commitment")
+			}
+			s.log.WithField("builder", builder).WithField("txn", pc.TxnHash).Info("builder signature verified for commitment")
+			// s.log.Info(pc)
 		}
 	}(searchernode, s)
 	s.p2pEngine = searchernode
