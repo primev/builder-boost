@@ -199,11 +199,13 @@ func run() cli.ActionFunc {
 				}
 
 				config.Log.WithField("commitment", commit).Info("commitment constructed")
+				commit.SendCommitmentToSearcher(buildernode)
+
 				txn, err := commit.StoreCommitmentToDA(builderKey, "0xac27A2cbdBA8768D49e359ebA326fC1F27832ED4", client)
 				if err != nil {
 					config.Log.WithError(err).Error("failed to store commitment to DA")
+					continue
 				}
-				commit.SendCommitmentToSearcher(buildernode)
 
 				config.Log.WithField("txn", txn.Hash().Hex()).Info("commitment stored to DA")
 				// config.Log.WithField("peer", peerMsg.Peer).Info(string(peerMsg.Bytes))
