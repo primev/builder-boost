@@ -93,7 +93,7 @@ func (p PreconfCommitment) SendCommitmentToSearcher(builderNode node.IBuilderNod
 		return err
 	}
 
-	builderNode.CommitmentSend(commons.Gossip, json)
+	builderNode.CommitmentSend(commons.Publish, json)
 	return nil
 }
 

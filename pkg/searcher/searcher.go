@@ -113,10 +113,17 @@ func (s *searcher) API(ctx context.Context) error {
 	}
 
 	go func(n node.ISearcherNode, s *searcher) {
+		s.log.Info("searcher node ready for commitment")
 		commitment := n.CommitmentReader()
 		for c := range commitment {
+			s.log.Info("received commitment")
 			// Print the commitment details
-			s.log.Info(c)
+			var pc preconf.PreconfCommitment
+			err := json.Unmarshal(c.Bytes, &pc)
+			if err != nil {
+				s.log.Error()
+			}
+			s.log.Info(pc)
 		}
 	}(searchernode, s)
 	s.p2pEngine = searchernode

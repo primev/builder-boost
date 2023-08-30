@@ -56,9 +56,9 @@ func TestCommitment(t *testing.T) {
 		t.Fatal(err)
 	}
 	commit.VerifyBuilderSignature()
-	privateKey, _ := crypto.HexToECDSA("a9b36f394d2133174158d2eed84ffd4da979a73fd26eaa7a516fe4927ec29bcc")
+	privateKey, _ := crypto.HexToECDSA("7cea3c338ce48647725ca014a52a80b2a8eb71d184168c343150a98100439d1b")
 
-	txn, err := commit.StoreCommitmentToDA(privateKey, "0xac27A2cbdBA8768D49e359ebA326fC1F27832ED4", client)
+	txn, err := commit.StoreCommitmentToDA(privateKey, "0x169c9cd14923ef3fed0e0ce98cdc71c3d6037728", client)
 	if err != nil {
 		t.Fatal(err)
 	}
