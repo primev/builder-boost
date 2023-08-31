@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math/big"
 	"net/http"
@@ -432,23 +433,23 @@ func newNode(logger log.Logger, key *ecdsa.PrivateKey, rollup rollup.Rollup, reg
 	)
 	switch peerType {
 	case commons.Builder:
-		// stake, err := rollup.GetMinimalStake(address)
-		// if err != nil {
-		// 	logger.With(log.F{
-		// 		"caller":  commons.GetCallerName(),
-		// 		"date":    commons.GetNow(),
-		// 		"service": "p2p rollup",
-		// 	}).Fatal(err)
-		// }
+		stake, err := rollup.GetMinimalStake(address)
+		if err != nil {
+			logger.With(log.F{
+				"caller":  commons.GetCallerName(),
+				"date":    commons.GetNow(),
+				"service": "p2p rollup",
+			}).Fatal(err)
+		}
 
-		// // if there is not enough stake, close node
-		// if stake.Cmp(cfg.MinimalStake()) < 0 {
-		// 	err = errors.New("not enough stake")
-		// 	logger.With(log.F{
-		// 		"service":  "p2p minimal stake",
-		// 		"log time": commons.GetNow(),
-		// 	}).Fatal(err)
-		// }
+		// if there is not enough stake, close node
+		if stake.Cmp(cfg.MinimalStake()) < 0 {
+			err = errors.New("not enough stake")
+			logger.With(log.F{
+				"service":  "p2p minimal stake",
+				"log time": commons.GetNow(),
+			}).Fatal(err)
+		}
 	case commons.Searcher:
 		//TODO no scenario has been designed for Searchers yet, follow the team opinions
 	}
