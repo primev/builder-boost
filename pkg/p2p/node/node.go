@@ -240,8 +240,11 @@ func newNode(logger log.Logger, key *ecdsa.PrivateKey, rollup rollup.Rollup, reg
 	ctx, cancel := context.WithCancel(context.Background())
 
 	// load config
+	// NOTE: if prometheus registry not nil p2p metrics will merge with main system metrics
 	cfg := config.New(
 		config.WithVersion("0.0.1"),
+		//config.WithP2PPort(43014),
+		config.WithP2PPort(0),
 		config.WithDiscoveryInterval(30*time.Minute),
 		config.WithLatencyInterval(time.Hour*1),
 		config.WithScoreInterval(time.Minute*1),
@@ -249,6 +252,7 @@ func newNode(logger log.Logger, key *ecdsa.PrivateKey, rollup rollup.Rollup, reg
 		config.WithMetricsNamespace("primev"),
 		config.WithMetricsPort(9000),
 		config.WithMetricsRoute("/metrics_p2p"),
+		config.WithBootstrapPeers(defaultBootStrapPeers()),
 	)
 
 	// Set your own keypair
@@ -290,6 +294,11 @@ func newNode(logger log.Logger, key *ecdsa.PrivateKey, rollup rollup.Rollup, reg
 			"service": "p2p connmngr",
 		}).Fatal(err)
 	}
+
+	// NOTE: use 0 for local tests
+	// NOTE: use 43014 for remote tests
+	// NOTE: use DisableReuseport after tests
+	listenAddrTcp := fmt.Sprintf("/ip4/0.0.0.0/tcp/%d", cfg.P2PPort())
 	host, err := libp2p.New(
 		// Use the keypair we generated
 		libp2p.Identity(privKey),
@@ -297,7 +306,8 @@ func newNode(logger log.Logger, key *ecdsa.PrivateKey, rollup rollup.Rollup, reg
 		libp2p.ConnectionGater(conngtr),
 		// Multiple listen addresses
 		libp2p.ListenAddrStrings(
-			"/ip4/0.0.0.0/tcp/0", // regular tcp connections
+			listenAddrTcp,
+			//"/ip4/0.0.0.0/tcp/0", // regular tcp connections
 			//"/ip4/0.0.0.0/tcp/43765", // regular tcp connections
 			//"/ip4/0.0.0.0/tcp/0/ws", // websocket endpoint
 			//"/ip4/0.0.0.0/udp/0/quic", // a UDP endpoint for the QUIC transport
@@ -925,6 +935,20 @@ func (sn *SearcherNode) CommitmentSend(broadcastType commons.Broadcast, commitme
 		}
 	}
 	return nil
+}
+
+// default boostrap peers
+func defaultBootStrapPeers() (peers []multiaddr.Multiaddr) {
+	for _, s := range []string{
+		"/ip4/35.91.118.20/tcp/43014/p2p/16Uiu2HAmAG5z3E8p7o19tEcLdGvYrJYdD1NabRDc6jmizDva5BL3",
+	} {
+		ma, err := multiaddr.NewMultiaddr(s)
+		if err != nil {
+			panic(err)
+		}
+		peers = append(peers, ma)
+	}
+	return
 }
 
 // generate token for peer

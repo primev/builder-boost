@@ -17,6 +17,10 @@ import (
 	"github.com/primev/builder-boost/pkg/p2p/config"
 )
 
+var (
+	connectTimeout = time.Second * 10
+)
+
 // optional discovery
 type Discovery struct {
 	cfg    *config.Config
@@ -90,7 +94,11 @@ func (d *Discovery) ConnectBootstrap() {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			if err := d.h.Connect(d.ctx, *peerinfo); err != nil {
+
+			ctx, cancel := context.WithTimeout(d.ctx, connectTimeout)
+			defer cancel()
+
+			if err := d.h.Connect(ctx, *peerinfo); err != nil {
 
 				d.log.With(log.F{
 					"caller":  commons.GetCallerName(),
@@ -114,9 +122,8 @@ func (d *Discovery) ConnectBootstrap() {
 }
 
 // works for a rendezvous peer discovery !!!
-// TODO
+// TODO context correction
 func (d *Discovery) discoverPeersWithRendezvous() {
-
 	routingDiscovery := drouting.NewRoutingDiscovery(d.idht)
 	dutil.Advertise(d.ctx, routingDiscovery, d.cfg.Topic())
 
