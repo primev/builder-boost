@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"log"
 	"math/big"
-	"net/http"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -242,10 +241,10 @@ func (p PreConfBid) SubmitBid(p2pEngine node.ISearcherNode) error {
 
 	fmt.Println(payload)
 	p2pEngine.BidSend(commons.Publish, payload)
-	// send payload to server at localhost:8080/preconf
-	//http client
-	request := http.Client{}
-	request.Post("http://localhost:8080/preconf", "application/json", bytes.NewBuffer(payload))
+	// // send payload to server at localhost:8080/preconf
+	// //http client
+	// request := http.Client{}
+	// request.Post("http://localhost:8080/preconf", "application/json", bytes.NewBuffer(payload))
 
 	return nil
 }
