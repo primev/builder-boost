@@ -31,7 +31,8 @@ func TestConnectSearcher(t *testing.T) {
 	// Initialize the API and its dependencies
 
 	config := boost.Config{
-		Log: log.New(),
+		Log:                  log.New(),
+		InclusionProofActive: true,
 	}
 
 	// setup the boost service
