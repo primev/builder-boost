@@ -188,6 +188,27 @@ func (s *searcher) processMessages(c *websocket.Conn) error {
 			s.m.Duration.WithLabelValues("e2e", s.addr).Observe(e2eTime.Seconds())
 
 		}
-		s.log.WithField("message", string(message)).Info("received message from builder")
+		var blockData boost.Metadata
+		err = json.Unmarshal(message, &blockData)
+		if err != nil {
+			s.log.WithField("message", string(message)).Error("failed to unmarshal message")
+			continue
+		}
+		// List out all the fields in blockdata into logs
+		s.log.
+			WithField("builder", blockData.Builder).
+			WithField("number", blockData.Number).
+			WithField("blockHash", blockData.BlockHash).
+			WithField("timestamp", blockData.Timestamp).
+			WithField("baseFee", blockData.BaseFee).
+			WithField("personal_transactions", blockData.ClientTransactions).
+			WithField("sent_timestamp", blockData.SentTimestamp).
+			WithField("rec_timestamp", blockData.RecTimestamp).
+			WithField("wire_time", now.Sub(blockData.SentTimestamp)).
+			WithField("e2e_time", now.Sub(blockData.RecTimestamp)).
+			WithField("count", blockData.Transactions.Count).
+			WithField("min_priority_fee", blockData.Transactions.MinPriorityFee).
+			WithField("max_priority_fee", blockData.Transactions.MaxPriorityFee).
+			Info("received message from builder")
 	}
 }
