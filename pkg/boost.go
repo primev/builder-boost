@@ -119,8 +119,8 @@ func (as *DefaultBoost) SubmitBlock(ctx context.Context, msg *capella.SubmitBloc
 				if _, ok := blockMetadata.SearcherTxns[clientID]; !ok {
 					blockMetadata.SearcherTxns[clientID] = make([]string, 0)
 				}
+        blockMetadata.SearcherTxns[clientID] = append(blockMetadata.SearcherTxns[clientID], txn.Hash().String())
 			}
-			blockMetadata.SearcherTxns[clientID] = append(blockMetadata.SearcherTxns[clientID], txn.Hash().String())
 		}
 
 		blockMetadata.InternalMetadata.Transactions.MinPriorityFee = minTipTxn.GasTipCap().Int64()
