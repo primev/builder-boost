@@ -107,6 +107,7 @@ func (a *API) init() {
 		router.Handle("/builder", http.HandlerFunc(a.handleBuilderID))
 		// Adds an endpoint to get commitment to the builder by searcher address
 		router.Handle("/commitment", a.authSearcher(http.HandlerFunc(a.handleSearcherCommitment)))
+		router.Handle("/version", http.HandlerFunc(a.handleVersionRequest))
 
 		// TODO(@ckartik): Guard this to only by a requset made form an authorized internal service
 		router.HandleFunc(PathSubmitBlock, handler(a.submitBlock))
@@ -188,6 +189,15 @@ type IDResponse struct {
 func (a *API) handleBuilderID(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(IDResponse{ID: a.Rollup.GetBuilderAddress().Hex()})
 }
+
+type VersionResponse struct {
+	Version string `json:"version"`
+}
+// handleVersionRequest returns the builder ID as an IDResponse
+func (a *API) handleVersionRequest(w http.ResponseWriter, r *http.Request) {
+	_ = json.NewEncoder(w).Encode(VersionResponse{Version: "1.0.0"})
+}
+
 
 type CommitmentResponse struct {
 	Commitment string `json:"commitment"`
