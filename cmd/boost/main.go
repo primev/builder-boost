@@ -102,6 +102,11 @@ var flags = []cli.Flag{
 		Usage:   "DA RPC address",
 		Value:   "http://54.200.76.18:8545",
 		EnvVars: []string{"ROLLUP_ADDR"},
+	&cli.BoolFlag{
+		Name:    "inclusionlist",
+		Usage:   "enables inclusion list for boost",
+		Value:   false,
+		EnvVars: []string{"INCLUSION_LIST"},
 	},
 }
 
@@ -294,6 +299,7 @@ func run() cli.ActionFunc {
 				Rollup:         ru,
 				BuilderToken:   c.String("buildertoken"),
 				MetricsEnabled: c.Bool("metrics"),
+				InclusionList:  c.Bool("inclusionlist"),
 			}
 
 			config.Log.Info("http server listening")

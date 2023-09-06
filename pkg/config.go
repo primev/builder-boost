@@ -6,7 +6,8 @@ import (
 
 // Config provides all available options for auction-gateway
 type Config struct {
-	Log log.Logger
+	Log                  log.Logger
+	InclusionProofActive bool
 }
 
 // noop for now
