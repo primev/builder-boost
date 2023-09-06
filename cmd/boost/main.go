@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -208,6 +209,26 @@ func run() cli.ActionFunc {
 				}
 
 				config.Log.WithField("txn", txn.Hash().Hex()).Info("commitment stored to DA")
+				// http call to send commitment to Geth Node
+				// Send RPC call as follows  curl -X POST --data '{"jsonrpc":"2.0","method":"eth_sendPreconfirmationBid","params":["0x927452e78b79db883d3652284245f1de5087efabba620d601098c9ae2ac8a942"],"id":1}' -H "Content-Type: application/json" http://localhost:8545
+				request := "{\"jsonrpc\":\"2.0\",\"method\":\"eth_sendPreconfirmationBid\",\"params\":[\"" + txn.Hash().Hex() + "\"],\"id\":1}"
+				config.Log.WithField("request", request).Info("sending request to Geth Node")
+
+				// // Start json rpc client using net/rpc package
+				// gethClient, err := rpc.DialHTTP("tcp", "localhost:8545")
+				// if err != nil {
+				// 	config.Log.WithError(err).Error("failed to dial Geth Node")
+				// 	continue
+				// }
+				// err = gethClient.Call("eth_sendPreconfirmationBid", txn.Hash().Hex(), nil)
+				resp, err := http.Post("http://localhost:8545", "application/json", bytes.NewBuffer([]byte(request)))
+				if err != nil {
+					config.Log.WithError(err).Error("failed to send request to Geth Node")
+					continue
+				}
+				resp.Body.Close()
+				// config.Log.WithField("response", resp).Info("response from Geth Node")
+
 				// config.Log.WithField("peer", peerMsg.Peer).Info(string(peerMsg.Bytes))
 			}
 		}()
