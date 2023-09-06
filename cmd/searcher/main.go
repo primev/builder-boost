@@ -7,9 +7,11 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/lthibault/log"
 	boost "github.com/primev/builder-boost/pkg"
 	"github.com/primev/builder-boost/pkg/boostcli"
+	"github.com/primev/builder-boost/pkg/rollup"
 	"github.com/primev/builder-boost/pkg/searcher"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/sync/errgroup"
@@ -63,9 +65,27 @@ var flags = []cli.Flag{
 		Value:   false,
 		EnvVars: []string{"METRICS"},
 	},
+	&cli.BoolFlag{
+		Name:    "api",
+		Usage:   "enable api",
+		Value:   false,
+		EnvVars: []string{"API"},
+	},
+	&cli.StringFlag{
+		Name:    "rollupaddr",
+		Usage:   "Rollup RPC address",
+		Value:   "https://ethereum-sepolia.blockpi.network/v1/rpc/public",
+		EnvVars: []string{"ROLLUP_ADDR"},
+	},
+	&cli.StringFlag{
+		Name:    "rollupcontract",
+		Usage:   "Rollup contract address",
+		Value:   "0x6219a236EFFa91567d5ba4a0A5134297a35b0b2A",
+		EnvVars: []string{"ROLLUP_CONTRACT"},
+	},
 }
 var (
-	config = searcher.Config{Log: log.New()}
+	config = searcher.Config{Log: log.New()} // add ru
 )
 
 func main() {
@@ -103,10 +123,36 @@ func run() cli.ActionFunc {
 		config.Key = searcherKey
 		config.Addr = boostAddrString
 		config.MetricsEnabled = c.Bool("metrics")
-		searcher := searcher.New(config)
+		var s searcher.Searcher
+		apiMode := c.Bool("api")
+		if apiMode {
+
+			client, err := ethclient.Dial(c.String("rollupaddr"))
+			if err != nil {
+				return err
+			}
+
+			contractAddress := common.HexToAddress(c.String("rollupcontract"))
+			ru, err := rollup.New(client, contractAddress, searcherKey, config.Log)
+
+			g.Go(func() error {
+				return ru.Run(ctx)
+			})
+			config.Ru = ru
+			s = searcher.New(config)
+			if err != nil {
+				return err
+			}
+
+			g.Go(func() error {
+				return s.API(ctx)
+			})
+			return g.Wait()
+		}
+		s = searcher.New(config)
 
 		g.Go(func() error {
-			return searcher.Run(ctx)
+			return s.Run(ctx)
 		})
 
 		return g.Wait()

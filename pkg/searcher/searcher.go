@@ -5,6 +5,7 @@ import (
 	"crypto/ecdsa"
 	"encoding/json"
 	"io/ioutil"
+	"math/big"
 	"net/http"
 	"net/url"
 	"time"
@@ -15,11 +16,15 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	boost "github.com/primev/builder-boost/pkg"
+	"github.com/primev/builder-boost/pkg/p2p/node"
+	"github.com/primev/builder-boost/pkg/preconf"
+	"github.com/primev/builder-boost/pkg/rollup"
 	"github.com/primev/builder-boost/pkg/utils"
 )
 
 type Searcher interface {
 	Run(ctx context.Context) error
+	API(ctx context.Context) error
 }
 
 func New(config Config) Searcher {
@@ -28,6 +33,7 @@ func New(config Config) Searcher {
 		key:            config.Key,
 		addr:           config.Addr,
 		metricsEnabled: config.MetricsEnabled,
+		ru:             config.Ru,
 	}
 }
 
@@ -37,6 +43,8 @@ type searcher struct {
 	addr           string
 	m              *metrics
 	metricsEnabled bool
+	ru             rollup.Rollup
+	p2pEngine      node.ISearcherNode
 }
 
 type metrics struct {
@@ -58,6 +66,78 @@ func NewMetrics(reg prometheus.Registerer) *metrics {
 	return m
 }
 
+// Struct for processing bid amount, ID hash, and block number
+type PreconfRequest struct {
+	BidAmount uint64 `json:"bid_amount"`
+	IDHash    string `json:"id_hash"`
+	BlockNum  uint64 `json:"block_num"`
+}
+
+func (s *searcher) preconfHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	// Read input from request: Bid Amount, ID Hash, Block number
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		s.log.WithError(err).Error("failed to read request body")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	var pc PreconfRequest
+	err = json.Unmarshal(body, &pc)
+	if err != nil {
+		s.log.WithError(err).Error("failed to unmarshal request body")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	// Construct bid
+	bid, err := preconf.ConstructSignedBid(big.NewInt(int64(pc.BidAmount)), pc.IDHash, big.NewInt(int64(pc.BlockNum)), s.key)
+	if err != nil {
+		s.log.WithError(err).Error("failed to construct bid")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	bid.SubmitBid(s.p2pEngine)
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (s *searcher) API(ctx context.Context) error {
+	s.log.Info("starting searcher api")
+	http.Handle("/preconf", http.HandlerFunc(s.preconfHandler))
+
+	searchernode := node.NewSearcherNode(s.log, s.key, s.ru, nil)
+	select {
+	case <-searchernode.Ready():
+	}
+
+	go func(n node.ISearcherNode, s *searcher) {
+		s.log.Info("searcher node ready for commitment")
+		commitment := n.CommitmentReader()
+		for c := range commitment {
+			s.log.Info("received commitment")
+			// Print the commitment details
+			var pc preconf.PreconfCommitment
+			err := json.Unmarshal(c.Bytes, &pc)
+			if err != nil {
+				s.log.Error()
+			}
+			builder, err := pc.VerifyBuilderSignature()
+			if err != nil {
+				s.log.Error("failed to verify builder signature for commitment")
+			}
+			s.log.WithField("builder", builder).WithField("txn", pc.TxnHash).Info("builder signature verified for commitment")
+			// s.log.Info(pc)
+		}
+	}(searchernode, s)
+	s.p2pEngine = searchernode
+	s.log.Info("searcher node ready for api")
+	http.ListenAndServe(":8082", nil)
+
+	return nil
+}
+
 func (s *searcher) Run(ctx context.Context) error {
 	if s.metricsEnabled {
 		reg := prometheus.NewRegistry()
@@ -68,6 +148,7 @@ func (s *searcher) Run(ctx context.Context) error {
 			promHandler := promhttp.HandlerFor(reg, promhttp.HandlerOpts{})
 
 			http.Handle("/metrics", promHandler)
+
 			http.ListenAndServe(":8080", nil)
 		}()
 	}

@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"net"
 	"net/http"
@@ -15,6 +17,8 @@ import (
 	"github.com/lthibault/log"
 	boost "github.com/primev/builder-boost/pkg"
 	"github.com/primev/builder-boost/pkg/boostcli"
+	"github.com/primev/builder-boost/pkg/p2p/node"
+	"github.com/primev/builder-boost/pkg/preconf"
 	"github.com/primev/builder-boost/pkg/rollup"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/sync/errgroup"
@@ -66,7 +70,7 @@ var flags = []cli.Flag{
 	&cli.StringFlag{
 		Name:    "rollupaddr",
 		Usage:   "Rollup RPC address",
-		Value:   "https://rpc.sepolia.org",
+		Value:   "https://ethereum-sepolia.blockpi.network/v1/rpc/public",
 		EnvVars: []string{"ROLLUP_ADDR"},
 	},
 	&cli.StringFlag{
@@ -87,6 +91,17 @@ var flags = []cli.Flag{
 		Value:   false,
 		EnvVars: []string{"METRICS"},
 	},
+	&cli.StringFlag{
+		Name:    "dacontract",
+		Usage:   "DA contract address",
+		Value:   "0xac27A2cbdBA8768D49e359ebA326fC1F27832ED4",
+		EnvVars: []string{"ROLLUP_CONTRACT"},
+	},
+	&cli.StringFlag{
+		Name:    "daaddr",
+		Usage:   "DA RPC address",
+		Value:   "http://54.200.76.18:8545",
+		EnvVars: []string{"ROLLUP_ADDR"},
 	&cli.BoolFlag{
 		Name:    "inclusionlist",
 		Usage:   "enables inclusion list for boost",
@@ -164,6 +179,64 @@ func run() cli.ActionFunc {
 		if err != nil {
 			return err
 		}
+		buildernode := node.NewBuilderNode(config.Log, builderKey, ru, nil)
+		select {
+		case <-buildernode.Ready():
+		}
+		go func() {
+			client, err := ethclient.Dial("http://54.200.76.18:8545")
+			if err != nil {
+				log.Fatalf("Failed to connect to the Ethereum client: %v", err)
+			}
+			for peerMsg := range buildernode.BidReader() {
+				var pc preconf.PreConfBid
+				err := json.Unmarshal(peerMsg.Bytes, &pc)
+				if err != nil {
+					config.Log.WithError(err).Error("failed to unmarshal preconf bid")
+				}
+				address, err := pc.VerifySearcherSignature()
+				if err != nil {
+					config.Log.WithError(err).Error("failed to verify preconf bid")
+				}
+				config.Log.WithField("address", address.Hex()).WithField("bid_txn", pc.TxnHash).WithField("bid_amt", pc.GetBidAmt()).WithField("sending_peer", peerMsg.Peer).Info("preconf bid verified")
+				commit, err := pc.ConstructCommitment(builderKey)
+				if err != nil {
+					config.Log.WithError(err).Error("failed to construct commitment")
+				}
+
+				config.Log.WithField("commitment", commit).Info("commitment constructed")
+				commit.SendCommitmentToSearcher(buildernode)
+
+				txn, err := commit.StoreCommitmentToDA(builderKey, "0xac27A2cbdBA8768D49e359ebA326fC1F27832ED4", client)
+				if err != nil {
+					config.Log.WithError(err).Error("failed to store commitment to DA")
+					continue
+				}
+
+				config.Log.WithField("txn", txn.Hash().Hex()).Info("commitment stored to DA")
+				// http call to send commitment to Geth Node
+				// Send RPC call as follows  curl -X POST --data '{"jsonrpc":"2.0","method":"eth_sendPreconfirmationBid","params":["0x927452e78b79db883d3652284245f1de5087efabba620d601098c9ae2ac8a942"],"id":1}' -H "Content-Type: application/json" http://localhost:8545
+				request := "{\"jsonrpc\":\"2.0\",\"method\":\"eth_sendPreconfirmationBid\",\"params\":[\"" + txn.Hash().Hex() + "\"],\"id\":1}"
+				config.Log.WithField("request", request).Info("sending request to Geth Node")
+
+				// // Start json rpc client using net/rpc package
+				// gethClient, err := rpc.DialHTTP("tcp", "localhost:8545")
+				// if err != nil {
+				// 	config.Log.WithError(err).Error("failed to dial Geth Node")
+				// 	continue
+				// }
+				// err = gethClient.Call("eth_sendPreconfirmationBid", txn.Hash().Hex(), nil)
+				resp, err := http.Post("http://localhost:8545", "application/json", bytes.NewBuffer([]byte(request)))
+				if err != nil {
+					config.Log.WithError(err).Error("failed to send request to Geth Node")
+					continue
+				}
+				resp.Body.Close()
+				// config.Log.WithField("response", resp).Info("response from Geth Node")
+
+				// config.Log.WithField("peer", peerMsg.Peer).Info(string(peerMsg.Bytes))
+			}
+		}()
 
 		g.Go(func() error {
 			return ru.Run(ctx)
