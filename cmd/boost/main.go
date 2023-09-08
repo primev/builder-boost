@@ -102,6 +102,7 @@ var flags = []cli.Flag{
 		Usage:   "DA RPC address",
 		Value:   "http://54.200.76.18:8545",
 		EnvVars: []string{"ROLLUP_ADDR"},
+	},
 	&cli.BoolFlag{
 		Name:    "inclusionlist",
 		Usage:   "enables inclusion list for boost",
