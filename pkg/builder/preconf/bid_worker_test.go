@@ -1,4 +1,4 @@
-package builder_test
+package preconf_test
 
 import (
 	"crypto/ecdsa"

@@ -1,4 +1,4 @@
-package builder
+package preconf
 
 import (
 	"crypto/ecdsa"
