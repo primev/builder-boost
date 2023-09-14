@@ -30,5 +30,6 @@ func NewNode(
 	ctx context.Context,
 	opts Options,
 ) (*Node, error) {
+
 	return &Node{}, nil
 }

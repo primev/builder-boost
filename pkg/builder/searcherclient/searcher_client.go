@@ -16,10 +16,9 @@ import (
 
 // SearcherInfo is a struct containing information about a searcher
 type SearcherInfo struct {
-	ID        string        `json:"id"`
-	Latency   time.Duration `json:"latency"`
-	Validity  time.Time     `json:"validity"`
-	Heartbeat time.Time     `json:"heartbeat"`
+	ID        string    `json:"id"`
+	Validity  int64     `json:"validity"`
+	Heartbeat time.Time `json:"heartbeat"`
 }
 
 // SearcherClient is an interface for managing searcher connections
@@ -136,7 +135,7 @@ func (s *searcherClient) SubmitBlock(
 		blockMetadata.SearcherTxns = make(map[string][]string)
 	}
 
-	for _, btxn := range payload.ExecutionPayload.Transactions {
+	for idx, btxn := range payload.ExecutionPayload.Transactions {
 		var txn types.Transaction
 		err := txn.UnmarshalBinary(btxn)
 		if err != nil {
@@ -144,10 +143,10 @@ func (s *searcherClient) SubmitBlock(
 			continue
 		}
 		// Extract Min/Max
-		if txn.GasTipCap().Cmp(minTipTxn) < 0 {
+		if txn.GasTipCap().Cmp(minTipTxn) < 0 || idx == 0 {
 			minTipTxn = txn.GasTipCap()
 		}
-		if txn.GasTipCap().Cmp(maxTipTxn) > 0 {
+		if txn.GasTipCap().Cmp(maxTipTxn) > 0 || idx == 0 {
 			maxTipTxn = txn.GasTipCap()
 		}
 
@@ -173,12 +172,22 @@ func (s *searcherClient) SubmitBlock(
 
 	s.logger.Info("block metadata processed", "blockMetadata", blockMetadata)
 
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	if s.inclusionProofActive {
+		s.mu.Lock()
+		defer s.mu.Unlock()
 
-	for _, searcher := range s.searchers {
-		if _, ok := blockMetadata.SearcherTxns[searcher.ID()]; ok {
-			searcher.Send(ctx, blockMetadata)
+		for _, searcher := range s.searchers {
+			if _, ok := blockMetadata.SearcherTxns[searcher.ID()]; ok {
+				err := searcher.Send(ctx, blockMetadata)
+				if err != nil {
+					s.logger.Error("failed to send block metadata to searcher",
+						"err", err,
+						"searcher", searcher.ID(),
+					)
+				}
+				// this could only happen if the callback for disconnection is
+				// not called yet
+			}
 		}
 	}
 

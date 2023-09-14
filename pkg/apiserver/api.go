@@ -1,11 +1,7 @@
 package apiserver
 
 import (
-	"bytes"
-	"encoding/json"
-	"errors"
 	"expvar"
-	"fmt"
 	"net/http"
 	"net/http/pprof"
 
@@ -21,7 +17,7 @@ const (
 
 type searcherKey struct{}
 
-type API struct {
+type Service struct {
 	*http.Server
 
 	metricsRegistry *prometheus.Registry
@@ -29,13 +25,13 @@ type API struct {
 	logger          *slog.Logger
 }
 
-func NewAPI() *API {
-	return &API{}
+func New() *Service {
+	return &Service{}
 }
 
-func (a *API) registerDebugEndpoints() {
+func (a *Service) registerDebugEndpoints() {
 	// register metrics handler
-	a.router.Handle("/metrics", promhttp.HandlerFor(a.MetricsRegistry(), promhttp.HandlerOpts{}))
+	a.router.Handle("/metrics", promhttp.HandlerFor(a.metricsRegistry, promhttp.HandlerOpts{}))
 
 	// register pprof handlers
 	a.router.Handle(
@@ -77,59 +73,19 @@ func newMetrics(version string) (r *prometheus.Registry) {
 	return r
 }
 
-func (a *API) MetricsRegistry() *prometheus.Registry {
-	return a.metricsRegistry
-}
-
-func (a *API) Router() *http.ServeMux {
-	return a.router
-}
-
-type statusResponse struct {
-	Code    int    `json:"code"`
-	Message string `json:"message"`
-}
-
-func WriteResponse(w http.ResponseWriter, code int, message any) error {
-	var b bytes.Buffer
-	switch message.(type) {
-	case string:
-		err := json.NewEncoder(&b).Encode(statusResponse{Code: code, Message: message.(string)})
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			return fmt.Errorf("failed to encode status response: %w", err)
-		}
-	default:
-		err := json.NewEncoder(&b).Encode(message)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			return fmt.Errorf("failed to encode response: %w", err)
-		}
+func (a *Service) ChainHandlers(
+	path string,
+	handler http.Handler,
+	mws ...func(http.Handler) http.Handler,
+) {
+	h := handler
+	for i := len(mws) - 1; i > 0; i-- {
+		h = mws[i](h)
 	}
-
-	w.WriteHeader(code)
-	w.Header().Set("Content-Type", "application/json")
-	fmt.Fprintln(w, b.String())
-	return nil
+	a.router.Handle(path, h)
 }
 
-func MethodHandler(method string, handler http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != method {
-			WriteResponse(w, http.StatusMethodNotAllowed, "method not allowed")
-			return
-		}
-		handler(w, r)
-	}
+func (a *Service) RegisterMetricsCollectors(cs ...prometheus.Collector) {
+	a.metricsRegistry.MustRegister(cs...)
 }
 
-func BindJSON[T any](w http.ResponseWriter, r *http.Request) (T, error) {
-	var body T
-
-	if r.Body == nil {
-		return body, errors.New("no body")
-	}
-	defer r.Body.Close()
-
-	return body, json.NewDecoder(r.Body).Decode(&body)
-}

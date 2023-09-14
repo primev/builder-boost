@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"time"
@@ -12,7 +13,6 @@ import (
 	"github.com/primev/builder-boost/pkg/builder/searcherclient"
 	"github.com/primev/builder-boost/pkg/rollup"
 	"github.com/primev/builder-boost/pkg/utils"
-	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/exp/slog"
 )
 
@@ -22,16 +22,61 @@ const (
 
 type searcherKey struct{}
 
-type API struct {
-	metricsRegistry *prometheus.Registry
-	router          *http.ServeMux
-	rollUp          rollup.Rollup
-	logger          *slog.Logger
-	sclient         searcherclient.SearcherClient
+type api struct {
+	builderToken string
+	rollUp       rollup.Rollup
+	logger       *slog.Logger
+	sclient      searcherclient.SearcherClient
 }
 
-func NewAPI() *API {
-	return &API{}
+type APIServer interface {
+	ChainHandlers(string, http.Handler, ...func(http.Handler) http.Handler)
+}
+
+// RegisterAPI registers the API handlers with the provided server. It doesnt
+// return anything as it is assumed that the server will be started after
+// registration. Lifecycle of arguments is the responsibility of the caller.
+func RegisterAPI(
+	token string,
+	server APIServer,
+	rollUp rollup.Rollup,
+	logger *slog.Logger,
+	sclient searcherclient.SearcherClient,
+) {
+
+	a := &api{
+		builderToken: token,
+		rollUp:       rollUp,
+		logger:       logger,
+		sclient:      sclient,
+	}
+	server.ChainHandlers(
+		"/health",
+		apiserver.MethodHandler(http.MethodGet, a.handleHealthCheck),
+		a.authSearcher,
+	)
+
+	server.ChainHandlers(
+		"/builder",
+		apiserver.MethodHandler(http.MethodGet, a.handleBuilderID),
+		a.authenticateBuilder,
+	)
+
+	server.ChainHandlers(
+		"/commitment",
+		apiserver.MethodHandler(http.MethodGet, a.handleSearcherCommitment),
+		a.authSearcher,
+	)
+
+	server.ChainHandlers(
+		"/primev/v1/builder/blocks",
+		apiserver.MethodHandler(http.MethodPost, a.submitBlock),
+	)
+
+	server.ChainHandlers(
+		"/ws",
+		apiserver.MethodHandler(http.MethodGet, a.connectSearcher),
+	)
 }
 
 // IDResponse is a simple struct for returning an ID
@@ -39,8 +84,24 @@ type IDResponse struct {
 	ID string `json:"id"`
 }
 
+func (a *api) authenticateBuilder(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		authToken := r.Header.Get("X-Builder-Token")
+		if authToken != a.builderToken {
+			a.logger.Error("failed to authenticate builder request")
+			err := apiserver.WriteResponse(w, http.StatusUnauthorized, "token invalid")
+			if err != nil {
+				a.logger.Error("error writing response", "err", err)
+			}
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
 // handleBuilderID returns the builder ID as an IDResponse
-func (a *API) handleBuilderID(w http.ResponseWriter, r *http.Request) {
+func (a *api) handleBuilderID(w http.ResponseWriter, r *http.Request) {
 	logger := a.logger.With("method", "handleBuilderID")
 	resp := IDResponse{ID: a.rollUp.GetBuilderAddress().Hex()}
 
@@ -55,14 +116,43 @@ type CommitmentResponse struct {
 	Commitment string `json:"commitment"`
 }
 
+func (a *api) authSearcher(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		authToken := r.Header.Get("X-Primev-Signature")
+		builderAddress := a.rollUp.GetBuilderAddress()
+		searcherAddress, ok := utils.VerifyAuthenticationToken(authToken, builderAddress.Hex())
+		if !ok {
+			a.logger.Error(
+				"error verifying authentication token",
+				"token", authToken,
+				"builderAddress", builderAddress.Hex(),
+			)
+			err := apiserver.WriteResponse(w, http.StatusUnauthorized, "token is not valid")
+			if err != nil {
+				a.logger.Error("error writing response", "err", err)
+			}
+			return
+		}
+
+		reqClone := r.Clone(context.WithValue(r.Context(), searcherKey{}, searcherAddress))
+
+		next.ServeHTTP(w, reqClone)
+	})
+}
+
 // handleSearcherCommitment returns the searcher commitment as a CommitmentResponse
-func (a *API) handleSearcherCommitment(w http.ResponseWriter, r *http.Request) {
+func (a *api) handleSearcherCommitment(w http.ResponseWriter, r *http.Request) {
 	logger := a.logger.With("method", "handleSearcherCommitment")
 
 	searcherAddress, ok := r.Context().Value(searcherKey{}).(common.Address)
 	if !ok {
 		logger.Error("error getting searcher address from context")
-		err := apiserver.WriteResponse(w, http.StatusBadRequest, "searcher address not found")
+		// This should never happen
+		err := apiserver.WriteResponse(
+			w,
+			http.StatusInternalServerError,
+			"searcher address not found",
+		)
 		if err != nil {
 			logger.Error("error writing response", "err", err)
 		}
@@ -84,7 +174,7 @@ func (a *API) handleSearcherCommitment(w http.ResponseWriter, r *http.Request) {
 // 1. The token is valid
 // 2. The searcher behind the token has active subscription
 // 3. The searcher behind the token is not already connected
-func (a *API) connectSearcher(w http.ResponseWriter, r *http.Request) {
+func (a *api) connectSearcher(w http.ResponseWriter, r *http.Request) {
 	logger := a.logger.With("method", "connectSearcher")
 
 	// Use verification scheme on token
@@ -227,7 +317,7 @@ func (a *API) connectSearcher(w http.ResponseWriter, r *http.Request) {
 }
 
 // builder related handlers
-func (a *API) submitBlock(w http.ResponseWriter, r *http.Request) {
+func (a *api) submitBlock(w http.ResponseWriter, r *http.Request) {
 	logger := a.logger.With("method", "submitBlock")
 
 	br, err := apiserver.BindJSON[capella.SubmitBlockRequest](w, r)
@@ -266,7 +356,7 @@ type healthCheck struct {
 
 // healthCheck detremines if the service is healthy
 // how many connections are open
-func (a *API) handleHealthCheck(w http.ResponseWriter, r *http.Request) {
+func (a *api) handleHealthCheck(w http.ResponseWriter, r *http.Request) {
 	logger := a.logger.With("method", "handleHealthCheck")
 	sInfo := a.sclient.GetSeacherInfo()
 

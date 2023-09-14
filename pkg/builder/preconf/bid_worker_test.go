@@ -7,7 +7,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/primev/builder-boost/pkg/builder"
+	builder "github.com/primev/builder-boost/pkg/builder/preconf"
 	"github.com/primev/builder-boost/pkg/preconf"
 	"golang.org/x/exp/slog"
 )
