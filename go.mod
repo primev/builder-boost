@@ -1,6 +1,6 @@
 module github.com/primev/builder-boost
 
-go 1.18
+go 1.20
 
 require (
 	github.com/alecthomas/assert v1.0.0
@@ -16,7 +16,8 @@ require (
 	github.com/sirupsen/logrus v1.9.0
 	github.com/stretchr/testify v1.8.2
 	github.com/urfave/cli/v2 v2.17.2-0.20221006022127-8f469abc00aa
-	golang.org/x/sync v0.1.0
+	golang.org/x/exp v0.0.0-20230905200255-921286631fa9
+	golang.org/x/sync v0.3.0
 	gopkg.in/DataDog/dd-trace-go.v1 v1.50.1
 )
 
@@ -70,7 +71,7 @@ require (
 	go.uber.org/atomic v1.10.0 // indirect
 	go4.org/intern v0.0.0-20211027215823-ae77deb06f29 // indirect
 	go4.org/unsafe/assume-no-moving-gc v0.0.0-20220617031537-928513b29760 // indirect
-	golang.org/x/crypto v0.7.0
+	golang.org/x/crypto v0.13.0
 	golang.org/x/time v0.0.0-20220922220347-f3bd1da661af // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	google.golang.org/genproto v0.0.0-20210402141018-6c239bbf2bb1 // indirect
@@ -168,12 +169,11 @@ require (
 	go.uber.org/fx v1.19.2 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.24.0 // indirect
-	golang.org/x/exp v0.0.0-20230321023759-10a507213a29 // indirect
-	golang.org/x/mod v0.10.0 // indirect
-	golang.org/x/net v0.8.0 // indirect
-	golang.org/x/sys v0.7.0 // indirect
-	golang.org/x/text v0.8.0 // indirect
-	golang.org/x/tools v0.7.0 // indirect
+	golang.org/x/mod v0.12.0 // indirect
+	golang.org/x/net v0.15.0 // indirect
+	golang.org/x/sys v0.12.0 // indirect
+	golang.org/x/text v0.13.0 // indirect
+	golang.org/x/tools v0.13.0 // indirect
 	gonum.org/v1/gonum v0.11.0 // indirect
 	lukechampine.com/blake3 v1.1.7 // indirect
 	nhooyr.io/websocket v1.8.7 // indirect
