@@ -17,16 +17,27 @@ const (
 
 type searcherKey struct{}
 
+// Service wraps http.Server with additional functionality for metrics and
+// other common middlewares.
 type Service struct {
-	*http.Server
-
 	metricsRegistry *prometheus.Registry
 	router          *http.ServeMux
 	logger          *slog.Logger
 }
 
-func New() *Service {
-	return &Service{}
+// New creates a new Service.
+func New(
+	version string,
+	logger *slog.Logger,
+) *Service {
+	srv := &Service{
+		router:          http.NewServeMux(),
+		logger:          logger,
+		metricsRegistry: newMetrics(version),
+	}
+
+	srv.registerDebugEndpoints()
+	return srv
 }
 
 func (a *Service) registerDebugEndpoints() {
@@ -73,19 +84,25 @@ func newMetrics(version string) (r *prometheus.Registry) {
 	return r
 }
 
+// Router returns the router.
+func (a *Service) Router() http.Handler {
+	return newAccessLogHandler(a.logger)(a.router)
+}
+
+// ChainHandlers chains middlewares and handler.
 func (a *Service) ChainHandlers(
 	path string,
 	handler http.Handler,
 	mws ...func(http.Handler) http.Handler,
 ) {
 	h := handler
-	for i := len(mws) - 1; i > 0; i-- {
+	for i := len(mws) - 1; i >= 0; i-- {
 		h = mws[i](h)
 	}
 	a.router.Handle(path, h)
 }
 
+// RegisterMetricsCollectors registers prometheus collectors.
 func (a *Service) RegisterMetricsCollectors(cs ...prometheus.Collector) {
 	a.metricsRegistry.MustRegister(cs...)
 }
-

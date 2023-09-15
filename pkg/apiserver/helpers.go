@@ -8,19 +8,20 @@ import (
 	"net/http"
 )
 
-type statusResponse struct {
+// StatusResponse is a helper struct used to wrap a string message with a status code.
+type StatusResponse struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
 }
 
 // WriteResponse helper is used to write a response to the client with the given code
-// and message. If the message is a string, it will be wrapped in a statusResponse
+// and message. If the message is a string, it will be wrapped in a StatusResponse
 // struct. Otherwise, the message will be encoded as JSON.
 func WriteResponse(w http.ResponseWriter, code int, message any) error {
 	var b bytes.Buffer
 	switch message.(type) {
 	case string:
-		err := json.NewEncoder(&b).Encode(statusResponse{Code: code, Message: message.(string)})
+		err := json.NewEncoder(&b).Encode(StatusResponse{Code: code, Message: message.(string)})
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return fmt.Errorf("failed to encode status response: %w", err)

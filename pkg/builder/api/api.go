@@ -339,10 +339,6 @@ func (a *api) submitBlock(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// if a.MetricsEnabled {
-	// 	a.metrics.Duration.WithLabelValues("algo_processing", "N/A").Observe(time.Since(now).Seconds())
-	// 	a.metrics.PayloadsRecieved.Inc()
-	// }
 	err = apiserver.WriteResponse(w, http.StatusOK, "block submitted")
 	if err != nil {
 		logger.Error("error writing response", "err", err)
